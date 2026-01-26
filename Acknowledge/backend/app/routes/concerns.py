@@ -149,3 +149,42 @@ async def update_concern(concern_id: int, update: ConcernUpdate, db: AsyncSessio
         )
     )
     return result.scalars().first()
+
+@router.get("/escalated", response_model=List[ConcernResponse])
+async def get_escalated_concerns(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Get all escalated concerns (for senior dashboard)"""
+    if current_user.role not in [UserRole.SENIOR, UserRole.MANAGER]:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    result = await db.execute(
+        select(Concern)
+        .filter(Concern.status == ConcernStatus.ESCALATED)
+        .options(
+            selectinload(Concern.raised_by),
+            selectinload(Concern.notified_users),
+            selectinload(Concern.acknowledged_by)
+        )
+        .order_by(Concern.created_at.desc())
+    )
+    return result.scalars().all()
+
+@router.put("/{concern_id}/action")
+async def action_on_concern(concern_id: int, action: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Take action on escalated concern (assign, review, close)"""
+    if current_user.role not in [UserRole.SENIOR, UserRole.MANAGER]:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    result = await db.execute(select(Concern).filter(Concern.id == concern_id))
+    concern = result.scalars().first()
+    
+    if not concern:
+        raise HTTPException(status_code=404, detail="Concern not found")
+    
+    if action == "reviewed":
+        concern.status = ConcernStatus.OPEN
+    elif action == "closed":
+        concern.status = ConcernStatus.RESOLVED
+        concern.resolved_at = datetime.utcnow()
+    
+    await db.commit()
+    return {"message": f"Concern {action} successfully"}

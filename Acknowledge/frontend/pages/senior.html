@@ -54,33 +54,33 @@
 
             <!-- Navigation -->
             <nav class="mt-8 px-4 space-y-1">
-                <a href="#"
-                    class="flex items-center px-4 py-3 bg-primary-light text-primary rounded-lg font-medium transition-colors">
+                <button onclick="switchTab('stats')" id="nav-stats"
+                    class="w-full flex items-center px-4 py-3 bg-primary-light text-primary rounded-lg font-medium transition-colors text-left">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
                     Organization Stats
-                </a>
-                <a href="#"
-                    class="flex items-center px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors">
+                </button>
+                <button onclick="switchTab('compliance')" id="nav-compliance"
+                    class="w-full flex items-center px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors text-left">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                     Compliance & Policies
-                </a>
-                <a href="#"
-                    class="flex items-center px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors">
+                </button>
+                <button onclick="switchTab('workforce')" id="nav-workforce"
+                    class="w-full flex items-center px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors text-left">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
                     Workforce
-                </a>
+                </button>
             </nav>
         </div>
 
@@ -109,6 +109,10 @@
                     class="text-sm font-medium text-gray-500 hover:text-red-600 transition-colors mr-2">
                     Logout
                 </button>
+                <button id="notifyBtn" onclick="openNotifyModal()"
+                    class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors shadow-sm">
+                    Notify Everyone
+                </button>
                 <button
                     class="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm">
                     Download Report
@@ -117,158 +121,297 @@
         </header>
 
         <!-- Dashboard Content -->
-        <div class="flex-1 overflow-auto p-8">
+        <div class="flex-1 overflow-auto p-8 relative">
 
-            <!-- High Level Metrics -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <!-- Efficiency -->
-                <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm relative overflow-hidden">
-                    <div class="absolute right-0 top-0 h-full w-2 bg-primary"></div>
-                    <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Operational Efficiency</p>
-                    <div class="mt-4 flex items-end justify-between">
-                        <div>
-                            <p class="text-4xl font-bold text-gray-900">92%</p>
-                            <p class="text-sm text-green-600 mt-1">↑ 2.4% vs last month</p>
-                        </div>
-                        <div class="h-10 w-20">
-                            <!-- Simple sparkline placeholder -->
-                            <svg viewBox="0 0 100 50" class="w-full h-full text-primary opacity-20" fill="currentColor">
-                                <path d="M0 50 L20 40 L40 45 L60 20 L80 30 L100 10 V50 Z" />
-                            </svg>
+            <!-- Loading Overlay -->
+            <div id="loading-overlay"
+                class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50 hidden">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+
+            <!-- TAB 1: ORGANIZATION STATS -->
+            <div id="view-stats" class="space-y-8 animate-fade-in">
+                <!-- High Level Metrics -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <!-- Efficiency -->
+                    <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm relative overflow-hidden">
+                        <div class="absolute right-0 top-0 h-full w-2 bg-primary"></div>
+                        <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Operational Efficiency</p>
+                        <div class="mt-4">
+                            <p class="text-4xl font-bold text-gray-900" id="stat-efficiency">--%</p>
+                            <p class="text-sm mt-1" id="stat-efficiency-change">--</p>
                         </div>
                     </div>
-                </div>
 
-                <!-- Compliance -->
-                <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm relative overflow-hidden">
-                    <div class="absolute right-0 top-0 h-full w-2 bg-gray-300"></div>
-                    <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Compliance Rate</p>
-                    <div class="mt-4 flex items-end justify-between">
-                        <div>
+                    <!-- Compliance -->
+                    <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm relative overflow-hidden">
+                        <div class="absolute right-0 top-0 h-full w-2 bg-blue-500"></div>
+                        <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Compliance Rate</p>
+                        <div class="mt-4">
                             <p class="text-4xl font-bold text-gray-900" id="stat-compliance-rate">--%</p>
                             <p class="text-sm text-gray-500 mt-1">Policy Acknowledgments</p>
                         </div>
                     </div>
-                </div>
 
-                <!-- Risk -->
-                <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm relative overflow-hidden">
-                    <div class="absolute right-0 top-0 h-full w-2 bg-red-400"></div>
-                    <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Escalated Concerns</p>
-                    <div class="mt-4 flex items-end justify-between">
-                        <div>
+                    <!-- Escalations -->
+                    <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm relative overflow-hidden">
+                        <div class="absolute right-0 top-0 h-full w-2 bg-red-500"></div>
+                        <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Escalated Concerns</p>
+                        <div class="mt-4">
                             <p class="text-4xl font-bold text-gray-900" id="stat-open-concerns">--</p>
-                            <p class="text-sm text-red-500 mt-1">Requires Immediate Action</p>
+                            <p class="text-sm text-red-500 mt-1">Requires Action</p>
+                        </div>
+                    </div>
+
+                    <!-- Total Employees -->
+                    <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm relative overflow-hidden">
+                        <div class="absolute right-0 top-0 h-full w-2 bg-purple-500"></div>
+                        <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Total Workforce</p>
+                        <div class="mt-4">
+                            <p class="text-4xl font-bold text-gray-900" id="stat-total-employees">--</p>
+                            <p class="text-sm text-gray-500 mt-1">Active Employees</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Department Performance & Escalations Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+                    <!-- Department Performance -->
+                    <div>
+                        <h2 class="text-lg font-medium text-gray-900 mb-4">Department Performance</h2>
+                        <div id="department-list" class="space-y-4">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Recent Escalations -->
+                    <div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-lg font-medium text-gray-900">Escalated Concerns</h2>
+                        </div>
+                        <div class="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm min-h-[300px]">
+                            <div id="escalations-list" class="divide-y divide-gray-50">
+                                <!-- Populated by JS -->
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Department Performance Grid -->
-            <div class="mb-8">
-                <h2 class="text-lg font-medium text-gray-900 mb-6">Department Performance</h2>
+            <!-- TAB 2: COMPLIANCE & POLICIES -->
+            <div id="view-compliance" class="hidden space-y-8 animate-fade-in">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-lg font-medium text-gray-900">Policy Compliance Audit</h2>
+                    <div class="flex space-x-3">
+                        <button onclick="openPolicyCreateModal()"
+                            class="text-sm bg-primary text-white px-3 py-1.5 rounded hover:bg-primary-hover shadow-sm font-medium transition-colors">
+                            + Publish New Policy
+                        </button>
+                        <button
+                            class="text-sm bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded hover:bg-gray-50 transition-colors">
+                            Export Audit Log
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm">
+                    <table class="min-w-full divide-y divide-gray-50">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Policy Name</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Status</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Completion</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Date Issued</th>
+                                <th
+                                    class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-50" id="audit-log-body">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 3: WORKFORCE -->
+            <div id="view-workforce" class="hidden space-y-8 animate-fade-in">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                    <!-- Sales Dept -->
-                    <div class="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-semibold text-gray-800">Sales & Marketing</h3>
-                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">High
-                                Performance</span>
-                        </div>
-                        <div class="space-y-4">
-                            <div>
-                                <div class="flex justify-between text-sm mb-1">
-                                    <span class="text-gray-500">Task Completion</span>
-                                    <span class="font-medium text-gray-900">94%</span>
+                    <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Workload Distribution</h3>
+                        <div id="workforce-distribution-chart"
+                            class="h-64 flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-100 rounded-lg">
+                            <div class="grid grid-cols-2 gap-12 text-center">
+                                <div>
+                                    <p class="text-3xl font-bold text-gray-800" id="active-emp-count">--</p>
+                                    <p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Active
+                                        Employees</p>
                                 </div>
-                                <div class="w-full bg-gray-100 rounded-full h-2">
-                                    <div class="bg-primary h-2 rounded-full" style="width: 94%"></div>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="flex justify-between text-sm mb-1">
-                                    <span class="text-gray-500">Resource Utilization</span>
-                                    <span class="font-medium text-gray-900">88%</span>
-                                </div>
-                                <div class="w-full bg-gray-100 rounded-full h-2">
-                                    <div class="bg-gray-400 h-2 rounded-full" style="width: 88%"></div>
+                                <div class="border-l border-gray-100 pl-12">
+                                    <p class="text-3xl font-bold text-primary" id="active-mgr-count">--</p>
+                                    <p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Active
+                                        Managers</p>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Engineering Dept -->
-                    <div class="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-semibold text-gray-800">Engineering</h3>
-                            <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">Capacity
-                                Warning</span>
-                        </div>
-                        <div class="space-y-4">
-                            <div>
-                                <div class="flex justify-between text-sm mb-1">
-                                    <span class="text-gray-500">Task Completion</span>
-                                    <span class="font-medium text-gray-900">82%</span>
-                                </div>
-                                <div class="w-full bg-gray-100 rounded-full h-2">
-                                    <div class="bg-yellow-400 h-2 rounded-full" style="width: 82%"></div>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="flex justify-between text-sm mb-1">
-                                    <span class="text-gray-500">Resource Utilization</span>
-                                    <span class="font-medium text-gray-900">98%</span>
-                                </div>
-                                <div class="w-full bg-gray-100 rounded-full h-2">
-                                    <div class="bg-red-400 h-2 rounded-full" style="width: 98%"></div>
-                                </div>
-                            </div>
+                    <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Overutilized Employees</h3>
+                        <div id="overutilized-list" class="space-y-3 max-h-64 overflow-y-auto">
+                            <!-- Populated by JS -->
                         </div>
                     </div>
+                </div>
 
+                <!-- Comprehensive Directory -->
+                <div class="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm">
+                    <div class="px-6 py-4 border-b border-gray-50 flex justify-between items-center bg-gray-50">
+                        <h3 class="text-lg font-bold text-gray-900">Organization Directory</h3>
+                        <div class="flex space-x-2">
+                            <select id="role-filter" onchange="loadWorkforce()"
+                                class="text-sm border border-gray-200 rounded px-2 py-1 outline-none">
+                                <option value="all">All Roles</option>
+                                <option value="manager">Managers</option>
+                                <option value="employee">Employees</option>
+                            </select>
+                        </div>
+                    </div>
+                    <table class="min-w-full divide-y divide-gray-50">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Name</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Role</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Email</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Joined</th>
+                                <th
+                                    class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-50" id="workforce-list-body">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
-            <!-- Recent Escalations List -->
-            <div class="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm">
-                <div class="px-6 py-4 border-b border-gray-50">
-                    <h3 class="text-lg font-medium text-gray-900">Recent Policy Acknowledgment Audit</h3>
+            <!-- My Sent Notifications -->
+            <div class="mt-8 bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm">
+                <div class="px-6 py-4 border-b border-gray-50 flex justify-between items-center">
+                    <h3 class="text-lg font-medium text-gray-900">My Sent Notifications</h3>
                 </div>
-                <table class="min-w-full divide-y divide-gray-50">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Policy Name</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Status</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Completion</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Date Issued</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-50" id="audit-log-body">
-                        <tr>
-                            <td class="px-6 py-4 text-sm font-medium text-gray-900">Data Security 2026</td>
-                            <td class="px-6 py-4"><span class="text-green-600 text-xs font-bold uppercase">Active</span>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-500">142/150 Employees</td>
-                            <td class="px-6 py-4 text-sm text-gray-500">Jan 10, 2026</td>
-                        </tr>
-                        <tr>
-                            <td class="px-6 py-4 text-sm font-medium text-gray-900">Remote Work Guidelines</td>
-                            <td class="px-6 py-4"><span
-                                    class="text-gray-400 text-xs font-bold uppercase">Archived</span></td>
-                            <td class="px-6 py-4 text-sm text-gray-500">150/150 Employees</td>
-                            <td class="px-6 py-4 text-sm text-gray-500">Dec 01, 2025</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div id="sent-notifications-list" class="divide-y divide-gray-50">
+                    <div class="p-6 text-center text-gray-500 text-sm">No notifications sent yet</div>
+                </div>
             </div>
 
         </div>
     </main>
+    <!-- Notify Everyone Modal -->
+    <div id="notify-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl">
+            <h2 class="text-xl font-bold mb-6">General Notification</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                    <input type="text" id="notify-title" placeholder="Reminder / Announcement"
+                        class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Content</label>
+                    <textarea id="notify-content" rows="4" placeholder="Type your message here..."
+                        class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"></textarea>
+                </div>
+            </div>
+            <div class="flex justify-end space-x-3 mt-8">
+                <button onclick="closeNotifyModal()"
+                    class="px-5 py-2 text-gray-500 hover:text-gray-800 font-medium transition-colors">
+                    Cancel
+                </button>
+                <button onclick="submitNotification()"
+                    class="px-6 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary-hover transition-all shadow-md">
+                    Send to Everyone
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Status Modal -->
+    <div id="notif-status-modal"
+        class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div
+            class="bg-white rounded-xl p-8 max-w-2xl w-full mx-4 shadow-2xl max-h-[80vh] overflow-hidden flex flex-col">
+            <h2 class="text-xl font-bold mb-4" id="status-modal-title">Notification Status</h2>
+            <div class="flex-1 overflow-y-auto mb-6">
+                <div class="grid grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-sm font-bold text-green-600 uppercase tracking-wider mb-3">Acknowledged</h3>
+                        <ul id="ack-list" class="space-y-2 text-sm text-gray-600"></ul>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-red-600 uppercase tracking-wider mb-3">Pending</h3>
+                        <ul id="pending-list" class="space-y-2 text-sm text-gray-600"></ul>
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-end">
+                <button onclick="document.getElementById('notif-status-modal').classList.add('hidden')"
+                    class="px-6 py-2 bg-gray-100 text-gray-800 rounded-lg font-medium hover:bg-gray-200 transition-all">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Policy Modal -->
+    <div id="create-policy-modal"
+        class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div
+            class="bg-white rounded-xl p-8 max-w-2xl w-full mx-4 shadow-2xl animate-fade-in flex flex-col max-h-[90vh]">
+            <h2 class="text-xl font-bold mb-6">Publish New Organization Policy</h2>
+            <div class="space-y-4 flex-1 overflow-y-auto pr-2">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Policy Title</label>
+                    <input type="text" id="policy-title" placeholder="Code of Conduct / Remote Work Policy"
+                        class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Content / Document Body</label>
+                    <textarea id="policy-content" rows="12"
+                        placeholder="Policy details, requirements, and compliance instructions..."
+                        class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all font-mono text-sm"></textarea>
+                </div>
+            </div>
+            <div class="flex justify-end space-x-3 mt-8 pt-4 border-t border-gray-50">
+                <button onclick="document.getElementById('create-policy-modal').classList.add('hidden')"
+                    class="px-5 py-2 text-gray-500 hover:text-gray-800 font-medium transition-colors">
+                    Discard Draft
+                </button>
+                <button onclick="submitNewPolicy()"
+                    class="px-6 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary-hover transition-all shadow-md">
+                    Publish to All Company
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="../static/js/api.js"></script>
     <script src="../static/js/senior.js"></script>
 </body>

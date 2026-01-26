@@ -68,3 +68,26 @@ async def get_all_users(db: AsyncSession = Depends(get_db), current_user: User =
     result = await db.execute(select(User).filter(User.id != current_user.id))
     users = result.scalars().all()
     return users
+
+@router.delete("/users/{user_id}")
+async def delete_user(user_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from sqlalchemy.future import select
+    from app.models.user import UserRole
+    
+    # Only seniors can delete users
+    if current_user.role != UserRole.SENIOR:
+        raise HTTPException(status_code=403, detail="Only seniors can delete credentials")
+    
+    result = await db.execute(select(User).filter(User.id == user_id))
+    user = result.scalars().first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    # Prevent senior from deleting themselves (though id check in UI/backend is good)
+    if user.id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot delete yourself")
+    
+    await db.delete(user)
+    await db.commit()
+    return {"message": "User credentials deleted successfully"}

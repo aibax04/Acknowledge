@@ -6,6 +6,7 @@ let currentUser = null;
 let allTasks = [];
 let allConcerns = [];
 let allEmployees = [];
+let allPolicies = [];
 
 // ============================================
 // UTILITY FUNCTIONS
@@ -91,11 +92,14 @@ async function loadOverview() {
         document.getElementById('stat-team-workload').innerText = stats.team_workload || '0%';
         document.getElementById('stat-pending-reviews').innerText = stats.pending_tasks || 0;
         document.getElementById('stat-open-concerns').innerText = stats.open_concerns || 0;
-        document.getElementById('stat-active-tasks').innerText = stats.total_tasks || 0;
+        document.getElementById('stat-active-tasks').innerText = stats.active_tasks || 0;
 
         // Load team status and attention items
         await loadTeamStatus();
         await loadAttentionItems();
+        await loadSentNotifications();
+        await loadNotifications();
+        await loadPolicies();
     } catch (error) {
         console.error('Failed to load overview:', error);
         showToast('Failed to load dashboard data', 'error');
@@ -345,8 +349,9 @@ async function loadAllTasks() {
 
     try {
         const tasks = await Api.get('/tasks');
+        const activeTasksList = tasks.filter(t => t.status === 'pending' || t.status === 'in_progress');
         allTasks = tasks;
-        renderAllTasks(tasks);
+        renderAllTasks(activeTasksList);
     } catch (error) {
         console.error('Failed to load tasks:', error);
         showEmptyState('all-tasks-tbody', 'Failed to load tasks');
@@ -493,6 +498,8 @@ function switchTab(tabName) {
         loadAllTasks();
     } else if (tabName === 'reports') {
         loadReports();
+    } else if (tabName === 'policies') {
+        loadPolicies();
     }
 }
 
@@ -548,6 +555,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('logoutBtn').addEventListener('click', handleLogout);
 
+    // Notification tray handlers
+    document.getElementById('notifTrayBtn')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.getElementById('notifDropdown').classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', () => {
+        const tray = document.getElementById('notifDropdown');
+        if (tray) tray.classList.add('hidden');
+    });
+
+    document.getElementById('notifDropdown')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+
+    // Policy Modal handlers
+    document.getElementById('close-policy-modal')?.addEventListener('click', () => {
+        document.getElementById('view-policy-modal').classList.remove('active');
+    });
+
+    document.getElementById('acknowledge-policy-btn')?.addEventListener('click', acknowledgePolicy);
+
     // Close modals on background click
     document.querySelectorAll('.modal').forEach(modal => {
         modal.addEventListener('click', (e) => {
@@ -576,3 +605,262 @@ window.addEventListener('unhandledrejection', (event) => {
         }
     }
 });
+
+// ============================================
+// NOTIFICATION SYSTEM
+// ============================================
+
+function openNotifyModal() {
+    document.getElementById('notify-title').value = '';
+    document.getElementById('notify-content').value = '';
+    document.getElementById('notify-modal').classList.remove('hidden');
+}
+
+function closeNotifyModal() {
+    document.getElementById('notify-modal').classList.add('hidden');
+}
+
+async function submitNotification() {
+    const title = document.getElementById('notify-title').value.trim();
+    const content = document.getElementById('notify-content').value.trim();
+
+    if (!title || !content) {
+        showToast("Please fill in all fields", "error");
+        return;
+    }
+
+    try {
+        await Api.post('/notifications/', { title, content });
+        showToast("General Notification sent to all employees!", "success");
+        closeNotifyModal();
+        await loadSentNotifications();
+    } catch (e) {
+        console.error(e);
+        showToast("Failed to send notification", "error");
+    }
+}
+
+async function loadSentNotifications() {
+    try {
+        const notifications = await Api.get('/notifications');
+        const container = document.getElementById('sent-notifications-list');
+
+        if (notifications.length === 0) {
+            container.innerHTML = '<div class="p-6 text-center text-gray-500 text-sm">No notifications sent yet</div>';
+            return;
+        }
+
+        container.innerHTML = notifications.map(notif => `
+            <div class="p-4 hover:bg-gray-50 transition-colors flex justify-between items-center">
+                <div>
+                    <h4 class="text-sm font-semibold text-gray-900">${notif.title}</h4>
+                    <p class="text-xs text-gray-500">${new Date(notif.created_at).toLocaleString()}</p>
+                </div>
+                <button onclick="viewNotifStatus(${notif.id}, '${notif.title}')" 
+                    class="text-xs font-medium text-primary hover:text-primary-hover bg-primary-light px-3 py-1 rounded-full">
+                    View Status
+                </button>
+            </div>
+        `).join('');
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+async function viewNotifStatus(id, title) {
+    try {
+        const status = await Api.get(`/notifications/${id}/status`);
+        document.getElementById('status-modal-title').innerText = `Status: ${title}`;
+
+        const ackList = document.getElementById('ack-list');
+        const pendingList = document.getElementById('pending-list');
+
+        ackList.innerHTML = status.acknowledged_users.length > 0
+            ? status.acknowledged_users.map(u => `<li>${u.full_name} <span class="text-green-500">✓</span></li>`).join('')
+            : '<li class="italic">None yet</li>';
+
+        pendingList.innerHTML = status.pending_users.length > 0
+            ? status.pending_users.map(u => `<li>${u.full_name}</li>`).join('')
+            : '<li class="italic text-green-600 font-bold">Everyone has acknowledged!</li>';
+
+        document.getElementById('notif-status-modal').classList.remove('hidden');
+    } catch (e) {
+        console.error(e);
+        showToast("Failed to load status", "error");
+    }
+}
+
+// ============================================
+// SHARED SYSTEMS (POLICY & NOTIFICATIONS)
+// ============================================
+
+async function loadNotifications() {
+    try {
+        const notifications = await Api.get('/notifications');
+        renderNotifications(notifications);
+    } catch (e) {
+        console.error('Failed to load notifications:', e);
+    }
+}
+
+function renderNotifications(notifications) {
+    const container = document.getElementById('notifItems');
+    const badge = document.getElementById('notifBadge');
+    if (!container || !badge) return;
+
+    const unacknowledged = notifications.filter(n => !n.is_acknowledged);
+
+    if (unacknowledged.length > 0) {
+        badge.innerText = unacknowledged.length;
+        badge.classList.remove('hidden');
+    } else {
+        badge.classList.add('hidden');
+    }
+
+    if (notifications.length === 0) {
+        container.innerHTML = '<div class="p-4 text-center text-gray-500 text-sm">No notifications</div>';
+        return;
+    }
+
+    container.innerHTML = notifications.map(notif => {
+        const date = new Date(notif.created_at).toLocaleString();
+        return `
+            <div class="p-4 ${notif.is_acknowledged ? 'bg-white opacity-70' : 'bg-blue-50'} hover:bg-gray-50 transition-colors">
+                <div class="flex justify-between items-start mb-1">
+                    <h4 class="text-sm font-bold text-gray-900">${notif.title}</h4>
+                    <span class="text-[10px] text-gray-400 font-medium">${date}</span>
+                </div>
+                <p class="text-xs text-gray-600 mb-2">${notif.content}</p>
+                <div class="flex justify-between items-center text-[10px]">
+                    <span class="text-gray-400">By: ${notif.created_by ? notif.created_by.full_name : 'Admin'}</span>
+                    ${notif.is_acknowledged ?
+                '<span class="text-green-600 font-bold flex items-center">✓ Acknowledged</span>' :
+                `<button onclick="acknowledgeNotification(${notif.id})" class="text-white bg-primary px-3 py-1 rounded font-bold hover:bg-primary-hover shadow-sm">Acknowledge</button>`
+            }
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+async function acknowledgeNotification(id) {
+    try {
+        await Api.post(`/notifications/${id}/acknowledge`);
+        showToast("Notification acknowledged", "success");
+        await loadNotifications();
+    } catch (e) {
+        console.error(e);
+        showToast("Failed to acknowledge", "error");
+    }
+}
+
+async function loadPolicies() {
+    showLoading('policies-list');
+
+    try {
+        const policies = await Api.get('/policies');
+
+        // Check which policies current user has acknowledged
+        allPolicies = policies.map(policy => {
+            const isAcknowledged = policy.acknowledged_by &&
+                policy.acknowledged_by.some(user => user.id === currentUser.id);
+            return { ...policy, is_acknowledged_by_me: isAcknowledged };
+        });
+
+        renderPolicies(allPolicies);
+        updatePoliciesBadge();
+    } catch (error) {
+        console.error('Failed to load policies:', error);
+        showEmptyState('policies-list', 'Failed to load policies');
+    }
+}
+
+function renderPolicies(policies) {
+    const container = document.getElementById('policies-list');
+    if (!container) return;
+
+    if (policies.length === 0) {
+        container.innerHTML = '<div class="col-span-2 text-center py-12 text-gray-500">No policies available</div>';
+        return;
+    }
+
+    container.innerHTML = policies.map(policy => `
+        <div class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
+            <div class="flex justify-between items-start mb-3">
+                <h3 class="font-semibold text-gray-900">${policy.title}</h3>
+                ${policy.is_acknowledged_by_me ?
+            '<span class="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Acknowledged</span>' :
+            '<span class="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Pending</span>'
+        }
+            </div>
+            <p class="text-sm text-gray-600 mb-4 line-clamp-2">${policy.content.substring(0, 100)}...</p>
+            <div class="flex justify-between items-center">
+                <span class="text-xs text-gray-500">Created ${new Date(policy.created_at).toLocaleDateString()}</span>
+                <button onclick="openPolicyModal(${policy.id})" class="text-primary hover:text-primary-hover text-sm font-medium">
+                    View Policy →
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function openPolicyModal(policyId) {
+    const policy = allPolicies.find(p => p.id === policyId);
+    if (!policy) return;
+
+    document.getElementById('policy-modal-id').value = policyId;
+    document.getElementById('policy-modal-title').innerText = policy.title;
+    document.getElementById('policy-modal-content').innerText = policy.content;
+
+    const ackBtn = document.getElementById('acknowledge-policy-btn');
+    if (policy.is_acknowledged_by_me) {
+        ackBtn.disabled = true;
+        ackBtn.innerText = 'Already Acknowledged';
+        ackBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    } else {
+        ackBtn.disabled = false;
+        ackBtn.innerText = 'Acknowledge';
+        ackBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+
+    document.getElementById('view-policy-modal').classList.add('active');
+}
+
+async function acknowledgePolicy() {
+    const policyId = document.getElementById('policy-modal-id').value;
+    const btn = document.getElementById('acknowledge-policy-btn');
+
+    btn.disabled = true;
+    btn.innerText = 'Acknowledging...';
+
+    try {
+        await Api.post(`/policies/${policyId}/acknowledge`, {});
+        showToast('Policy acknowledged successfully!', 'success');
+        document.getElementById('view-policy-modal').classList.remove('active');
+        await loadPolicies(); // Refresh policies
+    } catch (error) {
+        console.error('Failed to acknowledge policy:', error);
+        showToast('Failed to acknowledge policy', 'error');
+        btn.disabled = false;
+        btn.innerText = 'Acknowledge';
+    }
+}
+
+function updatePoliciesBadge() {
+    const pendingPolicies = allPolicies.filter(p => !p.is_acknowledged_by_me).length;
+    const badge = document.getElementById('policies-badge');
+    const stat = document.getElementById('stat-pending-policies');
+
+    if (badge) {
+        if (pendingPolicies > 0) {
+            badge.innerText = pendingPolicies;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+    }
+
+    if (stat) {
+        stat.innerText = pendingPolicies;
+    }
+}

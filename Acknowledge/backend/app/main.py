@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes import auth, tasks, concerns, policies, dashboard
+from app.routes import auth, tasks, concerns, policies, dashboard, senior_dashboard, reports, notifications
 from app.database import engine, Base
 
 app = FastAPI(title="Acknowledge API")
@@ -24,6 +24,9 @@ app.include_router(tasks.router)
 app.include_router(concerns.router)
 app.include_router(policies.router)
 app.include_router(dashboard.router)
+app.include_router(senior_dashboard.router)
+app.include_router(reports.router)
+app.include_router(notifications.router)
 
 @app.on_event("startup")
 async def startup():

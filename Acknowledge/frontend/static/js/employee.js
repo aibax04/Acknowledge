@@ -6,6 +6,7 @@ let currentUser = null;
 let allTasks = [];
 let allConcerns = [];
 let allPolicies = [];
+let currentWeekOffset = 0;
 
 // ============================================
 // UTILITY FUNCTIONS
@@ -494,6 +495,8 @@ function switchTab(tabName) {
         loadConcerns();
     } else if (tabName === 'policies') {
         loadPolicies();
+    } else if (tabName === 'schedule') {
+        loadSchedule();
     }
 }
 
@@ -526,6 +529,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Load initial data
     await loadTasks();
+    await loadNotifications();
 
     // Setup tab navigation
     document.querySelectorAll('.nav-link').forEach(link => {
@@ -559,6 +563,31 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('logoutBtn').addEventListener('click', handleLogout);
 
+    // Schedule Navigation
+    document.getElementById('prev-week')?.addEventListener('click', () => {
+        currentWeekOffset--;
+        loadSchedule();
+    });
+
+    document.getElementById('next-week')?.addEventListener('click', () => {
+        currentWeekOffset++;
+        loadSchedule();
+    });
+
+    // Notification tray handlers
+    document.getElementById('notifTrayBtn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.getElementById('notifDropdown').classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', () => {
+        document.getElementById('notifDropdown').classList.add('hidden');
+    });
+
+    document.getElementById('notifDropdown').addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+
     // Close modals on background click
     document.querySelectorAll('.modal').forEach(modal => {
         modal.addEventListener('click', (e) => {
@@ -587,3 +616,161 @@ window.addEventListener('unhandledrejection', (event) => {
         }
     }
 });
+
+// ============================================
+// NOTIFICATION SYSTEM
+// ============================================
+
+async function loadNotifications() {
+    try {
+        const notifications = await Api.get('/notifications');
+        renderNotifications(notifications);
+    } catch (e) {
+        console.error('Failed to load notifications:', e);
+    }
+}
+
+function renderNotifications(notifications) {
+    const container = document.getElementById('notifItems');
+    const badge = document.getElementById('notifBadge');
+
+    const unacknowledged = notifications.filter(n => !n.is_acknowledged);
+
+    if (unacknowledged.length > 0) {
+        badge.innerText = unacknowledged.length;
+        badge.classList.remove('hidden');
+    } else {
+        badge.classList.add('hidden');
+    }
+
+    if (notifications.length === 0) {
+        container.innerHTML = '<div class="p-4 text-center text-gray-500 text-sm">No notifications</div>';
+        return;
+    }
+
+    container.innerHTML = notifications.map(notif => {
+        const date = new Date(notif.created_at).toLocaleString();
+        return `
+            <div class="p-4 ${notif.is_acknowledged ? 'bg-white opacity-70' : 'bg-blue-50'} hover:bg-gray-50 transition-colors">
+                <div class="flex justify-between items-start mb-1">
+                    <h4 class="text-sm font-bold text-gray-900">${notif.title}</h4>
+                    <span class="text-[10px] text-gray-400 font-medium">${date}</span>
+                </div>
+                <p class="text-xs text-gray-600 mb-2">${notif.content}</p>
+                <div class="flex justify-between items-center text-[10px]">
+                    <span class="text-gray-400">By: ${notif.created_by ? notif.created_by.full_name : 'Admin'}</span>
+                    ${notif.is_acknowledged ?
+                '<span class="text-green-600 font-bold flex items-center">✓ Acknowledged</span>' :
+                `<button onclick="acknowledgeNotification(${notif.id})" class="text-white bg-primary px-3 py-1 rounded font-bold hover:bg-primary-hover shadow-sm">Acknowledge</button>`
+            }
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+async function acknowledgeNotification(id) {
+    try {
+        await Api.post(`/notifications/${id}/acknowledge`);
+        showToast("Notification acknowledged", "success");
+        await loadNotifications();
+    } catch (e) {
+        console.error(e);
+        showToast("Failed to acknowledge", "error");
+    }
+}
+
+// ============================================
+// WEEKLY SCHEDULE SYSTEM
+// ============================================
+
+function getWeekRange(offset = 0) {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    const day = now.getDay(); // 0 is Sun, 1 is Mon
+    const diff = day === 0 ? 6 : day - 1; // Adjust to Mon as first day
+
+    startOfWeek.setDate(now.getDate() - diff + (offset * 7));
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    return { start: startOfWeek, end: endOfWeek };
+}
+
+async function loadSchedule() {
+    if (allTasks.length === 0) {
+        try {
+            allTasks = await Api.get('/tasks');
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    const range = getWeekRange(currentWeekOffset);
+    const start = range.start;
+    const end = range.end;
+
+    // Update label
+    const label = document.getElementById('current-week-label');
+    if (currentWeekOffset === 0) label.innerText = "This Week";
+    else if (currentWeekOffset === -1) label.innerText = "Last Week";
+    else if (currentWeekOffset === 1) label.innerText = "Next Week";
+    else {
+        label.innerText = `${start.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+    }
+
+    // Days setup
+    const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+    days.forEach(day => document.getElementById(`day-${day}`).innerHTML = '');
+
+    let weekAssigned = 0;
+    let weekCompleted = 0;
+
+    allTasks.forEach(task => {
+        const taskDate = new Date(task.deadline || task.created_at);
+        if (taskDate >= start && taskDate <= end) {
+            weekAssigned++;
+            if (task.status === 'completed') weekCompleted++;
+
+            const dayIdx = taskDate.getDay() === 0 ? 6 : taskDate.getDay() - 1;
+            const dayId = `day-${days[dayIdx]}`;
+
+            const taskDiv = document.createElement('div');
+            taskDiv.className = `p-2 rounded text-[10px] text-left border ${task.status === 'completed' ? 'bg-green-50 border-green-100 text-green-700' : 'bg-blue-50 border-blue-100 text-blue-700 shadow-sm'}`;
+            taskDiv.innerHTML = `
+                <p class="font-bold truncate">${task.title}</p>
+                <div class="flex justify-between mt-1 items-center">
+                    <span>${task.priority}</span>
+                    ${task.status === 'completed' ? '<span>✓</span>' : ''}
+                </div>
+            `;
+            document.getElementById(dayId).appendChild(taskDiv);
+        }
+    });
+
+    // Update Performance UI
+    const statsEl = document.getElementById('weekly-completion-stats');
+    const barEl = document.getElementById('weekly-completion-bar');
+    const statusTextEl = document.getElementById('weekly-status-text');
+
+    statsEl.innerText = `${weekCompleted}/${weekAssigned}`;
+    const percent = weekAssigned > 0 ? (weekCompleted / weekAssigned) * 100 : 0;
+    barEl.style.width = `${percent}%`;
+
+    if (weekAssigned === 0) {
+        statusTextEl.innerText = "No Tasks";
+        statusTextEl.className = "text-lg font-bold text-gray-400";
+    } else if (percent === 100) {
+        statusTextEl.innerText = "Perfect Week!";
+        statusTextEl.className = "text-lg font-bold text-primary";
+    } else if (percent >= 70) {
+        statusTextEl.innerText = "Great Progress";
+        statusTextEl.className = "text-lg font-bold text-green-500";
+    } else {
+        statusTextEl.innerText = "Work in Progress";
+        statusTextEl.className = "text-lg font-bold text-yellow-600";
+    }
+}

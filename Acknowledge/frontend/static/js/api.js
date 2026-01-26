@@ -15,7 +15,7 @@ class Api {
             headers: this.getHeaders()
         });
         if (response.status === 401) {
-            window.location.href = '/frontend/pages/login.html';
+            window.location.href = 'login.html';
         }
         return response.json();
     }
@@ -38,6 +38,18 @@ class Api {
             method: 'PUT',
             headers: this.getHeaders(),
             body: JSON.stringify(data)
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'API Request failed');
+        }
+        return response.json();
+    }
+
+    static async delete(endpoint) {
+        const response = await fetch(`${API_URL}${endpoint}`, {
+            method: 'DELETE',
+            headers: this.getHeaders()
         });
         if (!response.ok) {
             const error = await response.json();
@@ -79,5 +91,13 @@ class Api {
         localStorage.removeItem('user_name');
         localStorage.removeItem('user_role');
         window.location.href = 'login.html';
+    }
+
+    static async getRaw(endpoint) {
+        const response = await fetch(`${API_URL}${endpoint}`, {
+            method: 'GET',
+            headers: this.getHeaders()
+        });
+        return response;
     }
 }

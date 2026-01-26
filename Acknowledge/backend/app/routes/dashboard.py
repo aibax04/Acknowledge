@@ -46,16 +46,23 @@ async def get_dashboard_stats(db: AsyncSession = Depends(get_db), current_user: 
             .where(Task.status == TaskStatus.PENDING)
         )
         
+        in_progress_tasks = await db.scalar(
+            select(func.count(Task.id))
+            .where(Task.status == TaskStatus.IN_PROGRESS)
+        )
+        
+        active_tasks = (pending_tasks or 0) + (in_progress_tasks or 0)
+        
         total_concerns = await db.scalar(select(func.count(Concern.id)))
         open_concerns = await db.scalar(
             select(func.count(Concern.id))
             .where(Concern.status == ConcernStatus.OPEN)
         )
         
-        # Calculate Team Workload (Pending / Total)
+        # Calculate Team Workload (Active / Total)
         team_workload = 0
         if total_tasks and total_tasks > 0:
-            team_workload = int((pending_tasks / total_tasks) * 100)
+            team_workload = int((active_tasks / total_tasks) * 100)
 
         # Calculate Compliance Rate
         total_employees = await db.scalar(select(func.count(User.id)).where(User.role == UserRole.EMPLOYEE))
@@ -71,6 +78,8 @@ async def get_dashboard_stats(db: AsyncSession = Depends(get_db), current_user: 
         stats = {
             "total_tasks": total_tasks or 0,
             "pending_tasks": pending_tasks or 0,
+            "in_progress_tasks": in_progress_tasks or 0,
+            "active_tasks": active_tasks,
             "total_concerns": total_concerns or 0,
             "open_concerns": open_concerns or 0,
             "team_workload": f"{team_workload}%",
