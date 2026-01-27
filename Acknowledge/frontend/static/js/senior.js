@@ -331,23 +331,31 @@ async function loadWorkforce() {
         if (empCountEl) empCountEl.innerText = `${data.active_employees} / ${data.total_employees}`;
         if (mgrCountEl) mgrCountEl.innerText = `${data.active_managers} / ${data.total_managers}`;
 
-        // Overutilized List
+        // Workforce Utilization List
         const overList = document.getElementById('overutilized-list');
         if (overList) {
             overList.innerHTML = '';
-            const overutilized = data.workload_distribution?.filter(u => u.status === 'overutilized') || [];
+            const allWorkload = data.workload_distribution || [];
 
-            if (overutilized.length === 0) {
-                overList.innerHTML = '<p class="text-gray-500 text-sm text-center py-4">No capacity issues detected</p>';
+            if (allWorkload.length === 0) {
+                overList.innerHTML = '<p class="text-gray-500 text-sm text-center py-4">No personnel found</p>';
             } else {
-                overutilized.forEach(emp => {
+                allWorkload.forEach(emp => {
+                    const isOver = emp.task_count >= 3;
+                    const bgColor = isOver ? 'bg-red-50' : 'bg-green-50';
+                    const borderColor = isOver ? 'border-red-100' : 'border-green-100';
+                    const textColor = isOver ? 'text-red-600' : 'text-green-600';
+                    const badgeColor = isOver ? 'text-red-50' : 'text-green-50';
+                    const badgeBg = isOver ? 'bg-red-500' : 'bg-green-500';
+                    const statusText = isOver ? 'High Utilization' : 'Normal';
+
                     overList.innerHTML += `
-                        <div class="flex justify-between items-center p-3 bg-red-50 rounded-lg border border-red-100 animate-pulse">
+                        <div class="flex justify-between items-center p-3 ${bgColor} rounded-lg border ${borderColor}">
                             <div>
                                 <p class="text-sm font-semibold text-gray-900">${emp.employee_name}</p>
-                                <p class="text-xs text-red-600">${emp.task_count} Active Tasks</p>
+                                <p class="text-xs ${textColor}">${emp.task_count} Pending Tasks</p>
                             </div>
-                            <span class="text-[10px] font-black text-red-500 bg-white px-2 py-0.5 rounded border border-red-200 uppercase tracking-tighter">Over Capacity</span>
+                            <span class="text-[10px] font-black ${badgeColor} ${badgeBg} px-2 py-0.5 rounded uppercase tracking-tighter">${statusText}</span>
                         </div>
                     `;
                 });

@@ -130,33 +130,35 @@ async def get_workforce_overview(db: AsyncSession = Depends(get_db), current_use
         .where(User.role == UserRole.MANAGER)
     )
     
-    # Workload distribution (employees)
+    # Workload distribution (employees) - Only count PENDING tasks
     workload_result = await db.execute(
-        select(User.id, User.full_name, func.count(Task.id).label('task_count'))
+        select(
+            User.id, 
+            User.full_name, 
+            func.count(Task.id).filter(Task.status == TaskStatus.PENDING).label('task_count')
+        )
         .join(Task, Task.assigned_to_id == User.id, isouter=True)
         .filter(User.role == UserRole.EMPLOYEE)
         .group_by(User.id, User.full_name)
     )
     workload_data = workload_result.all()
     
-    # Calculate average and find overutilized
+    # Calculate overutilized based on threshold of 3+ tasks
     task_counts = [row.task_count for row in workload_data]
-    avg_workload = sum(task_counts) / len(task_counts) if task_counts else 0
-    overutilized = len([count for count in task_counts if count > avg_workload * 1.5])
+    overutilized = len([count for count in task_counts if count >= 3])
     
     return {
         "total_employees": emp_count or 0,
         "active_employees": active_emp_count or 0,
         "total_managers": mgr_count or 0,
         "active_managers": active_mgr_count or 0,
-        "average_workload": round(avg_workload, 1),
         "overutilized_count": overutilized,
         "workload_distribution": [
             {
                 "employee_id": row.id,
                 "employee_name": row.full_name,
                 "task_count": row.task_count,
-                "status": "overutilized" if row.task_count > avg_workload * 1.5 else "normal"
+                "status": "overutilized" if row.task_count >= 3 else "normal"
             }
             for row in workload_data
         ]
