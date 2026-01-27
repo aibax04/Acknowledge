@@ -2,13 +2,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes import auth, tasks, concerns, policies, dashboard, senior_dashboard, reports, notifications
 from app.database import engine, Base
+from app.config import settings
 
 app = FastAPI(title="Acknowledge API")
 
 # Setup CORS
-origins = [
-    "*" # Simplified for dev
-]
+origins = settings.ALLOWED_ORIGINS.split(",")
 
 app.add_middleware(
     CORSMiddleware,
