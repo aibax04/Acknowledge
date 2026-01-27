@@ -1,12 +1,28 @@
-# Production Deployment Guide
+## AWS EC2 Deployment
 
-This application is configured for production using **Docker**, **Nginx**, and **PostgreSQL**.
+### 1. Launch Instance
+- Use **Ubuntu 22.04 LTS**.
+- Choose at least **t3.small** (2GB RAM recommended for Docker + Postgres).
+- **CRITICAL**: In Security Groups, add an Inbound Rule for **Custom TCP - Port 8001** and set Source to `0.0.0.0/0`.
 
-## Prerequisites
-- Docker and Docker Compose installed on your server.
-- A remote PostgreSQL database (managed or self-hosted).
+### 2. Connect and Transfer Code
+SSH into your instance and clone your repository or SCP your files:
+```bash
+git clone <your-repo-url>
+cd Acknowledge
+```
 
-## Deployment Steps
+### 3. Run Automation Script
+I have provided a `setup_aws.sh` script that installs Docker and launches everything:
+```bash
+chmod +x setup_aws.sh
+./setup_aws.sh
+```
+
+---
+
+## Manual Deployment Steps
+(If not using the automation script)
 
 ### 1. Configure Environment Variables
 Copy `.env.prod.example` to a new file named `.env.prod` and update the values:
@@ -25,13 +41,14 @@ docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 ```
 
 ## Architecture Details
-- **Nginx**: Listens on port 80. Routes `/api/*` to the backend and serves static files from `/frontend`.
+- **Nginx**: Listens on port 80 inside the container, exposed as **8001** on your host. Routes `/api/*` to the backend and serves static files from `/frontend`.
 - **Backend (FastAPI)**: Runs inside a Docker container, accessible to Nginx via internal network.
+- **PostgreSQL**: Runs inside a Docker container with persistent volumes.
 - **Frontend**: Standard HTML/JS files served by Nginx.
 
 ## Port Map
-- **Frontend/Nginx**: `http://<your-server-ip>/` (redirects to login)
-- **Backend API**: `http://<your-server-ip>/api/docs` (Swagger UI)
+- **Frontend/Nginx**: `http://<your-server-ip>:8001/` (redirects to login)
+- **Backend API**: `http://<your-server-ip>:8001/api/docs` (Swagger UI)
 
 ## Troubleshooting
 - **Database Connection**: Ensure your server's IP is allowlisted in your remote PostgreSQL provider's firewall.
