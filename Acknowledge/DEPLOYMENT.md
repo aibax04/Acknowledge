@@ -25,19 +25,19 @@ chmod +x setup_aws.sh
 (If not using the automation script)
 
 ### 1. Configure Environment Variables
-Copy `.env.prod.example` to a new file named `.env.prod` and update the values:
+There is a single env file: `backend/.env`. Copy the example and edit:
 ```bash
-cp .env.prod.example .env.prod
-# Edit .env.prod with your production credentials
+cp backend/.env.example backend/.env
+# Edit backend/.env with your production credentials
 ```
 
 ### 2. Update Database Connection
-Ensure your `DATABASE_URL` in `.env.prod` uses the `postgresql+asyncpg://` driver.
+Ensure your `DATABASE_URL` in `backend/.env` uses the `postgresql+asyncpg://` driver.
 
 ### 3. Deploy with Docker Compose
 Run the following command on your server:
 ```bash
-docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+docker-compose -f docker-compose.prod.yml --env-file backend/.env up -d --build
 ```
 
 ## Architecture Details

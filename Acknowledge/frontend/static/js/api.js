@@ -1,8 +1,12 @@
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? "http://localhost:8000"
-    : window.location.origin + "/api";
+    : "/api";
 
 class Api {
+    static getApiUrl() {
+        return API_URL;
+    }
+
     static getHeaders() {
         const token = localStorage.getItem('access_token');
         return {
@@ -19,6 +23,11 @@ class Api {
         if (response.status === 401) {
             window.location.href = 'login.html';
         }
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            const msg = typeof err.detail === 'string' ? err.detail : (Array.isArray(err.detail) ? (err.detail[0]?.msg || err.detail[0]) : err.detail);
+            throw new Error(msg || response.statusText || 'API Request failed');
+        }
         return response.json();
     }
 
@@ -29,8 +38,9 @@ class Api {
             body: JSON.stringify(data)
         });
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || 'API Request failed');
+            const err = await response.json().catch(() => ({}));
+            const msg = typeof err.detail === 'string' ? err.detail : (Array.isArray(err.detail) ? (err.detail[0]?.msg || err.detail[0]) : err.detail);
+            throw new Error(msg || response.statusText || 'API Request failed');
         }
         return response.json();
     }
@@ -42,8 +52,23 @@ class Api {
             body: JSON.stringify(data)
         });
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || 'API Request failed');
+            const err = await response.json().catch(() => ({}));
+            const msg = typeof err.detail === 'string' ? err.detail : (Array.isArray(err.detail) ? (err.detail[0]?.msg || err.detail[0]) : err.detail);
+            throw new Error(msg || response.statusText || 'API Request failed');
+        }
+        return response.json();
+    }
+
+    static async patch(endpoint, data = null) {
+        const response = await fetch(`${API_URL}${endpoint}`, {
+            method: 'PATCH',
+            headers: this.getHeaders(),
+            body: data ? JSON.stringify(data) : undefined
+        });
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            const msg = typeof err.detail === 'string' ? err.detail : (Array.isArray(err.detail) ? (err.detail[0]?.msg || err.detail[0]) : err.detail);
+            throw new Error(msg || response.statusText || 'API Request failed');
         }
         return response.json();
     }
@@ -54,8 +79,9 @@ class Api {
             headers: this.getHeaders()
         });
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || 'API Request failed');
+            const err = await response.json().catch(() => ({}));
+            const msg = typeof err.detail === 'string' ? err.detail : (Array.isArray(err.detail) ? (err.detail[0]?.msg || err.detail[0]) : err.detail);
+            throw new Error(msg || response.statusText || 'API Request failed');
         }
         return response.json();
     }
@@ -84,6 +110,20 @@ class Api {
         });
         if (!response.ok) {
             throw new Error('Failed to fetch profile');
+        }
+        return response.json();
+    }
+
+    static async updateProfile(data) {
+        const response = await fetch(`${API_URL}/auth/me`, {
+            method: 'POST',
+            headers: this.getHeaders(),
+            body: JSON.stringify(data)
+        });
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            const msg = Array.isArray(err.detail) ? (err.detail[0]?.msg || err.detail[0]) : err.detail;
+            throw new Error(msg || 'Failed to update profile');
         }
         return response.json();
     }

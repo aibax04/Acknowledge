@@ -69,17 +69,17 @@ async def get_senior_summary(db: AsyncSession = Depends(get_db), current_user: U
         "total_employees": total_users
     }
 
-@router.get("/departments")
-async def get_department_performance(db: AsyncSession = Depends(get_db), current_user: User = Depends(require_senior)):
-    """Get performance metrics by department (simulated)"""
+@router.get("/teams")
+async def get_team_performance(db: AsyncSession = Depends(get_db), current_user: User = Depends(require_senior)):
+    """Get performance metrics by team (simulated)"""
     
-    # Since we don't have a department table, we'll create mock data based on managers
+    # Include both Managers and Seniors in the performance list
     managers_result = await db.execute(
-        select(User).filter(User.role == UserRole.MANAGER)
+        select(User).filter(User.role.in_([UserRole.MANAGER, UserRole.SENIOR]))
     )
     managers = managers_result.scalars().all()
     
-    departments = []
+    teams = []
     for manager in managers:
         # Get tasks assigned by this manager
         tasks_result = await db.execute(
@@ -101,8 +101,8 @@ async def get_department_performance(db: AsyncSession = Depends(get_db), current
         else:
             flag = "normal"
         
-        departments.append({
-            "department_name": f"{manager.full_name}'s Team",
+        teams.append({
+            "team_name": f"{manager.full_name}'s Team",
             "task_completion_percentage": completion_rate,
             "resource_utilization_percentage": utilization,
             "performance_flag": flag,
@@ -110,7 +110,7 @@ async def get_department_performance(db: AsyncSession = Depends(get_db), current
             "completed_tasks": completed
         })
     
-    return sorted(departments, key=lambda x: x["task_completion_percentage"], reverse=True)
+    return sorted(teams, key=lambda x: x["task_completion_percentage"], reverse=True)
 
 @router.get("/workforce/overview")
 async def get_workforce_overview(db: AsyncSession = Depends(get_db), current_user: User = Depends(require_senior)):
@@ -123,23 +123,34 @@ async def get_workforce_overview(db: AsyncSession = Depends(get_db), current_use
     # Active entities
     active_emp_count = await db.scalar(
         select(func.count(func.distinct(Task.assigned_to_id)))
+        .join(User, Task.assigned_to_id == User.id)
+        .where(User.role == UserRole.EMPLOYEE)
     )
     active_mgr_count = await db.scalar(
         select(func.count(func.distinct(Task.created_by_id)))
         .join(User, Task.created_by_id == User.id)
         .where(User.role == UserRole.MANAGER)
     )
+
+    # Total interns and active interns
+    intern_count = await db.scalar(select(func.count(User.id)).where(User.role == UserRole.INTERN))
+    active_intern_count = await db.scalar(
+        select(func.count(func.distinct(Task.assigned_to_id)))
+        .join(User, Task.assigned_to_id == User.id)
+        .where(User.role == UserRole.INTERN)
+    )
     
-    # Workload distribution (employees) - Only count PENDING tasks
+    # Workload distribution (employees and interns) - Only count PENDING tasks
     workload_result = await db.execute(
         select(
             User.id, 
             User.full_name, 
+            User.role,
             func.count(Task.id).filter(Task.status == TaskStatus.PENDING).label('task_count')
         )
         .join(Task, Task.assigned_to_id == User.id, isouter=True)
-        .filter(User.role == UserRole.EMPLOYEE)
-        .group_by(User.id, User.full_name)
+        .filter(User.role.in_([UserRole.EMPLOYEE, UserRole.INTERN]))
+        .group_by(User.id, User.full_name, User.role)
     )
     workload_data = workload_result.all()
     
@@ -152,11 +163,14 @@ async def get_workforce_overview(db: AsyncSession = Depends(get_db), current_use
         "active_employees": active_emp_count or 0,
         "total_managers": mgr_count or 0,
         "active_managers": active_mgr_count or 0,
+        "total_interns": intern_count or 0,
+        "active_interns": active_intern_count or 0,
         "overutilized_count": overutilized,
         "workload_distribution": [
             {
                 "employee_id": row.id,
                 "employee_name": row.full_name,
+                "role": row.role,
                 "task_count": row.task_count,
                 "status": "overutilized" if row.task_count >= 3 else "normal"
             }

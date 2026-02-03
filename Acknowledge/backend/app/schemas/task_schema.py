@@ -9,6 +9,7 @@ class TaskBase(BaseModel):
     description: Optional[str] = None
     priority: TaskPriority = TaskPriority.MEDIUM
     deadline: Optional[datetime] = None
+    venture_id: Optional[int] = None
 
 class TaskCreate(TaskBase):
     assigned_to_id: int
@@ -26,8 +27,30 @@ class TaskResponse(TaskBase):
     status: TaskStatus
     created_at: datetime
     updated_at: Optional[datetime]
+    acknowledged_at: Optional[datetime] = None
     created_by: Optional[UserResponse] = None
     assigned_to: Optional[UserResponse] = None
 
     class Config:
         from_attributes = True
+
+
+class TaskCommentCreate(BaseModel):
+    body: str
+
+
+class TaskCommentResponse(BaseModel):
+    id: int
+    task_id: int
+    user_id: int
+    body: str
+    created_at: datetime
+    user: Optional[UserResponse] = None
+
+    class Config:
+        from_attributes = True
+
+
+class TaskCommentSummary(BaseModel):
+    task_id: int
+    last_comment_at: Optional[datetime] = None

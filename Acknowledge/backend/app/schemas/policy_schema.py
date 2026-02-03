@@ -6,6 +6,8 @@ from app.schemas.user_schema import UserResponse
 class PolicyBase(BaseModel):
     title: str
     content: str
+    target_audience: Optional[str] = "all"
+    image_url: Optional[str] = None
     is_active: bool = True
 
 class PolicyCreate(PolicyBase):
@@ -14,6 +16,7 @@ class PolicyCreate(PolicyBase):
 class PolicyResponse(PolicyBase):
     id: int
     created_at: datetime
+    created_by: Optional[UserResponse] = None
     acknowledged_by: List[UserResponse] = []
 
     class Config:

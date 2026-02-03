@@ -12,6 +12,14 @@ notification_acknowledgments = Table(
     Column('acknowledged_at', DateTime(timezone=True), server_default=func.now())
 )
 
+# Association table for notification recipients (for targeted notifications)
+notification_recipients = Table(
+    'notification_recipients',
+    Base.metadata,
+    Column('notification_id', Integer, ForeignKey('notifications.id'), primary_key=True),
+    Column('user_id', Integer, ForeignKey('users.id'), primary_key=True)
+)
+
 class Notification(Base):
     __tablename__ = "notifications"
 
@@ -20,7 +28,9 @@ class Notification(Base):
     content = Column(Text, nullable=False)
     created_by_id = Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    notification_type = Column(String, default="BROADCAST") # BROADCAST, TARGETED
     
     # Relationships
     created_by = relationship("User", backref="notifications_created")
     acknowledged_by = relationship("User", secondary=notification_acknowledgments, backref="notifications_acknowledged")
+    recipients = relationship("User", secondary=notification_recipients, backref="notifications_received")

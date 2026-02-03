@@ -27,9 +27,8 @@ venv/
 .docker_data/
 postgres_data/
 
-# Environments
+# Environments (single .env lives in backend/)
 .env
-.env.prod
 .env.local
 .env.*.local
 

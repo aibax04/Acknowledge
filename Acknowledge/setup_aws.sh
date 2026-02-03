@@ -27,15 +27,15 @@ sudo usermod -aG docker $USER
 
 echo "--- ✅ Docker Installed ---"
 
-# Check if .env.prod exists
-if [ ! -f ".env.prod" ]; then
-    echo "--- ⚠️ Creating .env.prod from example ---"
-    cp .env.prod.example .env.prod
-    echo "PLEASE EDIT .env.prod WITH SECURE CREDENTIALS!"
+# Single .env lives in backend/
+if [ ! -f "backend/.env" ]; then
+    echo "--- ⚠️ Creating backend/.env from example ---"
+    cp backend/.env.example backend/.env
+    echo "PLEASE EDIT backend/.env WITH SECURE CREDENTIALS!"
 fi
 
 echo "--- 🚀 Launching Application ---"
-sudo docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+sudo docker compose -f docker-compose.prod.yml --env-file backend/.env up -d --build
 
 echo "--- 🌱 Seeding Database ---"
 # Wait a few seconds for DB to be ready

@@ -10,6 +10,8 @@ class ConcernBase(BaseModel):
 
 class ConcernCreate(ConcernBase):
     notified_user_ids: List[int] = []  # List of user IDs to notify
+    task_id: Optional[int] = None
+    venture_id: Optional[int] = None
 
 class ConcernUpdate(BaseModel):
     status: Optional[ConcernStatus] = None
@@ -19,8 +21,11 @@ class ConcernResponse(ConcernBase):
     id: int
     status: ConcernStatus
     raised_by: Optional[UserResponse] = None
+    resolved_by: Optional[UserResponse] = None
     notified_users: List[UserResponse] = []
     acknowledged_by: List[UserResponse] = []
+    task_id: Optional[int] = None
+    venture_id: Optional[int] = None
     created_at: datetime
     resolved_at: Optional[datetime] = None
 

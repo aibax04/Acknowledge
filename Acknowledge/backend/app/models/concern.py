@@ -6,6 +6,7 @@ import enum
 
 class ConcernStatus(str, enum.Enum):
     OPEN = "open"
+    ACCEPTED = "accepted"
     RESOLVED = "resolved"
     ESCALATED = "escalated"
 
@@ -35,11 +36,17 @@ class Concern(Base):
     status = Column(Enum(ConcernStatus), default=ConcernStatus.OPEN)
     
     raised_by_id = Column(Integer, ForeignKey("users.id"))
+    task_id = Column(Integer, ForeignKey("tasks.id"), nullable=True)
+    venture_id = Column(Integer, ForeignKey("ventures.id"), nullable=True)
+    resolved_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     resolved_at = Column(DateTime(timezone=True), nullable=True)
 
     # Relationships
     raised_by = relationship("User", foreign_keys=[raised_by_id], backref="concerns_raised")
+    resolved_by = relationship("User", foreign_keys=[resolved_by_id], backref="concerns_resolved")
     notified_users = relationship("User", secondary=concern_notified_users, backref="concerns_notified")
     acknowledged_by = relationship("User", secondary=concern_acknowledgments, backref="concerns_acknowledged")
+    task = relationship("Task", backref="concerns")
+    venture = relationship("Venture", backref="concerns")

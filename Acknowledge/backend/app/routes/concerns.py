@@ -17,7 +17,10 @@ async def create_concern(concern: ConcernCreate, db: AsyncSession = Depends(get_
     new_concern = Concern(
         subject=concern.subject,
         description=concern.description,
-        raised_by_id=current_user.id
+        raised_by_id=current_user.id,
+        task_id=concern.task_id,
+        venture_id=concern.venture_id,
+        status=ConcernStatus.ESCALATED if str(current_user.role).lower() in ["manager", "senior"] else ConcernStatus.OPEN
     )
     db.add(new_concern)
     await db.flush()  # Flush to get the ID
@@ -59,11 +62,12 @@ async def get_concerns(db: AsyncSession = Depends(get_db), current_user: User = 
     query = select(Concern).options(
         selectinload(Concern.raised_by),
         selectinload(Concern.notified_users),
-        selectinload(Concern.acknowledged_by)
+        selectinload(Concern.acknowledged_by),
+        selectinload(Concern.resolved_by)
     )
     
-    if current_user.role == UserRole.EMPLOYEE:
-        # Employees see concerns they raised OR concerns they were notified about
+    if current_user.role in [UserRole.EMPLOYEE, UserRole.MANAGER, UserRole.INTERN]:
+        # Employees and Managers see concerns they raised OR concerns they were notified about
         from sqlalchemy import or_
         from app.models.concern import concern_notified_users
         query = query.outerjoin(concern_notified_users).filter(
@@ -72,7 +76,7 @@ async def get_concerns(db: AsyncSession = Depends(get_db), current_user: User = 
                 concern_notified_users.c.user_id == current_user.id
             )
         ).distinct()  # IMPORTANT: Prevent duplicates when multiple users are notified
-    # Managers/Seniors see all concerns
+    # Seniors see all concerns
     
     result = await db.execute(query)
     return result.scalars().unique().all()  # Use unique() to ensure no duplicates
@@ -82,11 +86,23 @@ async def acknowledge_concern(concern_id: int, db: AsyncSession = Depends(get_db
     from app.models.concern import concern_acknowledgments
     from sqlalchemy import insert, and_
     
-    # Check if concern exists
-    result = await db.execute(select(Concern).filter(Concern.id == concern_id))
+    # Load concern with notified_users so we can verify this user is allowed to acknowledge
+    result = await db.execute(
+        select(Concern)
+        .filter(Concern.id == concern_id)
+        .options(selectinload(Concern.notified_users))
+    )
     concern = result.scalars().first()
     if not concern:
         raise HTTPException(status_code=404, detail="Concern not found")
+    
+    # Only users who were notified (interns/employees in notified_users) can acknowledge
+    notified_ids = [u.id for u in concern.notified_users]
+    if current_user.id not in notified_ids:
+        raise HTTPException(
+            status_code=403,
+            detail="Only notified users can acknowledge this nudge"
+        )
     
     # Check if already acknowledged
     check_result = await db.execute(
@@ -100,7 +116,7 @@ async def acknowledge_concern(concern_id: int, db: AsyncSession = Depends(get_db
     if check_result.first():
         return {"message": "Already acknowledged"}
     
-    # Add acknowledgment using direct SQL insert
+    # Add acknowledgment
     await db.execute(
         insert(concern_acknowledgments).values(
             concern_id=concern_id,
@@ -122,7 +138,8 @@ async def update_concern(concern_id: int, update: ConcernUpdate, db: AsyncSessio
         .options(
             selectinload(Concern.raised_by),
             selectinload(Concern.notified_users),
-            selectinload(Concern.acknowledged_by)
+            selectinload(Concern.acknowledged_by),
+            selectinload(Concern.resolved_by)
         )
     )
     concern = result.scalars().first()
@@ -135,6 +152,7 @@ async def update_concern(concern_id: int, update: ConcernUpdate, db: AsyncSessio
         concern.resolved_at = update.resolved_at
     elif update.status == ConcernStatus.RESOLVED and not concern.resolved_at:
         concern.resolved_at = datetime.utcnow()
+        concern.resolved_by_id = current_user.id
         
     await db.commit()
     
@@ -145,28 +163,49 @@ async def update_concern(concern_id: int, update: ConcernUpdate, db: AsyncSessio
         .options(
             selectinload(Concern.raised_by),
             selectinload(Concern.notified_users),
-            selectinload(Concern.acknowledged_by)
+            selectinload(Concern.acknowledged_by),
+            selectinload(Concern.resolved_by)
         )
     )
     return result.scalars().first()
 
 @router.get("/escalated", response_model=List[ConcernResponse])
 async def get_escalated_concerns(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    """Get all escalated concerns (for senior dashboard)"""
+    """Get all escalated/raised concerns. Seniors see all; managers see only those they are notified on."""
     if current_user.role not in [UserRole.SENIOR, UserRole.MANAGER]:
         raise HTTPException(status_code=403, detail="Access denied")
-    
-    result = await db.execute(
-        select(Concern)
-        .filter(Concern.status == ConcernStatus.ESCALATED)
-        .options(
-            selectinload(Concern.raised_by),
-            selectinload(Concern.notified_users),
-            selectinload(Concern.acknowledged_by)
+
+    if current_user.role == UserRole.SENIOR:
+        # Seniors see all escalated and open concerns in the org
+        result = await db.execute(
+            select(Concern)
+            .filter(Concern.status.in_([ConcernStatus.ESCALATED, ConcernStatus.OPEN]))
+            .options(
+                selectinload(Concern.raised_by),
+                selectinload(Concern.notified_users),
+                selectinload(Concern.acknowledged_by)
+            )
+            .order_by(Concern.created_at.desc())
         )
-        .order_by(Concern.created_at.desc())
-    )
-    return result.scalars().all()
+        return result.scalars().unique().all()
+    else:
+        # Managers see only concerns where they are in notified_users
+        from app.models.concern import concern_notified_users
+        result = await db.execute(
+            select(Concern)
+            .join(concern_notified_users, Concern.id == concern_notified_users.c.concern_id)
+            .filter(
+                concern_notified_users.c.user_id == current_user.id,
+                Concern.status.in_([ConcernStatus.ESCALATED, ConcernStatus.OPEN])
+            )
+            .options(
+                selectinload(Concern.raised_by),
+                selectinload(Concern.notified_users),
+                selectinload(Concern.acknowledged_by)
+            )
+            .order_by(Concern.created_at.desc())
+        )
+        return result.scalars().unique().all()
 
 @router.put("/{concern_id}/action")
 async def action_on_concern(concern_id: int, action: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):

@@ -1,3 +1,5 @@
+let currentUser = null;
+
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Auth & Session Validation
     const token = localStorage.getItem('access_token');
@@ -8,25 +10,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // Set user info
-    let userName = localStorage.getItem('user_name');
-    if (!userName) {
-        try {
-            const user = await Api.getProfile();
-            userName = user.full_name;
-            localStorage.setItem('user_name', userName);
-            localStorage.setItem('user_role', user.role);
-            if (user.role !== 'senior') window.location.href = 'login.html';
-        } catch (e) {
-            console.error("Failed to load profile", e);
-            logout();
+    // Load profile and set user info
+    try {
+        currentUser = await Api.getProfile();
+        if (currentUser.role !== 'senior') {
+            window.location.href = 'login.html';
+            return;
         }
-    }
-
-    if (userName) {
-        document.getElementById('user-name').innerText = userName;
-        const initials = userName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-        document.getElementById('user-avatar').innerText = initials;
+        localStorage.setItem('user_name', currentUser.full_name);
+        localStorage.setItem('user_role', currentUser.role);
+        updateUserDisplay();
+        setupEditName();
+    } catch (e) {
+        console.error("Failed to load profile", e);
+        logout();
     }
 
     // Initialize Dashboard
@@ -52,7 +49,68 @@ document.addEventListener('DOMContentLoaded', async () => {
             btn.onclick = downloadReport;
         }
     }
+
+    // Initialize policy image upload handlers
+    initPolicyImageUpload();
+
+    // Initialize audience checkbox handlers
+    initAudienceCheckboxes();
+
+    // Assign Task Modal Listeners
+    document.getElementById('cancel-assign-task')?.addEventListener('click', () => {
+        document.getElementById('assign-task-modal').classList.add('hidden');
+    });
+
+    document.getElementById('confirm-assign-task')?.addEventListener('click', assignTask);
+
+    document.getElementById('task-comments-close')?.addEventListener('click', () => {
+        document.getElementById('task-comments-modal').classList.add('hidden');
+    });
+    document.getElementById('task-comments-post')?.addEventListener('click', postTaskComment);
 });
+
+function updateUserDisplay() {
+    if (!currentUser) return;
+    const el = document.getElementById('user-name');
+    const av = document.getElementById('user-avatar');
+    const roleEl = document.getElementById('user-role');
+    if (el) el.innerText = currentUser.full_name;
+    if (av) av.innerText = (currentUser.full_name || '').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || '--';
+    if (roleEl) roleEl.innerText = 'Director';
+    localStorage.setItem('user_name', currentUser.full_name || '');
+}
+
+function setupEditName() {
+    const btn = document.getElementById('edit-name-btn');
+    const modal = document.getElementById('edit-name-modal');
+    const input = document.getElementById('edit-name-input');
+    const saveBtn = document.getElementById('edit-name-save');
+    const cancelBtn = document.getElementById('edit-name-cancel');
+    const backdrop = document.getElementById('edit-name-backdrop');
+    if (!btn || !modal || !input) return;
+    function closeModal() { modal.classList.add('hidden'); }
+    btn.addEventListener('click', function() {
+        input.value = currentUser ? (currentUser.full_name || '') : '';
+        modal.classList.remove('hidden');
+        input.focus();
+    });
+    if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+    if (backdrop) backdrop.addEventListener('click', closeModal);
+    if (saveBtn) saveBtn.addEventListener('click', async function() {
+        const name = (input.value || '').trim();
+        if (!name) return;
+        try {
+            const updated = await Api.updateProfile({ full_name: name });
+            currentUser.full_name = updated.full_name;
+            localStorage.setItem('user_name', updated.full_name);
+            updateUserDisplay();
+            closeModal();
+            if (currentTab === 'workforce') await loadWorkforce();
+        } catch (e) {
+            alert(e.message || 'Failed to update name');
+        }
+    });
+}
 
 let currentTab = 'stats';
 
@@ -63,9 +121,15 @@ function switchTab(tabId) {
     document.getElementById('view-stats').classList.add('hidden');
     document.getElementById('view-compliance').classList.add('hidden');
     document.getElementById('view-workforce').classList.add('hidden');
+    const projectsView = document.getElementById('view-projects');
+    if (projectsView) projectsView.classList.add('hidden');
+    const calendarView = document.getElementById('view-calendar');
+    if (calendarView) calendarView.classList.add('hidden');
+    const reportsView = document.getElementById('view-reports');
+    if (reportsView) reportsView.classList.add('hidden');
 
     // Reset nav styles
-    const navs = ['nav-stats', 'nav-compliance', 'nav-workforce'];
+    const navs = ['nav-stats', 'nav-compliance', 'nav-workforce', 'nav-projects', 'nav-calendar', 'nav-reports'];
     navs.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -84,9 +148,16 @@ function switchTab(tabId) {
         activeNav.classList.add('bg-primary-light', 'text-primary');
     }
 
-    // Refresh data for the specific tab if needed, but for simplicity we load all or lazy load
+    // Load data
+    if (tabId === 'calendar') {
+        if (typeof loadPersonalCalendar === 'function') loadPersonalCalendar();
+    }
+
+    // Refresh data for specific tabs
     if (tabId === 'workforce') loadWorkforce();
     if (tabId === 'compliance') loadPolicyAudit();
+    if (tabId === 'reports') loadReports();
+    if (tabId === 'projects' && typeof loadProjects === 'function') loadProjects();
 }
 
 async function refreshDashboard() {
@@ -94,12 +165,13 @@ async function refreshDashboard() {
     try {
         await Promise.all([
             loadStats(),
-            loadDepartmentPerformance(),
+            loadTeamPerformance(),
             loadEscalatedConcerns(),
             loadPolicyAudit(),
-            loadSentNotifications()
+            loadReports()
         ]);
         if (currentTab === 'workforce') await loadWorkforce();
+        if (currentTab === 'projects' && typeof loadProjects === 'function') await loadProjects();
     } catch (error) {
         console.error("Dashboard refresh failed", error);
     } finally {
@@ -131,45 +203,45 @@ async function loadStats() {
     }
 }
 
-async function loadDepartmentPerformance() {
+async function loadTeamPerformance() {
     try {
-        const depts = await Api.get('/dashboard/senior/departments');
-        const container = document.getElementById('department-list');
+        const teams = await Api.get('/dashboard/senior/teams');
+        const container = document.getElementById('team-list');
         container.innerHTML = '';
 
-        depts.forEach(dept => {
-            const colorClass = dept.performance_flag === 'high' ? 'green' :
-                dept.performance_flag === 'warning' ? 'yellow' : 'gray';
+        teams.forEach(team => {
+            const colorClass = team.performance_flag === 'high' ? 'green' :
+                team.performance_flag === 'warning' ? 'yellow' : 'gray';
 
-            const badgeText = dept.performance_flag === 'high' ? 'High Performance' :
-                dept.performance_flag === 'warning' ? 'Capacity Warning' : 'Normal';
+            const badgeText = team.performance_flag === 'high' ? 'High Performance' :
+                team.performance_flag === 'warning' ? 'Capacity Warning' : 'Normal';
 
-            const badgeColor = dept.performance_flag === 'high' ? 'bg-green-100 text-green-800' :
-                dept.performance_flag === 'warning' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800';
+            const badgeColor = team.performance_flag === 'high' ? 'bg-green-100 text-green-800' :
+                team.performance_flag === 'warning' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800';
 
             const html = `
                 <div class="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-semibold text-gray-800">${dept.department_name}</h3>
+                        <h3 class="font-semibold text-gray-800">${team.team_name}</h3>
                         <span class="px-2 py-1 ${badgeColor} text-xs rounded-full uppercase font-bold">${badgeText}</span>
                     </div>
                     <div class="space-y-4">
                         <div>
                             <div class="flex justify-between text-sm mb-1">
                                 <span class="text-gray-500">Task Completion</span>
-                                <span class="font-medium text-gray-900">${dept.task_completion_percentage}%</span>
+                                <span class="font-medium text-gray-900">${team.task_completion_percentage}%</span>
                             </div>
                             <div class="w-full bg-gray-100 rounded-full h-2">
-                                <div class="bg-primary h-2 rounded-full" style="width: ${dept.task_completion_percentage}%"></div>
+                                <div class="bg-primary h-2 rounded-full" style="width: ${team.task_completion_percentage}%"></div>
                             </div>
                         </div>
                         <div>
                             <div class="flex justify-between text-sm mb-1">
                                 <span class="text-gray-500">Resource Utilization</span>
-                                <span class="font-medium text-gray-900">${dept.resource_utilization_percentage}%</span>
+                                <span class="font-medium text-gray-900">${team.resource_utilization_percentage}%</span>
                             </div>
                             <div class="w-full bg-gray-100 rounded-full h-2">
-                                <div class="${dept.resource_utilization_percentage > 90 ? 'bg-red-400' : 'bg-blue-400'} h-2 rounded-full" style="width: ${dept.resource_utilization_percentage}%"></div>
+                                <div class="${team.resource_utilization_percentage > 90 ? 'bg-red-400' : 'bg-blue-400'} h-2 rounded-full" style="width: ${team.resource_utilization_percentage}%"></div>
                             </div>
                         </div>
                     </div>
@@ -189,12 +261,28 @@ async function loadEscalatedConcerns() {
         container.innerHTML = '';
 
         if (concerns.length === 0) {
-            container.innerHTML = '<div class="p-6 text-center text-gray-500 text-sm">No escalated concerns</div>';
+            container.innerHTML = '<div class="p-6 text-center text-gray-500 text-sm">No escalated nudges</div>';
             return;
         }
 
         concerns.forEach(concern => {
             const date = new Date(concern.created_at).toLocaleDateString();
+            const notifiedUsers = concern.notified_users || [];
+            const acknowledgedUsers = concern.acknowledged_by || [];
+            const notifiedCount = notifiedUsers.length;
+            const acknowledgedCount = acknowledgedUsers.length;
+            const ackBlock = notifiedCount > 0
+                ? `<div class="mb-2 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                    <p class="text-xs font-medium text-blue-800 mb-1">Notified: ${notifiedCount} people</p>
+                    <div class="flex flex-wrap gap-1 mb-1">
+                        ${notifiedUsers.map(u => {
+                            const isAck = acknowledgedUsers.some(a => a.id === u.id);
+                            return `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs ${isAck ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}">${u.full_name} ${isAck ? '✓' : ''}</span>`;
+                        }).join('')}
+                    </div>
+                    <p class="text-xs text-gray-600">${acknowledgedCount} of ${notifiedCount} acknowledged</p>
+                </div>`
+                : '';
             const html = `
                 <div class="p-4 hover:bg-gray-50 transition-colors">
                     <div class="flex justify-between items-start mb-1">
@@ -202,6 +290,7 @@ async function loadEscalatedConcerns() {
                         <span class="text-xs text-gray-400">${date}</span>
                     </div>
                     <p class="text-xs text-gray-600 mb-2 line-clamp-2">${concern.description}</p>
+                    ${ackBlock}
                     <div class="flex justify-between items-center">
                         <div class="flex items-center space-x-2">
                             <span class="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded-full font-medium">High Severity</span>
@@ -219,13 +308,13 @@ async function loadEscalatedConcerns() {
 }
 
 async function closeConcern(id) {
-    if (!confirm("Are you sure you want to close this concern?")) return;
+    if (!confirm("Are you sure you want to close this nudge?")) return;
     try {
         await Api.put(`/concerns/${id}/action?action=closed`); // Note: Backend implementation might need body or query param check. 
         // Checked backend: it expects action as query param based on signature: action: str
         await refreshDashboard();
     } catch (e) {
-        alert("Failed to close concern");
+        alert("Failed to close nudge");
     }
 }
 
@@ -253,9 +342,11 @@ async function loadPolicyAudit() {
                     </div>
                 </td>
                 <td class="px-6 py-4 text-sm text-gray-500">${new Date(item.date_issued).toLocaleDateString()}</td>
-                <td class="px-6 py-4 text-right text-sm space-x-3">
+                <td class="px-6 py-4 text-right text-sm space-x-2">
+                    <button onclick="viewPolicyAcknowledgments(${item.policy_id}, '${item.policy_name.replace(/'/g, "\\'")}')" class="text-purple-600 hover:text-purple-800 font-bold text-xs uppercase hover:underline">View Details</button>
                     <button onclick="remindPolicy(${item.policy_id})" class="text-primary hover:text-primary-hover font-bold text-xs uppercase hover:underline">Remind</button>
-                    <button onclick="deletePolicy(${item.policy_id}, '${item.policy_name}')" class="text-red-500 hover:text-red-700 font-bold text-xs uppercase hover:underline">Delete</button>
+                    <button onclick="editPolicy(${item.policy_id})" class="text-blue-500 hover:text-blue-700 font-bold text-xs uppercase hover:underline">Edit</button>
+                    <button onclick="deletePolicy(${item.policy_id}, '${item.policy_name.replace(/'/g, "\\'")}')" class="text-red-500 hover:text-red-700 font-bold text-xs uppercase hover:underline">Delete</button>
                 </td>
             `;
             tbody.appendChild(tr);
@@ -274,32 +365,423 @@ async function remindPolicy(id) {
     }
 }
 
+async function viewPolicyAcknowledgments(policyId, policyName) {
+    try {
+        console.log(`=== LOADING ACKNOWLEDGMENTS FOR POLICY ${policyId} ===`);
+        const data = await Api.get(`/policies/${policyId}/acknowledgments`);
+        console.log("Acknowledgment data received:", data);
+
+        // Safety checks
+        if (!data) {
+            throw new Error("No data received from server");
+        }
+        if (!data.acknowledged) {
+            console.warn("No 'acknowledged' field in response, defaulting to empty array");
+            data.acknowledged = [];
+        }
+        if (!data.pending) {
+            console.warn("No 'pending' field in response, defaulting to empty array");
+            data.pending = [];
+        }
+
+        // Update modal title
+        document.getElementById('ack-modal-title').innerText = `Acknowledgments: ${policyName}`;
+
+        // Populate acknowledged list
+        const ackList = document.getElementById('ack-users-list');
+        ackList.innerHTML = '';
+        if (data.acknowledged.length === 0) {
+            ackList.innerHTML = '<p class="text-gray-500 text-sm">No one has acknowledged yet</p>';
+        } else {
+            data.acknowledged.forEach(user => {
+                const date = new Date(user.acknowledged_at).toLocaleString();
+                ackList.innerHTML += `
+                    <div class="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-bold text-xs mr-3">
+                                ${user.full_name.charAt(0)}
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">${user.full_name}</p>
+                                <p class="text-xs text-gray-500">${user.role}</p>
+                            </div>
+                        </div>
+                        <span class="text-xs text-gray-400">${date}</span>
+                    </div>
+                `;
+            });
+        }
+
+        // Populate pending list
+        const pendingList = document.getElementById('pending-users-list');
+        pendingList.innerHTML = '';
+        if (data.pending.length === 0) {
+            pendingList.innerHTML = '<p class="text-gray-500 text-sm">Everyone has acknowledged!</p>';
+        } else {
+            data.pending.forEach(user => {
+                pendingList.innerHTML += `
+                    <div class="flex items-center p-2 hover:bg-gray-50 rounded">
+                        <div class="w-8 h-8 rounded-full bg-red-100 text-red-700 flex items-center justify-center font-bold text-xs mr-3">
+                            ${user.full_name.charAt(0)}
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">${user.full_name}</p>
+                            <p class="text-xs text-gray-500">${user.role}</p>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // Show stats
+        const total = data.acknowledged.length + data.pending.length;
+        const percentage = total > 0 ? Math.round(data.acknowledged.length / total * 100) : 0;
+        document.getElementById('ack-stats').innerText = `${data.acknowledged.length} of ${total} (${percentage}%)`;
+
+        console.log("Modal populated successfully, showing modal");
+        // Show modal
+        document.getElementById('policy-ack-modal').classList.remove('hidden');
+    } catch (e) {
+        console.error("Failed to load acknowledgments:", e);
+        console.error("Error details:", e.message, e.stack);
+        alert("Failed to load acknowledgment details: " + (e.message || "Unknown error"));
+    }
+}
+
+function closePolicyAckModal() {
+    document.getElementById('policy-ack-modal').classList.add('hidden');
+}
+
 // --- POLICY MANAGEMENT ---
 
+function switchPolicyTab(tab) {
+    const writeBtn = document.getElementById('tab-write-policy');
+    const previewBtn = document.getElementById('tab-preview-policy');
+    const writeArea = document.getElementById('policy-write-area');
+    const previewArea = document.getElementById('policy-preview-area');
+    const content = document.getElementById('policy-content').value;
+
+    if (tab === 'write') {
+        // Active Tab Style
+        writeBtn.classList.add('text-primary', 'border-primary', 'border-b-2');
+        writeBtn.classList.remove('text-gray-500', 'hover:text-gray-700', 'border-transparent');
+
+        previewBtn.classList.remove('text-primary', 'border-primary', 'border-b-2');
+        previewBtn.classList.add('text-gray-500', 'hover:text-gray-700');
+
+        // Show Write Area
+        writeArea.classList.remove('hidden');
+        previewArea.classList.add('hidden');
+    } else {
+        // Active Tab Style
+        previewBtn.classList.add('text-primary', 'border-primary', 'border-b-2');
+        previewBtn.classList.remove('text-gray-500', 'hover:text-gray-700');
+
+        writeBtn.classList.remove('text-primary', 'border-primary', 'border-b-2');
+        writeBtn.classList.add('text-gray-500', 'hover:text-gray-700');
+
+        // Show Preview Area
+        writeArea.classList.add('hidden');
+        previewArea.classList.remove('hidden');
+
+        // Render Content
+        if (content.trim()) {
+            // Using formatPopupContent from notification-popup.js
+            previewArea.innerHTML = typeof formatPopupContent === 'function'
+                ? formatPopupContent(content)
+                : `<p>${content}</p>`;
+        } else {
+            previewArea.innerHTML = '<p class="text-gray-400 text-center italic mt-10">Start writing to see a preview...</p>';
+        }
+    }
+}
+
+
 function openPolicyCreateModal() {
+    document.getElementById('policy-id').value = ''; // Clear ID for new creation
+    document.getElementById('create-policy-modal-title').innerText = 'Publish New Organization Policy';
+    document.getElementById('create-policy-btn-text').innerText = 'Publish to Selected Audience';
+
     document.getElementById('policy-title').value = '';
+    // Clear all checkboxes
+    document.querySelectorAll('.policy-audience-checkbox').forEach(cb => cb.checked = false);
+    // Default to 'all' checked
+    document.getElementById('audience-all').checked = true;
     document.getElementById('policy-content').value = '';
+    document.getElementById('policy-image-url').value = '';
+    document.getElementById('policy-image-preview').classList.add('hidden');
+    document.getElementById('policy-upload-placeholder').classList.remove('hidden');
+    updatePolicyCharCount();
+    switchPolicyTab('write');
     document.getElementById('create-policy-modal').classList.remove('hidden');
 }
 
+function clearPolicyImage(event) {
+    if (event) event.stopPropagation();
+    document.getElementById('policy-image-url').value = '';
+    document.getElementById('policy-image-input').value = '';
+    document.getElementById('policy-image-preview').classList.add('hidden');
+    document.getElementById('policy-upload-placeholder').classList.remove('hidden');
+}
+
+async function handlePolicyImageUpload(file) {
+    if (!file) return;
+
+    // Show loading state
+    const placeholder = document.getElementById('policy-upload-placeholder');
+    placeholder.innerHTML = `
+        <div class="flex items-center justify-center space-x-2">
+            <svg class="animate-spin w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            <span class="text-gray-600">Uploading...</span>
+        </div>
+    `;
+
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const token = localStorage.getItem('access_token');
+        const response = await fetch('/api/uploads/policy-image', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData
+        });
+
+        if (!response.ok) {
+            let errorMessage = 'Upload failed';
+            try {
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const err = await response.json();
+                    errorMessage = err.detail || errorMessage;
+                } else {
+                    errorMessage = `Server error (${response.status}): The server returned an unexpected response format. This may be due to the file being too large or a server configuration issue.`;
+                }
+            } catch (parseError) {
+                errorMessage = `Server error (${response.status}): Could not parse error response.`;
+            }
+            throw new Error(errorMessage);
+        }
+
+        const result = await response.json();
+
+        // Show preview
+        document.getElementById('policy-image-url').value = result.url;
+        document.getElementById('policy-preview-img').src = '/api' + result.url;
+        document.getElementById('policy-image-preview').classList.remove('hidden');
+        placeholder.classList.add('hidden');
+
+        // Reset placeholder content
+        placeholder.innerHTML = `
+            <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <p class="text-gray-600 font-medium">Click to upload a cover image</p>
+            <p class="text-sm text-gray-400 mt-1">PNG, JPG, GIF up to 5MB</p>
+        `;
+
+    } catch (e) {
+        console.error('Upload failed:', e);
+        alert('Failed to upload image: ' + e.message);
+        // Reset placeholder
+        placeholder.innerHTML = `
+            <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <p class="text-gray-600 font-medium">Click to upload a cover image</p>
+            <p class="text-sm text-gray-400 mt-1">PNG, JPG, GIF up to 5MB</p>
+        `;
+    }
+}
+
+function updatePolicyCharCount() {
+    const content = document.getElementById('policy-content').value;
+    const countEl = document.getElementById('policy-char-count');
+    if (countEl) {
+        countEl.textContent = `${content.length} characters`;
+    }
+}
+
+function initPolicyImageUpload() {
+    const uploadArea = document.getElementById('policy-image-upload-area');
+    const fileInput = document.getElementById('policy-image-input');
+    const contentTextarea = document.getElementById('policy-content');
+
+    if (uploadArea && fileInput) {
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handlePolicyImageUpload(file);
+        });
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('border-primary', 'bg-primary-light');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('border-primary', 'bg-primary-light');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('border-primary', 'bg-primary-light');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                handlePolicyImageUpload(file);
+            }
+        });
+    }
+
+    // Character count
+    if (contentTextarea) {
+        contentTextarea.addEventListener('input', updatePolicyCharCount);
+    }
+}
+
+function initAudienceCheckboxes() {
+    // Add event listeners to handle checkbox interactions
+    const allCheckbox = document.getElementById('audience-all');
+    const otherCheckboxes = document.querySelectorAll('.policy-audience-checkbox:not(#audience-all)');
+
+    if (allCheckbox) {
+        allCheckbox.addEventListener('change', function () {
+            if (this.checked) {
+                // Uncheck all other checkboxes when "All" is selected
+                otherCheckboxes.forEach(cb => cb.checked = false);
+            }
+        });
+    }
+
+    otherCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function () {
+            if (this.checked && allCheckbox) {
+                // Uncheck "All" when any specific audience is selected
+                allCheckbox.checked = false;
+            }
+        });
+    });
+}
+
+
 async function submitNewPolicy() {
     const title = document.getElementById('policy-title').value.trim();
-    const content = document.getElementById('policy-content').value.trim();
 
-    if (!title || !content) {
+    // Get selected audiences from checkboxes
+    const selectedAudiences = [];
+    const allCheckboxes = document.querySelectorAll('.policy-audience-checkbox');
+    console.log("=== CHECKBOX DEBUGGING ===");
+    console.log("Total checkboxes found:", allCheckboxes.length);
+
+    allCheckboxes.forEach(cb => {
+        console.log(`Checkbox: id=${cb.id}, value=${cb.value}, checked=${cb.checked}`);
+        if (cb.checked) {
+            selectedAudiences.push(cb.value);
+        }
+    });
+
+    const content = document.getElementById('policy-content').value; // Preserving exact spacing
+    const imageUrl = document.getElementById('policy-image-url').value.trim();
+    const policyId = document.getElementById('policy-id').value;
+
+    if (!title || !content.trim()) {
         alert("Please fill in both title and content");
         return;
     }
 
+    if (selectedAudiences.length === 0) {
+        alert("Please select at least one target audience");
+        return;
+    }
+
     try {
-        const res = await Api.post('/policies/', { title, content, is_active: true });
-        alert("Policy published successfully to all company members!");
+        // Join multiple audiences with comma
+        const audienceString = selectedAudiences.join(',');
+
+        console.log("=== POLICY SUBMISSION DEBUG ===");
+        console.log("Selected audiences array:", selectedAudiences);
+        console.log("Audience string:", audienceString);
+
+        const payload = {
+            title,
+            content,
+            target_audience: audienceString,
+            is_active: true
+        };
+        console.log("DEBUG: Submitting policy payload:", JSON.stringify(payload, null, 2));
+
+        if (imageUrl) {
+            payload.image_url = imageUrl;
+        }
+
+        let res;
+        if (policyId) {
+            // Update existing
+            res = await Api.put(`/policies/${policyId}`, payload);
+            alert("Policy updated successfully!");
+        } else {
+            // Create new
+            res = await Api.post('/policies/', payload);
+            console.log("Policy creation response:", res);
+            const audienceText = selectedAudiences.includes('all') ? 'all company members' : selectedAudiences.join(', ');
+            alert(`Policy published successfully to ${audienceText}!`);
+        }
+
         document.getElementById('create-policy-modal').classList.add('hidden');
         await loadPolicyAudit();
         await refreshDashboard();
     } catch (e) {
-        console.error(e);
-        alert(e.message || "Failed to publish policy");
+        console.error("Policy submission error:", e);
+        alert(e.message || "Failed to save policy");
+    }
+}
+
+async function editPolicy(id) {
+    try {
+        const policy = await Api.get(`/policies/${id}`);
+
+        // Populate Modal
+        document.getElementById('policy-id').value = policy.id;
+        document.getElementById('create-policy-modal-title').innerText = 'Edit Policy';
+        document.getElementById('create-policy-btn-text').innerText = 'Save Changes';
+
+        document.getElementById('policy-title').value = policy.title;
+
+        // Handle multiple audiences
+        const audiences = (policy.target_audience || 'all').split(',');
+        document.querySelectorAll('.policy-audience-checkbox').forEach(cb => {
+            cb.checked = audiences.includes(cb.value);
+        });
+
+        const contentArea = document.getElementById('policy-content');
+        contentArea.value = policy.content;
+        contentArea.scrollTop = 0; // Ensure we start at the top
+        updatePolicyCharCount();
+
+        // Handle Image
+        if (policy.image_url) {
+            document.getElementById('policy-image-url').value = policy.image_url;
+            document.getElementById('policy-preview-img').src = '/api' + policy.image_url;
+            document.getElementById('policy-image-preview').classList.remove('hidden');
+            document.getElementById('policy-upload-placeholder').classList.add('hidden');
+        } else {
+            clearPolicyImage();
+        }
+
+        switchPolicyTab('write');
+        document.getElementById('create-policy-modal').classList.remove('hidden');
+    } catch (e) {
+        console.error("Failed to load policy for editing", e);
+        alert("Failed to load policy details");
     }
 }
 
@@ -324,12 +806,16 @@ async function loadWorkforce() {
         const data = await Api.get('/dashboard/senior/workforce/overview');
         const users = await Api.get('/auth/all-users');
         const roleFilter = document.getElementById('role-filter')?.value || 'all';
+        const searchVal = document.getElementById('workforce-search')?.value.toLowerCase().trim() || '';
 
         // Distribution Update
         const empCountEl = document.getElementById('active-emp-count');
         const mgrCountEl = document.getElementById('active-mgr-count');
-        if (empCountEl) empCountEl.innerText = `${data.active_employees} / ${data.total_employees}`;
-        if (mgrCountEl) mgrCountEl.innerText = `${data.active_managers} / ${data.total_managers}`;
+        const internCountEl = document.getElementById('active-intern-count');
+
+        if (empCountEl) empCountEl.innerText = `${data.active_employees || 0} / ${data.total_employees || 0}`;
+        if (mgrCountEl) mgrCountEl.innerText = `${data.active_managers || 0} / ${data.total_managers || 0}`;
+        if (internCountEl) internCountEl.innerText = `${data.active_interns || 0} / ${data.total_interns || 0}`;
 
         // Workforce Utilization List
         const overList = document.getElementById('overutilized-list');
@@ -352,7 +838,7 @@ async function loadWorkforce() {
                     overList.innerHTML += `
                         <div class="flex justify-between items-center p-3 ${bgColor} rounded-lg border ${borderColor}">
                             <div>
-                                <p class="text-sm font-semibold text-gray-900">${emp.employee_name}</p>
+                                <p class="text-sm font-semibold text-gray-900">${emp.employee_name} <span class="text-[10px] text-gray-400 font-normal">(${emp.role})</span></p>
                                 <p class="text-xs ${textColor}">${emp.task_count} Pending Tasks</p>
                             </div>
                             <span class="text-[10px] font-black ${badgeColor} ${badgeBg} px-2 py-0.5 rounded uppercase tracking-tighter">${statusText}</span>
@@ -368,8 +854,9 @@ async function loadWorkforce() {
             tbody.innerHTML = '';
 
             const filteredUsers = users.filter(u => {
-                if (roleFilter === 'all') return u.role !== 'senior';
-                return u.role === roleFilter;
+                const matchesRole = roleFilter === 'all' ? true : (u.role || '').toLowerCase() === roleFilter;
+                const matchesSearch = (u.full_name || '').toLowerCase().includes(searchVal) || (u.email || '').toLowerCase().includes(searchVal);
+                return matchesRole && matchesSearch;
             });
 
             if (filteredUsers.length === 0) {
@@ -378,6 +865,7 @@ async function loadWorkforce() {
             }
 
             filteredUsers.forEach(user => {
+                const fullNameEsc = (user.full_name || '').replace(/'/g, '&#39;').replace(/"/g, '&quot;');
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-gray-50 transition-colors group";
                 tr.innerHTML = `
@@ -390,7 +878,7 @@ async function loadWorkforce() {
                         </div>
                     </td>
                     <td class="px-6 py-4">
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${user.role === 'manager' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${user.role === 'senior' ? 'bg-emerald-100 text-emerald-700' : user.role === 'manager' ? 'bg-purple-100 text-purple-700' : user.role === 'intern' ? 'bg-sky-100 text-sky-700' : 'bg-blue-100 text-blue-700'}">
                             ${user.role}
                         </span>
                     </td>
@@ -398,19 +886,25 @@ async function loadWorkforce() {
                     <td class="px-6 py-4 text-sm text-gray-500">${new Date(user.created_at).toLocaleDateString()}</td>
                     <td class="px-6 py-4 text-right relative">
                         <div class="inline-block relative">
-                            <button onclick="toggleActionMenu(${user.id})" class="text-gray-400 hover:text-gray-900 p-1 rounded-full hover:bg-gray-200 transition-all">
+                            <button type="button" onclick="event.stopPropagation(); toggleActionMenu(${user.id})" class="text-gray-400 hover:text-gray-900 p-1 rounded-full hover:bg-gray-200 transition-all cursor-pointer">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                     <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
                                 </svg>
                             </button>
                             <div id="action-menu-${user.id}" class="hidden absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-lg shadow-xl z-50 overflow-hidden">
-                                <button onclick="deleteUser(${user.id}, '${user.full_name}')" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center">
+                                <button type="button" onclick="openAssignTaskModal(${user.id}, '${fullNameEsc}')" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                    </svg>
+                                    Assign Task
+                                </button>
+                                <button type="button" onclick="deleteUser(${user.id}, '${fullNameEsc}')" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                     </svg>
                                     Delete Credentials
                                 </button>
-                                <button class="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 flex items-center">
+                                <button type="button" class="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 flex items-center">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                     </svg>
@@ -430,6 +924,46 @@ async function loadWorkforce() {
     }
 }
 
+async function loadReports() {
+    try {
+        const summary = await Api.get('/dashboard/senior/summary');
+
+        // Update Compliance Health List
+        const complianceList = document.getElementById('compliance-health-list');
+        if (complianceList) {
+            complianceList.innerHTML = `
+                <div class="p-3 bg-blue-50 rounded-lg">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs font-bold text-blue-800">Overall Acknowledgment Rate</span>
+                        <span class="text-xs font-bold text-blue-800">${summary.compliance_rate}%</span>
+                    </div>
+                    <div class="w-full bg-blue-200 rounded-full h-1.5">
+                        <div class="bg-blue-600 h-1.5 rounded-full" style="width: ${summary.compliance_rate}%"></div>
+                    </div>
+                </div>
+                <div class="p-3 bg-purple-50 rounded-lg">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs font-bold text-purple-800">Operational Efficiency</span>
+                        <span class="text-xs font-bold text-purple-800">${summary.operational_efficiency_percentage}%</span>
+                    </div>
+                    <div class="w-full bg-purple-200 rounded-full h-1.5">
+                        <div class="bg-purple-600 h-1.5 rounded-full" style="width: ${summary.operational_efficiency_percentage}%"></div>
+                    </div>
+                </div>
+            `;
+        }
+    } catch (e) {
+        console.error("Failed to load reports data", e);
+    }
+}
+
+function getPriorityColor(p) {
+    p = (p || 'low').toLowerCase();
+    if (p === 'high') return 'bg-red-500 text-red-600';
+    if (p === 'medium') return 'bg-yellow-500 text-yellow-600';
+    return 'bg-blue-500 text-blue-600';
+}
+
 function toggleActionMenu(userId) {
     const menus = document.querySelectorAll('[id^="action-menu-"]');
     menus.forEach(m => {
@@ -442,9 +976,9 @@ function toggleActionMenu(userId) {
     }
 }
 
-// Close menus when clicking outside
+// Close menus when clicking outside (ignore clicks on action menu trigger or inside a menu)
 document.addEventListener('click', (e) => {
-    if (!e.target.closest('button')) {
+    if (!e.target.closest('button') && !e.target.closest('[id^="action-menu-"]')) {
         document.querySelectorAll('[id^="action-menu-"]').forEach(m => m.classList.add('hidden'));
     }
 });
@@ -511,12 +1045,27 @@ function showLoading(show) {
 // --- NOTIFICATION SYSTEM ---
 
 function openNotifyModal() {
+    window._notifyTargetUserId = null;
+    const h2 = document.querySelector('#notify-modal h2');
+    if (h2) h2.textContent = 'General Notification';
     document.getElementById('notify-title').value = '';
     document.getElementById('notify-content').value = '';
     document.getElementById('notify-modal').classList.remove('hidden');
 }
 
+window.openNotifyForUser = function (userId, userName) {
+    window._notifyTargetUserId = userId;
+    const h2 = document.querySelector('#notify-modal h2');
+    if (h2) h2.textContent = userName ? 'Notify ' + userName : 'Notify';
+    document.getElementById('notify-title').value = '';
+    document.getElementById('notify-content').value = '';
+    document.getElementById('notify-modal').classList.remove('hidden');
+};
+
 function closeNotifyModal() {
+    window._notifyTargetUserId = null;
+    const h2 = document.querySelector('#notify-modal h2');
+    if (h2) h2.textContent = 'General Notification';
     document.getElementById('notify-modal').classList.add('hidden');
 }
 
@@ -530,8 +1079,14 @@ async function submitNotification() {
     }
 
     try {
-        await Api.post('/notifications/', { title, content });
-        alert("General Notification sent to all employees!");
+        if (window._notifyTargetUserId) {
+            await Api.post('/notifications/', { title, content, notification_type: 'TARGETED', recipient_ids: [window._notifyTargetUserId] });
+            window._notifyTargetUserId = null;
+            alert("Notification sent!");
+        } else {
+            await Api.post('/notifications/', { title, content });
+            alert("General Notification sent to all employees!");
+        }
         closeNotifyModal();
         await loadSentNotifications();
     } catch (e) {
@@ -542,7 +1097,7 @@ async function submitNotification() {
 
 async function loadSentNotifications() {
     try {
-        const notifications = await Api.get('/notifications');
+        const notifications = await Api.get('/notifications/');
         const container = document.getElementById('sent-notifications-list');
 
         // Filter to show only those created by me
@@ -556,10 +1111,19 @@ async function loadSentNotifications() {
         }
 
         container.innerHTML = myNotifications.map(notif => `
-            <div class="p-4 hover:bg-gray-50 transition-colors flex justify-between items-center">
+            <div class="p-4 hover:bg-gray-50 transition-colors flex justify-between items-center group">
                 <div>
                     <h4 class="text-sm font-semibold text-gray-900">${notif.title}</h4>
-                    <p class="text-xs text-gray-500">${new Date(notif.created_at).toLocaleString()}</p>
+                    <div class="flex items-center gap-2">
+                        <p class="text-xs text-gray-500">${new Date(notif.created_at).toLocaleString()}</p>
+                        <button onclick="deleteNotification(${notif.id})" 
+                            class="text-red-400 hover:text-red-600 transition-opacity"
+                            title="Delete notification">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
                 <button onclick="viewNotifStatus(${notif.id}, '${notif.title}')" 
                     class="text-xs font-medium text-primary hover:text-primary-hover bg-primary-light px-3 py-1 rounded-full">
@@ -569,6 +1133,18 @@ async function loadSentNotifications() {
         `).join('');
     } catch (e) {
         console.error(e);
+    }
+}
+
+async function deleteNotification(id) {
+    if (!confirm('Are you sure you want to delete this notification?')) return;
+    try {
+        await Api.delete(`/notifications/${id}`);
+        alert("Notification deleted successfully");
+        await loadSentNotifications();
+    } catch (e) {
+        console.error(e);
+        alert(e.message || "Failed to delete notification");
     }
 }
 
@@ -592,5 +1168,321 @@ async function viewNotifStatus(id, title) {
     } catch (e) {
         console.error(e);
         alert("Failed to load status");
+    }
+}
+
+// ============================================
+// TASK ASSIGNMENT (SENIOR)
+// ============================================
+
+async function openAssignTaskModal(userId = null, userName = null) {
+    document.getElementById('task-title').value = '';
+    document.getElementById('task-description').value = '';
+    document.getElementById('task-priority').value = 'medium';
+    document.getElementById('task-deadline').value = '';
+
+    // Populate Assign To Dropdown
+    const assigneeSelect = document.getElementById('task-assignee');
+    assigneeSelect.innerHTML = '<option value="">Loading users...</option>';
+
+    try {
+        const users = await Api.get('/auth/all-users');
+        assigneeSelect.innerHTML = '<option value="">Select person...</option>';
+
+        const myName = localStorage.getItem('user_name') || 'Me';
+
+        users.forEach(user => {
+            const option = document.createElement('option');
+            option.value = user.id;
+            const roleLabel = user.role.charAt(0).toUpperCase() + user.role.slice(1);
+            option.textContent = `${user.full_name} (${roleLabel})`;
+
+            // Check if this user is me (simple check by name, or if we had ID)
+            if (user.full_name === myName) {
+                option.textContent += ' (Me)';
+                option.style.fontWeight = 'bold';
+            }
+
+            if (userId && user.id === userId) {
+                option.selected = true;
+            }
+            assigneeSelect.appendChild(option);
+        });
+
+    } catch (e) {
+        console.error("Failed to load users for assignment", e);
+        assigneeSelect.innerHTML = '<option value="">Error loading users</option>';
+    }
+    // Populate Projects Dropdown
+    const projectSelect = document.getElementById('task-project');
+    projectSelect.innerHTML = '<option value="">Loading projects...</option>';
+
+    try {
+        const projects = await Api.get('/projects/');
+        projectSelect.innerHTML = '<option value="">Select project (Optional)</option>';
+
+        projects.forEach(v => {
+            const option = document.createElement('option');
+            option.value = v.id;
+            option.textContent = v.name;
+            projectSelect.appendChild(option);
+        });
+    } catch (e) {
+        console.error("Failed to load projects", e);
+        projectSelect.innerHTML = '<option value="">Error loading projects</option>';
+    }
+
+    document.getElementById('assign-task-modal').classList.remove('hidden');
+}
+
+async function assignTask() {
+    const title = document.getElementById('task-title').value.trim();
+    const description = document.getElementById('task-description').value.trim();
+    const assignedToId = document.getElementById('task-assignee').value;
+    const projectId = document.getElementById('task-project').value;
+    const priority = document.getElementById('task-priority').value;
+    const deadline = document.getElementById('task-deadline').value;
+    const btn = document.getElementById('confirm-assign-task');
+
+    if (!title || !assignedToId) {
+        alert('Please fill in required fields (Title and Assignee)');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerText = 'Assigning...';
+
+    try {
+        const taskData = {
+            title,
+            description: description || null,
+            assigned_to_id: parseInt(assignedToId),
+            venture_id: projectId ? parseInt(projectId) : null,
+            priority,
+            deadline: deadline ? new Date(deadline).toISOString() : null
+        };
+
+        await Api.post('/tasks/', taskData);
+        alert('Task assigned successfully!');
+        document.getElementById('assign-task-modal').classList.add('hidden');
+
+        // Refresh relevant sections
+        if (currentTab === 'calendar') {
+            loadPersonalCalendar();
+            loadAssignmentsByMe();
+        } else {
+            refreshDashboard();
+        }
+
+    } catch (error) {
+        console.error('Failed to assign task:', error);
+        alert(`Error: ${error.message || 'Failed to assign task'}`);
+    } finally {
+        btn.disabled = false;
+        btn.innerText = 'Assign Task';
+    }
+}
+
+// ============================================
+// CALENDAR & PERSONAL TASKS
+// ============================================
+
+async function loadPersonalCalendar() {
+    try {
+        const tasks = await Api.get('/tasks/my-calendar');
+        renderCalendar(tasks);
+        renderPersonalTodoList(tasks);
+        loadAssignmentsByMe();
+    } catch (e) {
+        console.error('Failed to load my calendar:', e);
+    }
+}
+window.refreshPersonalCalendar = loadPersonalCalendar;
+
+async function loadAssignmentsByMe() {
+    try {
+        // Fetch ALL tasks then filter
+        // Ideally backend should have /tasks/assigned-by-me but this works for now
+        const allTasks = await Api.get('/tasks/');
+        const myName = localStorage.getItem('user_name');
+
+        // We filter by checking if we CAN remove it? No, backend returns Created By.
+        // Actually, let's look at Task model. It has created_by_id.
+        // We don't have our own ID easily accessible here unless we stored it.
+        // Let's assume we can filter by 'created_by.full_name' == myName or similar.
+        // Or better: Use the endpoint to get profile first if needed.
+
+        // For urgency, let's try to find tasks where created_by name matches or use a backend filter if exists.
+        // Creating a new endpoint is best, but "keep every feature as it is" suggests minimal backend changes if possible.
+        // However, we modified backend previously.
+
+        // Let's check if the Task object has created_by info.
+        // tasks.py: selectinload(Task.created_by) IS INCLUDED.
+
+        const myTasks = allTasks.filter(t => t.created_by && t.created_by.full_name === myName);
+
+        const container = document.getElementById('assigned-by-me-list');
+        if (myTasks.length === 0) {
+            container.innerHTML = '<p class="text-center text-gray-400 py-4">You haven\'t assigned any tasks.</p>';
+            return;
+        }
+
+        container.innerHTML = myTasks.map(t => `
+            <div class="p-3 bg-gray-50 rounded-lg flex justify-between items-center">
+                <div>
+                    <p class="text-sm font-medium text-gray-900">${t.title}</p>
+                    <p class="text-xs text-gray-500">To: ${t.assigned_to ? t.assigned_to.full_name : 'Unassigned'} • Status: <span class="uppercase text-primary font-bold">${t.status}</span></p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="openTaskCommentsModal(${t.id}, ${JSON.stringify(t.title || '')})" class="text-xs text-gray-600 hover:text-primary font-medium">Comment</button>
+                    <span class="text-xs text-gray-400">${new Date(t.created_at).toLocaleDateString()}</span>
+                </div>
+            </div>
+        `).join('');
+
+    } catch (e) {
+        console.error("Failed to load assigned tasks", e);
+    }
+}
+
+function renderPersonalTodoList(tasks) {
+    const list = document.getElementById('personal-todo-list');
+    if (!list || list.closest('#personal-todo-list-container')) return;
+    const pending = tasks.filter(t => t.status !== 'completed');
+
+    if (pending.length === 0) {
+        list.innerHTML = '<p class="text-center text-gray-400 py-4">No pending personal tasks</p>';
+        return;
+    }
+
+    list.innerHTML = pending.map(t => `
+        <div class="flex items-center p-3 bg-gray-50 rounded-lg border border-gray-100 hover:bg-white hover:shadow-sm transition-all group">
+            <div class="flex-1">
+                <p class="text-sm font-medium text-gray-800">${t.title}</p>
+                <div class="flex items-center gap-2 mt-1">
+                    <span class="text-[10px] px-2 py-0.5 rounded-full ${getPriorityColor(t.priority)} bg-opacity-10 text-opacity-80 uppercase font-bold tracking-wide">${t.priority}</span>
+                    <span class="text-xs text-gray-400">${t.deadline ? new Date(t.deadline).toLocaleDateString() : 'No deadline'}</span>
+                </div>
+            </div>
+            <div class="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onclick="markTaskComplete(${t.id})" class="text-green-500 hover:text-green-600 p-1" title="Mark Complete">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderCalendar(tasks) {
+    const grid = document.getElementById('calendar-grid');
+    const monthLabel = document.getElementById('calendar-month-year');
+
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+
+    monthLabel.innerText = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDay = firstDay.getDay();
+    const totalDays = lastDay.getDate();
+
+    let html = '';
+
+    // Empty cells
+    for (let i = 0; i < startDay; i++) {
+        html += '<div class="h-24 bg-gray-50/50"></div>';
+    }
+
+    const personalTodos = typeof window.getPersonalTodosForCalendar === 'function' ? window.getPersonalTodosForCalendar() : [];
+
+    // Days
+    for (let day = 1; day <= totalDays; day++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dayTasks = tasks.filter(t => t.deadline && t.deadline.startsWith(dateStr));
+        const dayPersonalTodos = personalTodos.filter(t => t.date === dateStr && !t.done);
+        const dayItems = dayTasks.map(t => ({ title: t.title, priority: t.priority || 'medium' }))
+            .concat(dayPersonalTodos.map(t => ({ title: t.text, priority: (t.priority || 'medium').toLowerCase() })));
+
+        html += `
+            <div class="h-24 bg-white p-2 border border-gray-50 flex flex-col relative group hover:bg-blue-50/10 transition-colors">
+                <span class="text-xs font-semibold text-gray-700 ${day === now.getDate() ? 'bg-primary text-white w-6 h-6 flex items-center justify-center rounded-full' : ''}">${day}</span>
+                <div class="flex-1 overflow-auto mt-1 space-y-1">
+                    ${dayItems.map(t => `
+                        <div class="w-full h-1.5 rounded-full ${getPriorityColor(t.priority)}" title="${(t.title || '').replace(/"/g, '&quot;')}"></div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    grid.innerHTML = html;
+}
+
+function getPriorityColor(p) {
+    if (p === 'high') return 'bg-red-500 text-red-500';
+    if (p === 'medium') return 'bg-yellow-500 text-yellow-500';
+    return 'bg-blue-500 text-blue-500';
+}
+
+async function markTaskComplete(id) {
+    try {
+        await Api.put(`/tasks/${id}`, { status: 'completed' });
+        loadPersonalCalendar(); // refresh
+    } catch (e) {
+        console.error(e);
+        alert(e.message || "Failed");
+    }
+}
+
+function openTaskCommentsModal(taskId, taskTitle) {
+    document.getElementById('task-comments-task-id').value = taskId;
+    document.getElementById('task-comments-title').textContent = 'Comments: ' + (taskTitle || 'Task');
+    document.getElementById('task-comments-input').value = '';
+    document.getElementById('task-comments-modal').classList.remove('hidden');
+    loadTaskComments(taskId);
+}
+
+async function loadTaskComments(taskId) {
+    const listEl = document.getElementById('task-comments-list');
+    if (!listEl) return;
+    listEl.innerHTML = '<span class="text-gray-400">Loading...</span>';
+    try {
+        const comments = await Api.get('/tasks/' + taskId + '/comments');
+        if (!comments || comments.length === 0) {
+            listEl.innerHTML = '<p class="text-gray-400 text-sm">No comments yet. Add one below.</p>';
+            return;
+        }
+        listEl.innerHTML = comments.map(c => {
+            const name = c.user ? c.user.full_name : 'Someone';
+            const date = c.created_at ? new Date(c.created_at).toLocaleString() : '';
+            const body = (c.body || '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+            return '<div class="border-l-2 border-primary/30 pl-3 py-1"><span class="font-medium text-gray-900">' + name + '</span> <span class="text-xs text-gray-400">' + date + '</span><p class="text-gray-700 mt-0.5">' + body + '</p></div>';
+        }).join('');
+    } catch (e) {
+        const msg = (e && e.message) ? String(e.message) : 'Failed to load comments.';
+        listEl.innerHTML = '<p class="text-red-500 text-sm">' + msg.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</p>';
+    }
+}
+
+async function postTaskComment() {
+    const taskId = document.getElementById('task-comments-task-id').value;
+    const input = document.getElementById('task-comments-input');
+    const body = (input.value || '').trim();
+    if (!body) return;
+    const btn = document.getElementById('task-comments-post');
+    if (!btn) return;
+    btn.disabled = true;
+    btn.textContent = 'Posting...';
+    try {
+        await Api.post('/tasks/' + taskId + '/comments', { body });
+        input.value = '';
+        await loadTaskComments(taskId);
+    } catch (e) {
+        alert(e.message || 'Failed to post comment');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Post';
     }
 }

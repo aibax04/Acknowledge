@@ -28,10 +28,26 @@ class Task(Base):
     # Foreign Keys
     assigned_to_id = Column(Integer, ForeignKey("users.id"))
     created_by_id = Column(Integer, ForeignKey("users.id"))
+    venture_id = Column(Integer, ForeignKey("ventures.id"), nullable=True)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    acknowledged_at = Column(DateTime(timezone=True), nullable=True)
 
     # Relationships
     assigned_to = relationship("User", foreign_keys=[assigned_to_id], backref="assigned_tasks")
     created_by = relationship("User", foreign_keys=[created_by_id], backref="created_tasks")
+    venture = relationship("Venture", backref="tasks")
+    comments = relationship("TaskComment", backref="task", cascade="all, delete-orphan")
+
+
+class TaskComment(Base):
+    __tablename__ = "task_comments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    task_id = Column(Integer, ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    body = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", backref="task_comments")

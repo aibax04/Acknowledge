@@ -1,14 +1,49 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
+from pydantic import BaseModel
+from typing import Optional
 from app.database import get_db
-from app.schemas.user_schema import UserCreate, UserResponse, Token
+from app.schemas.user_schema import UserCreate, UserResponse, UserUpdate, Token
 from app.services.auth_service import create_user, authenticate_user, get_user_by_email
+from app.services.microsoft_oauth_service import microsoft_oauth_service
 from app.utils.jwt_handler import create_access_token, verify_token
-from app.models.user import User
+from app.utils.hashing import get_password_hash
+from app.models.user import User, UserRole
+from app.config import settings
+import secrets
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+def _require_senior_signup_key(role: UserRole, provided_key: Optional[str]) -> None:
+    """Raise HTTPException if role is senior and key is missing or invalid."""
+    if role != UserRole.SENIOR:
+        return
+    if not settings.SENIOR_SIGNUP_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Senior signup is not configured",
+        )
+    if not provided_key or provided_key.strip() != settings.SENIOR_SIGNUP_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid senior signup key",
+        )
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+
+# Pydantic models for Microsoft OAuth
+class MicrosoftCallbackRequest(BaseModel):
+    code: str
+    redirect_uri: str
+    action: Optional[str] = "login"  # "login" or "signup"
+    role: Optional[str] = "employee"  # Default role for new users
+    senior_signup_key: Optional[str] = None  # required when creating account as senior
+
+class MicrosoftAuthResponse(BaseModel):
+    access_token: str
+    token_type: str
+    user: UserResponse
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
     credentials_exception = HTTPException(
@@ -24,6 +59,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
 
 @router.post("/signup", response_model=UserResponse)
 async def signup(user: UserCreate, db: AsyncSession = Depends(get_db)):
+    _require_senior_signup_key(user.role, getattr(user, "senior_signup_key", None))
     db_user = await get_user_by_email(db, email=user.email)
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -42,21 +78,278 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSessi
     access_token = create_access_token(data={"sub": user.email, "role": user.role.value}) 
     return {"access_token": access_token, "token_type": "bearer"}
 
+# --- MICROSOFT OAUTH ENDPOINTS ---
+
+@router.get("/microsoft/config")
+async def get_microsoft_config():
+    """Get Microsoft OAuth configuration for frontend."""
+    config = microsoft_oauth_service.get_config()
+    if not config["configured"]:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Microsoft OAuth is not configured"
+        )
+    return config
+
+@router.post("/microsoft/callback")
+async def microsoft_callback(
+    callback_data: MicrosoftCallbackRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Handle Microsoft OAuth callback.
+    Exchanges authorization code for tokens and creates or logs in user.
+    """
+    if not microsoft_oauth_service.is_configured():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Microsoft OAuth is not configured"
+        )
+    
+    try:
+        # Exchange code for token
+        token_response = await microsoft_oauth_service.exchange_code_for_token(
+            code=callback_data.code,
+            redirect_uri=callback_data.redirect_uri
+        )
+        
+        ms_access_token = token_response.get("access_token")
+        if not ms_access_token:
+            raise HTTPException(status_code=400, detail="No access token received from Microsoft")
+        
+        # Get user info from Microsoft Graph
+        ms_user_info = await microsoft_oauth_service.get_user_info(ms_access_token)
+        
+        email = ms_user_info.get("mail") or ms_user_info.get("userPrincipalName")
+        if not email:
+            raise HTTPException(status_code=400, detail="Could not get email from Microsoft account")
+        
+        # Normalize email to lowercase
+        email = email.lower()
+        
+        # Get display name
+        display_name = ms_user_info.get("displayName") or ms_user_info.get("givenName", "User")
+        
+        # Check if user exists
+        existing_user = await get_user_by_email(db, email=email)
+        
+        if existing_user:
+            # User exists - log them in
+            user = existing_user
+        else:
+            # User doesn't exist - create new account
+            # Generate a random password (user won't use it - they login via Microsoft)
+            random_password = secrets.token_urlsafe(32)
+            hashed_password = get_password_hash(random_password)
+            
+            # Determine role - default to employee for new Microsoft signups
+            role_str = callback_data.role or "employee"
+            try:
+                role = UserRole(role_str)
+            except ValueError:
+                role = UserRole.EMPLOYEE
+            
+            _require_senior_signup_key(role, callback_data.senior_signup_key)
+            
+            # Create new user
+            user = User(
+                email=email,
+                full_name=display_name,
+                hashed_password=hashed_password,
+                role=role,
+                is_active=True
+            )
+            db.add(user)
+            await db.commit()
+            await db.refresh(user)
+        
+        # Create our JWT token
+        access_token = create_access_token(data={"sub": user.email, "role": user.role.value})
+        
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "full_name": user.full_name,
+                "role": user.role.value,
+                "is_active": user.is_active,
+                "created_at": user.created_at
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Microsoft authentication failed: {str(e)}"
+        )
+
+
+# --- GOOGLE OAUTH ENDPOINTS ---
+from app.services.google_oauth_service import GoogleOAuthService
+
+google_oauth_service = GoogleOAuthService()
+
+class GoogleCallbackRequest(BaseModel):
+    code: str
+    redirect_uri: str
+    action: Optional[str] = "login"
+    role: Optional[str] = "intern"
+    senior_signup_key: Optional[str] = None  # required when creating account as senior
+
+@router.get("/google/config")
+async def get_google_config():
+    if not settings.GOOGLE_CLIENT_ID:
+        raise HTTPException(status_code=503, detail="Google OAuth not configured")
+    return {"client_id": settings.GOOGLE_CLIENT_ID}
+
+@router.post("/google/callback")
+async def google_callback(
+    callback_data: GoogleCallbackRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    if not settings.GOOGLE_CLIENT_ID:
+        raise HTTPException(status_code=503, detail="Google OAuth not configured")
+    
+    try:
+        token_response = await google_oauth_service.get_access_token(
+            code=callback_data.code,
+            redirect_uri=callback_data.redirect_uri
+        )
+        if not token_response:
+             raise HTTPException(status_code=400, detail="Failed to retrieve Google token")
+             
+        access_token = token_response.get("access_token")
+        
+        user_info = await google_oauth_service.get_user_info(access_token)
+        if not user_info:
+             raise HTTPException(status_code=400, detail="Failed to retrieve Google user info")
+             
+        email = user_info.get("email")
+        if not email:
+            raise HTTPException(status_code=400, detail="No email provided by Google")
+        
+        email = email.lower()
+        
+        # Enforce Gmail restriction for Inter role if user is signing up as Intern
+        # Or if login is attempted for an Intern user.
+        # But here we just get email.
+        # Logic: If role requested is Intern, MUST be Gmail?
+        # User said: "interns can only login through gmail".
+        # This implies if you are an Intern, you better be using Google.
+        # And if you use Google... should we restrict to @gmail.com?
+        # "login through gmail" usually means "Using Google Account".
+        # Many Google accounts are @gmail.com, but some are Workspace.
+        # I will enforce @gmail.com ONLY IF the role is INTERN.
+        
+        role_str = callback_data.role or "intern"
+        
+        if role_str == "intern" and not email.endswith("@gmail.com"):
+             raise HTTPException(status_code=403, detail="Interns must use a @gmail.com account")
+
+        display_name = user_info.get("name", "Google User")
+        
+        existing_user = await get_user_by_email(db, email=email)
+        
+        if existing_user:
+            user = existing_user
+            # If user is logging in specifically as Intern via Google, ensure their role is set to Intern
+            # This handles the case where they might have been created as Employee before
+            if role_str == "intern" and user.role != UserRole.INTERN:
+                 user.role = UserRole.INTERN
+                 db.add(user)
+                 await db.commit()
+                 await db.refresh(user)
+        else:
+             random_password = secrets.token_urlsafe(32)
+             hashed_password = get_password_hash(random_password)
+             
+             try:
+                role = UserRole(role_str)
+             except ValueError:
+                role = UserRole.INTERN # Default for Google flow? Or stick to input.
+             
+             _require_senior_signup_key(role, callback_data.senior_signup_key)
+             
+             user = User(
+                email=email,
+                full_name=display_name,
+                hashed_password=hashed_password,
+                role=role,
+                is_active=True
+            )
+             db.add(user)
+             await db.commit()
+             await db.refresh(user)
+             
+        access_token = create_access_token(data={"sub": user.email, "role": user.role.value})
+        
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "full_name": user.full_name,
+                "role": user.role.value,
+                "is_active": user.is_active,
+                "created_at": user.created_at
+            }
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Google authentication failed: {str(e)}"
+        )
+
+# --- EXISTING ENDPOINTS ---
+
 @router.get("/me", response_model=UserResponse)
 async def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
 
+async def _do_update_profile(update: UserUpdate, current_user: User, db: AsyncSession):
+    """Shared logic for PATCH/POST profile update."""
+    if update.full_name is not None:
+        name = (update.full_name or "").strip()
+        if not name:
+            raise HTTPException(status_code=400, detail="Name cannot be empty")
+        current_user.full_name = name
+        db.add(current_user)
+        await db.commit()
+        await db.refresh(current_user)
+    return current_user
+
+@router.patch("/me", response_model=UserResponse)
+async def update_profile_patch(update: UserUpdate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Update current user's profile (e.g. display name). PATCH method."""
+    return await _do_update_profile(update, current_user, db)
+
+@router.post("/me", response_model=UserResponse)
+async def update_profile_post(update: UserUpdate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Update current user's profile. POST supported for proxies that block PATCH."""
+    return await _do_update_profile(update, current_user, db)
+
 @router.get("/users", response_model=list[UserResponse])
 async def get_users(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     from sqlalchemy.future import select
-    from app.models.user import UserRole
+    from sqlalchemy import or_
     
     # Only managers and seniors can access this
     if current_user.role == UserRole.EMPLOYEE:
         raise HTTPException(status_code=403, detail="Access denied")
     
-    # Get all employees
-    result = await db.execute(select(User).filter(User.role == UserRole.EMPLOYEE))
+    # Return all users that a manager or senior should see in their directories
+    # This includes Employees, Interns, and other Managers/Seniors
+    allowed_roles = [UserRole.EMPLOYEE, UserRole.INTERN, UserRole.MANAGER, UserRole.SENIOR]
+    
+    result = await db.execute(select(User).filter(User.role.in_(allowed_roles)))
     users = result.scalars().all()
     return users
 
@@ -64,7 +357,8 @@ async def get_users(db: AsyncSession = Depends(get_db), current_user: User = Dep
 async def get_all_users(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     from sqlalchemy.future import select
     
-    # Get all users except the current user
+    # Organization directory: return all users except current user.
+    # Include all roles (employees, interns, managers, and other seniors).
     result = await db.execute(select(User).filter(User.id != current_user.id))
     users = result.scalars().all()
     return users
@@ -72,7 +366,6 @@ async def get_all_users(db: AsyncSession = Depends(get_db), current_user: User =
 @router.delete("/users/{user_id}")
 async def delete_user(user_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     from sqlalchemy.future import select
-    from app.models.user import UserRole
     
     # Only seniors can delete users
     if current_user.role != UserRole.SENIOR:
@@ -91,3 +384,4 @@ async def delete_user(user_id: int, db: AsyncSession = Depends(get_db), current_
     await db.delete(user)
     await db.commit()
     return {"message": "User credentials deleted successfully"}
+

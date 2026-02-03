@@ -19,43 +19,45 @@
             theme: {
                 extend: {
                     colors: {
-                        primary: '#10b981', // Emerald 500
-                        'primary-hover': '#059669', // Emerald 600
-                        'primary-light': '#ecfdf5', // Emerald 50
-                        'primary-bg': '#f0fdf4', // Very light green background
+                        primary: '#10b981',
+                        'primary-hover': '#059669',
+                        'primary-light': 'rgba(16, 185, 129, 0.1)',
+                        'primary-glow': 'rgba(16, 185, 129, 0.3)',
                     }
                 }
             }
         }
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
+            background: #f9fafb;
+            color: #1f2937;
         }
     </style>
 </head>
 
-<body class="bg-gray-50 text-gray-800 flex h-screen overflow-hidden">
+<body class="bg-gray-50 text-gray-900 flex h-screen overflow-hidden">
 
     <!-- Sidebar -->
-    <aside class="w-64 bg-white border-r border-gray-100 flex-shrink-0 flex flex-col justify-between">
+    <aside class="w-64 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col justify-between">
         <div>
             <!-- Logo -->
-            <div class="h-16 flex items-center px-8 border-b border-gray-50">
-                <div class="w-8 h-8 rounded-full bg-primary-light text-primary flex items-center justify-center mr-3">
+            <div class="h-16 flex items-center gap-3 px-8 border-b border-primary/80 bg-primary">
+                <div class="w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center flex-shrink-0">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                     </svg>
                 </div>
-                <span class="font-semibold text-lg tracking-tight">Acknowledge</span>
+                <span class="font-semibold text-lg tracking-tight text-white">Acknowledge</span>
             </div>
 
             <!-- Navigation -->
             <nav class="mt-8 px-4 space-y-1">
                 <button onclick="switchTab('stats')" id="nav-stats"
-                    class="w-full flex items-center px-4 py-3 bg-primary-light text-primary rounded-lg font-medium transition-colors text-left">
+                    class="w-full flex items-center px-4 py-3 bg-primary/15 text-primary rounded-lg font-medium transition-colors text-left">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -64,7 +66,7 @@
                     Organization Stats
                 </button>
                 <button onclick="switchTab('compliance')" id="nav-compliance"
-                    class="w-full flex items-center px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors text-left">
+                    class="w-full flex items-center px-4 py-3 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-lg font-medium transition-colors text-left">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -73,7 +75,7 @@
                     Compliance & Policies
                 </button>
                 <button onclick="switchTab('workforce')" id="nav-workforce"
-                    class="w-full flex items-center px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors text-left">
+                    class="w-full flex items-center px-4 py-3 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-lg font-medium transition-colors text-left">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -81,40 +83,95 @@
                     </svg>
                     Workforce
                 </button>
+                <button onclick="switchTab('projects')" id="nav-projects"
+                    class="w-full flex items-center px-4 py-3 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-lg font-medium transition-colors text-left">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    Projects
+                </button>
+                <button onclick="switchTab('reports')" id="nav-reports"
+                    class="w-full flex items-center px-4 py-3 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-lg font-medium transition-colors text-left">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Strategic Reports
+                </button>
+                <button onclick="switchTab('calendar')" id="nav-calendar"
+                    class="w-full flex items-center px-4 py-3 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-lg font-medium transition-colors text-left">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    My Calendar & Tasks
+                </button>
             </nav>
         </div>
 
         <!-- User Profile -->
-        <div class="p-4 border-t border-gray-50">
+        <div class="p-4 border-t border-gray-200">
             <div class="flex items-center">
                 <div id="user-avatar"
-                    class="w-10 h-10 rounded-full bg-gray-800 text-white flex items-center justify-center font-bold">
-                    ED
+                    class="w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">
+                    --
                 </div>
-                <div class="ml-3">
-                    <p id="user-name" class="text-sm font-medium text-gray-900">Elena Davis</p>
+                <div class="ml-3 flex-1 min-w-0">
+                    <div class="flex items-center gap-1">
+                        <p id="user-name" class="text-sm font-medium text-gray-900 truncate">Loading...</p>
+                        <button type="button" id="edit-name-btn" class="p-0.5 text-gray-400 hover:text-primary rounded focus:outline-none focus:ring-1 focus:ring-primary flex-shrink-0" title="Edit name" aria-label="Edit name">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                        </button>
+                    </div>
                     <p id="user-role" class="text-xs text-gray-500">Director</p>
                 </div>
             </div>
         </div>
     </aside>
 
+    <!-- Edit Name Modal -->
+    <div id="edit-name-modal" class="hidden fixed inset-0 z-[100] overflow-y-auto" aria-modal="true">
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div class="fixed inset-0 bg-black/40" aria-hidden="true" id="edit-name-backdrop"></div>
+            <div class="relative bg-white rounded-xl shadow-lg max-w-sm w-full p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-3">Edit display name</h3>
+                <input type="text" id="edit-name-input" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary" placeholder="Your name" maxlength="200">
+                <div class="flex justify-end gap-2 mt-4">
+                    <button type="button" id="edit-name-cancel" class="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
+                    <button type="button" id="edit-name-save" class="px-3 py-1.5 text-sm bg-primary text-white rounded-lg hover:bg-primary-hover">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Main Content -->
-    <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-white">
+    <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-gray-50">
         <!-- Header -->
-        <header class="flex items-center justify-between px-8 py-6 border-b border-gray-50 bg-white">
-            <h1 class="text-2xl font-semibold text-gray-800">Executive Overview</h1>
-            <div class="flex items-center space-x-4">
+        <header class="flex items-center justify-between gap-4 px-8 py-6 border-b border-gray-200 bg-white min-h-[72px]">
+            <h1 class="text-2xl font-semibold text-gray-900 flex-shrink-0">Executive Overview</h1>
+            <div class="relative flex-1 max-w-md min-w-0 mx-4">
+                <input type="text" id="org-directory-search" placeholder="Search organization directory..."
+                    class="w-full text-sm border border-gray-200 rounded-lg pl-9 pr-3 py-2 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-gray-50 placeholder-gray-500">
+                <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                <div id="org-directory-dropdown" class="hidden absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto"></div>
+            </div>
+            <div class="flex items-center gap-4 flex-shrink-0">
                 <button id="logoutBtn" onclick="Api.logout()"
-                    class="text-sm font-medium text-gray-500 hover:text-red-600 transition-colors mr-2">
+                    class="text-sm font-medium text-gray-500 hover:text-red-600 transition-colors py-2 px-0">
                     Logout
                 </button>
                 <button id="notifyBtn" onclick="openNotifyModal()"
-                    class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors shadow-sm">
+                    class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors shadow-sm whitespace-nowrap">
                     Notify Everyone
                 </button>
                 <button
-                    class="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm">
+                    class="bg-white border border-gray-200 text-gray-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors whitespace-nowrap">
                     Download Report
                 </button>
             </div>
@@ -132,9 +189,9 @@
             <!-- TAB 1: ORGANIZATION STATS -->
             <div id="view-stats" class="space-y-8 animate-fade-in">
                 <!-- High Level Metrics -->
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-stretch">
                     <!-- Efficiency -->
-                    <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm relative overflow-hidden">
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden flex flex-col justify-between">
                         <div class="absolute right-0 top-0 h-full w-2 bg-primary"></div>
                         <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Operational Efficiency</p>
                         <div class="mt-4">
@@ -144,7 +201,7 @@
                     </div>
 
                     <!-- Compliance -->
-                    <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm relative overflow-hidden">
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden flex flex-col justify-between">
                         <div class="absolute right-0 top-0 h-full w-2 bg-blue-500"></div>
                         <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Compliance Rate</p>
                         <div class="mt-4">
@@ -154,9 +211,9 @@
                     </div>
 
                     <!-- Escalations -->
-                    <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm relative overflow-hidden">
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden">
                         <div class="absolute right-0 top-0 h-full w-2 bg-red-500"></div>
-                        <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Escalated Concerns</p>
+                        <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Escalated Nudges</p>
                         <div class="mt-4">
                             <p class="text-4xl font-bold text-gray-900" id="stat-open-concerns">--</p>
                             <p class="text-sm text-red-500 mt-1">Requires Action</p>
@@ -164,7 +221,7 @@
                     </div>
 
                     <!-- Total Employees -->
-                    <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm relative overflow-hidden">
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden flex flex-col justify-between">
                         <div class="absolute right-0 top-0 h-full w-2 bg-purple-500"></div>
                         <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Total Workforce</p>
                         <div class="mt-4">
@@ -177,10 +234,10 @@
                 <!-- Department Performance & Escalations Grid -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
-                    <!-- Department Performance -->
+                    <!-- Team Performance -->
                     <div>
-                        <h2 class="text-lg font-medium text-gray-900 mb-4">Department Performance</h2>
-                        <div id="department-list" class="space-y-4">
+                        <h2 class="text-lg font-medium text-gray-900 mb-4">Team Performance</h2>
+                        <div id="team-list" class="space-y-4">
                             <!-- Populated by JS -->
                         </div>
                     </div>
@@ -188,7 +245,7 @@
                     <!-- Recent Escalations -->
                     <div>
                         <div class="flex justify-between items-center mb-4">
-                            <h2 class="text-lg font-medium text-gray-900">Escalated Concerns</h2>
+                            <h2 class="text-lg font-medium text-gray-900">Escalated Nudges</h2>
                         </div>
                         <div class="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm min-h-[300px]">
                             <div id="escalations-list" class="divide-y divide-gray-50">
@@ -250,13 +307,18 @@
                         <h3 class="text-lg font-medium text-gray-900 mb-4">Workload Distribution</h3>
                         <div id="workforce-distribution-chart"
                             class="h-64 flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-100 rounded-lg">
-                            <div class="grid grid-cols-2 gap-12 text-center">
+                            <div class="grid grid-cols-3 gap-8 text-center">
                                 <div>
                                     <p class="text-3xl font-bold text-gray-800" id="active-emp-count">--</p>
                                     <p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Active
                                         Employees</p>
                                 </div>
-                                <div class="border-l border-gray-100 pl-12">
+                                <div class="border-l border-gray-100 pl-8">
+                                    <p class="text-3xl font-bold text-blue-600" id="active-intern-count">--</p>
+                                    <p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Active
+                                        Interns</p>
+                                </div>
+                                <div class="border-l border-gray-100 pl-8">
                                     <p class="text-3xl font-bold text-primary" id="active-mgr-count">--</p>
                                     <p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Active
                                         Managers</p>
@@ -272,16 +334,29 @@
                     </div>
                 </div>
 
-                <!-- Comprehensive Directory -->
-                <div class="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm">
-                    <div class="px-6 py-4 border-b border-gray-50 flex justify-between items-center bg-gray-50">
+                <!-- Comprehensive Directory (overflow-visible so action dropdown is not clipped) -->
+                <div class="bg-white border border-gray-100 rounded-xl overflow-visible shadow-sm">
+                    <div
+                        class="px-6 py-4 border-b border-gray-50 flex flex-col md:flex-row justify-between items-center bg-gray-50 space-y-3 md:space-y-0">
                         <h3 class="text-lg font-bold text-gray-900">Organization Directory</h3>
-                        <div class="flex space-x-2">
+                        <div class="flex space-x-2 w-full md:w-auto">
+                            <div class="relative flex-1">
+                                <input type="text" id="workforce-search" oninput="loadWorkforce()"
+                                    placeholder="Search members..."
+                                    class="text-sm border border-gray-200 rounded-lg pl-8 pr-3 py-1.5 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary w-full">
+                                <svg class="w-4 h-4 text-gray-400 absolute left-2.5 top-2.5" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </div>
                             <select id="role-filter" onchange="loadWorkforce()"
-                                class="text-sm border border-gray-200 rounded px-2 py-1 outline-none">
+                                class="text-sm border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
                                 <option value="all">All Roles</option>
+                                <option value="senior">Seniors</option>
                                 <option value="manager">Managers</option>
                                 <option value="employee">Employees</option>
+                                <option value="intern">Interns</option>
                             </select>
                         </div>
                     </div>
@@ -312,7 +387,183 @@
                 </div>
             </div>
 
-            <!-- My Sent Notifications -->
+            <!-- TAB 4: PROJECTS -->
+            <div id="view-projects" class="hidden space-y-8 animate-fade-in">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-lg font-medium text-gray-900">Projects Management</h2>
+                    <button id="btn-create-project"
+                        class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors shadow-sm">
+                        + Create Project
+                    </button>
+                </div>
+
+                <div id="projects-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Projects will be loaded here -->
+                </div>
+            </div>
+
+            <!-- TAB 6: STRATEGIC REPORTS -->
+            <div id="view-reports" class="hidden space-y-8 animate-fade-in">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-lg font-medium text-gray-900">Strategic Performance Analysis</h2>
+                    <button onclick="downloadReport()"
+                        class="bg-white border border-gray-200 text-gray-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center shadow-sm">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Export PDF Report
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Productivity Matrix -->
+                    <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                        <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Productivity Matrix
+                        </h3>
+                        <div class="space-y-6">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium text-gray-600">Avg. Task Completion Time</span>
+                                <span class="text-lg font-bold text-gray-900">4.2 Days</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium text-gray-600">Acknowledgment Lead Time</span>
+                                <span class="text-lg font-bold text-gray-900">1.8 Hours</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium text-gray-600">Crisis Resolution Speed</span>
+                                <span class="text-lg font-bold text-green-600">Fast (↑ 12%)</span>
+                            </div>
+                        </div>
+                        <div class="mt-8 pt-6 border-t border-gray-50">
+                            <p class="text-xs text-gray-400 italic">Trends analysis based on last 30 days of
+                                organizational activity.</p>
+                        </div>
+                    </div>
+
+                    <!-- Compliance Health -->
+                    <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                        <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Compliance Health
+                        </h3>
+                        <div id="compliance-health-list" class="space-y-4">
+                            <!-- Populated by JS -->
+                            <div class="p-3 bg-blue-50 rounded-lg">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-xs font-bold text-blue-800">Policy Adherence</span>
+                                    <span class="text-xs font-bold text-blue-800">92%</span>
+                                </div>
+                                <div class="w-full bg-blue-200 rounded-full h-1.5">
+                                    <div class="bg-blue-600 h-1.5 rounded-full" style="width: 92%"></div>
+                                </div>
+                            </div>
+                            <div class="p-3 bg-purple-50 rounded-lg">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-xs font-bold text-purple-800">Training Completion</span>
+                                    <span class="text-xs font-bold text-purple-800">85%</span>
+                                </div>
+                                <div class="w-full bg-purple-200 rounded-full h-1.5">
+                                    <div class="bg-purple-600 h-1.5 rounded-full" style="width: 85%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Strategic Roadmap Placeholder -->
+                <div class="bg-white p-8 rounded-xl border border-gray-100 shadow-sm text-center">
+                    <div class="max-w-md mx-auto">
+                        <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-2">Predictive Insights</h3>
+                        <p class="text-gray-500 text-sm mb-6">Our AI is analyzing team performance trends to predict
+                            upcoming bottlenecks. Check back soon for the full strategic roadmap.</p>
+                        <div class="flex justify-center space-x-2">
+                            <span class="w-2 h-2 bg-primary rounded-full animate-bounce"></span>
+                            <span class="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                            <span class="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: CALENDAR & TASKS -->
+            <div id="view-calendar" class="hidden space-y-8 animate-fade-in">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Calendar Section (2/3 width) -->
+                    <div class="lg:col-span-2 bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-xl font-semibold text-gray-900">My Calendar</h2>
+                            <div class="flex items-center space-x-2">
+                                <button id="calendar-prev" class="p-1 hover:bg-gray-100 rounded">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 19l-7-7 7-7" />
+                                    </svg>
+                                </button>
+                                <span id="calendar-month-year" class="font-medium text-gray-900">Month Year</span>
+                                <button id="calendar-next" class="p-1 hover:bg-gray-100 rounded">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Calendar Grid -->
+                        <div class="grid grid-cols-7 gap-1 text-center text-sm mb-2 text-gray-400">
+                            <div>Sun</div>
+                            <div>Mon</div>
+                            <div>Tue</div>
+                            <div>Wed</div>
+                            <div>Thu</div>
+                            <div>Fri</div>
+                            <div>Sat</div>
+                        </div>
+                        <div id="calendar-grid"
+                            class="grid grid-cols-7 gap-1 text-sm bg-gray-50 border border-gray-100 rounded-lg overflow-hidden">
+                            <!-- JS Generated -->
+                        </div>
+                    </div>
+
+                    <!-- My Todo List & Assigned Tasks (1/3 width) -->
+                    <div class="space-y-6">
+                        <!-- My Todo List (create your own) -->
+                        <div id="personal-todo-list-container" class="bg-white border border-gray-200 rounded-xl shadow-sm p-6" data-storage-key="personal_todo_senior">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">My Todo List</h3>
+                            <div class="flex gap-2 mb-2">
+                                <input type="text" id="personal-todo-input" placeholder="Add a task..."
+                                    class="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                                <button type="button" id="personal-todo-add" class="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-hover transition-colors">Add</button>
+                            </div>
+                            <div class="flex gap-2 mb-4">
+                                <input type="date" id="personal-todo-date" class="text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary flex-1">
+                                <select id="personal-todo-priority" class="text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary w-28">
+                                    <option value="low">Low</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="high">High</option>
+                                </select>
+                            </div>
+                            <ul id="personal-todo-list" class="space-y-2 max-h-[240px] overflow-y-auto">
+                                <!-- Todo items rendered by todo-list.js -->
+                            </ul>
+                        </div>
+
+                        <!-- Tasks Assigned by Me -->
+                        <div
+                            class="bg-white border border-gray-200 rounded-xl shadow-sm p-6 flex flex-col max-h-[400px]">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Tasks I Assigned</h3>
+                            <div id="assigned-by-me-list" class="flex-1 overflow-y-auto space-y-3">
+                                <p class="text-center text-gray-400 py-4">Loading...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="mt-8 bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm">
                 <div class="px-6 py-4 border-b border-gray-50 flex justify-between items-center">
                     <h3 class="text-lg font-medium text-gray-900">My Sent Notifications</h3>
@@ -384,36 +635,432 @@
     <div id="create-policy-modal"
         class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div
-            class="bg-white rounded-xl p-8 max-w-2xl w-full mx-4 shadow-2xl animate-fade-in flex flex-col max-h-[90vh]">
-            <h2 class="text-xl font-bold mb-6">Publish New Organization Policy</h2>
-            <div class="space-y-4 flex-1 overflow-y-auto pr-2">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Policy Title</label>
-                    <input type="text" id="policy-title" placeholder="Code of Conduct / Remote Work Policy"
-                        class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Content / Document Body</label>
-                    <textarea id="policy-content" rows="12"
-                        placeholder="Policy details, requirements, and compliance instructions..."
-                        class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all font-mono text-sm"></textarea>
+            class="bg-white rounded-2xl p-0 max-w-3xl w-full mx-4 shadow-2xl animate-fade-in flex flex-col max-h-[95vh] overflow-hidden">
+
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white">
+                <div class="flex items-center space-x-3">
+                    <div class="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold" id="create-policy-modal-title">Publish New Organization Policy
+                        </h2>
+                        <p class="text-blue-100 text-sm">This will be visible to all company members</p>
+                    </div>
                 </div>
             </div>
-            <div class="flex justify-end space-x-3 mt-8 pt-4 border-t border-gray-50">
+
+            <!-- Form Content -->
+            <div class="flex-1 overflow-y-auto p-6 space-y-6">
+
+                <!-- Cover Image Upload -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Cover Image (Optional)</label>
+                    <div id="policy-image-upload-area"
+                        class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-primary transition-colors cursor-pointer bg-gray-50">
+                        <input type="file" id="policy-image-input" accept="image/*" class="hidden">
+                        <input type="hidden" id="policy-image-url">
+                        <input type="hidden" id="policy-id">
+                        <div id="policy-image-preview" class="hidden">
+                            <img id="policy-preview-img" src="" alt="Preview"
+                                class="max-h-40 mx-auto rounded-lg shadow-md">
+                            <button onclick="clearPolicyImage(event)"
+                                class="mt-3 text-sm text-red-600 hover:text-red-800 font-medium">
+                                Remove Image
+                            </button>
+                        </div>
+                        <div id="policy-upload-placeholder">
+                            <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <p class="text-gray-600 font-medium">Click to upload a cover image</p>
+                            <p class="text-sm text-gray-400 mt-1">PNG, JPG, GIF up to 5MB</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Policy Title -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Policy Title</label>
+                    <input type="text" id="policy-title" placeholder="e.g., Code of Conduct, Remote Work Policy"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-lg font-medium">
+                </div>
+
+                <!-- Target Audience -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Target Audience</label>
+                    <div class="space-y-2 p-4 border border-gray-300 rounded-xl bg-gray-50">
+                        <label
+                            class="flex items-center space-x-3 cursor-pointer hover:bg-white p-2 rounded-lg transition-colors">
+                            <input type="checkbox" id="audience-all"
+                                class="policy-audience-checkbox w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                                value="all">
+                            <span class="text-sm font-medium text-gray-700">All Company</span>
+                        </label>
+                        <label
+                            class="flex items-center space-x-3 cursor-pointer hover:bg-white p-2 rounded-lg transition-colors">
+                            <input type="checkbox" id="audience-employee"
+                                class="policy-audience-checkbox w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                                value="employee">
+                            <span class="text-sm font-medium text-gray-700">Employees</span>
+                        </label>
+                        <label
+                            class="flex items-center space-x-3 cursor-pointer hover:bg-white p-2 rounded-lg transition-colors">
+                            <input type="checkbox" id="audience-manager"
+                                class="policy-audience-checkbox w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                                value="manager">
+                            <span class="text-sm font-medium text-gray-700">Managers</span>
+                        </label>
+                        <label
+                            class="flex items-center space-x-3 cursor-pointer hover:bg-white p-2 rounded-lg transition-colors">
+                            <input type="checkbox" id="audience-intern"
+                                class="policy-audience-checkbox w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                                value="intern">
+                            <span class="text-sm font-medium text-gray-700">Interns</span>
+                        </label>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Select one or more groups who should see this policy</p>
+                </div>
+
+                <!-- Policy Content -->
+                <div>
+                    <div class="flex justify-between items-center mb-2 border-b border-gray-200">
+                        <div class="flex space-x-6">
+                            <button type="button" id="tab-write-policy" onclick="switchPolicyTab('write')"
+                                class="text-sm font-medium text-primary border-b-2 border-primary pb-2 px-1 transition-colors">
+                                Write
+                            </button>
+                            <button type="button" id="tab-preview-policy" onclick="switchPolicyTab('preview')"
+                                class="text-sm font-medium text-gray-500 hover:text-gray-700 pb-2 px-1 transition-colors">
+                                Preview
+                            </button>
+                        </div>
+                        <span class="text-xs text-gray-400">Supports **bold** text</span>
+                    </div>
+
+                    <!-- Write Area -->
+                    <div id="policy-write-area">
+                        <textarea id="policy-content" rows="14" placeholder="Write your policy content here...
+
+Use blank lines to create paragraphs.
+Wrap text in **asterisks** to make it bold.
+
+SECTION 1: OVERVIEW
+Describe the purpose and scope of this policy.
+
+SECTION 2: GUIDELINES
+List the key points and requirements.
+
+SECTION 3: COMPLIANCE
+Explain the compliance requirements and consequences."
+                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all font-mono text-sm leading-relaxed resize-none"></textarea>
+                    </div>
+
+                    <!-- Preview Area -->
+                    <div id="policy-preview-area"
+                        class="hidden w-full h-[350px] px-6 py-6 border border-gray-200 rounded-xl bg-gray-50 overflow-y-auto text-sm">
+                        <p class="text-gray-400 text-center italic mt-10">Start writing to see a preview...</p>
+                    </div>
+                    <div class="mt-2 flex items-center space-x-4 text-xs text-gray-400">
+                        <span class="flex items-center">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Text formatting will be preserved
+                        </span>
+                        <span id="policy-char-count">0 characters</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Footer Actions -->
+            <div class="flex justify-between items-center p-6 border-t border-gray-100 bg-gray-50">
                 <button onclick="document.getElementById('create-policy-modal').classList.add('hidden')"
-                    class="px-5 py-2 text-gray-500 hover:text-gray-800 font-medium transition-colors">
+                    class="px-5 py-2.5 text-gray-500 hover:text-gray-800 font-medium transition-colors">
                     Discard Draft
                 </button>
                 <button onclick="submitNewPolicy()"
-                    class="px-6 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary-hover transition-all shadow-md">
-                    Publish to All Company
+                    class="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-bold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl flex items-center space-x-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                    <span id="create-policy-btn-text">Publish to All Company</span>
                 </button>
             </div>
         </div>
     </div>
 
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <!-- Policy Acknowledgments Modal -->
+    <div id="policy-ack-modal"
+        class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div
+            class="bg-white rounded-xl p-6 max-w-3xl w-full mx-4 shadow-2xl max-h-[85vh] overflow-hidden flex flex-col">
+            <div class="flex justify-between items-center mb-4 pb-4 border-b border-gray-200">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900" id="ack-modal-title">Policy Acknowledgments</h2>
+                    <p class="text-sm text-gray-500 mt-1">Completion: <span id="ack-stats"
+                            class="font-semibold text-primary">--</span></p>
+                </div>
+                <button onclick="closePolicyAckModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto">
+                <div class="grid grid-cols-2 gap-6">
+                    <!-- Acknowledged Users -->
+                    <div>
+                        <h3 class="text-sm font-bold text-green-600 uppercase tracking-wider mb-3 flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            Acknowledged
+                        </h3>
+                        <div id="ack-users-list" class="space-y-2">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Pending Users -->
+                    <div>
+                        <h3 class="text-sm font-bold text-red-600 uppercase tracking-wider mb-3 flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            Pending
+                        </h3>
+                        <div id="pending-users-list" class="space-y-2">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end mt-6 pt-4 border-t border-gray-200">
+                <button onclick="closePolicyAckModal()"
+                    class="px-6 py-2 bg-gray-100 text-gray-800 rounded-lg font-medium hover:bg-gray-200 transition-all">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assign Task Modal -->
+    <div id="assign-task-modal"
+        class="modal hidden fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4 animate-fade-in">
+            <h3 class="text-lg font-semibold mb-4">Assign New Task</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Task Title</label>
+                    <input type="text" id="task-title" class="w-full border border-gray-300 rounded-lg px-3 py-2"
+                        placeholder="Enter task title">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <textarea id="task-description" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2"
+                        placeholder="Task details"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Assign To</label>
+                    <select id="task-assignee" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                        <option value="">Select person...</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Project</label>
+                    <select id="task-project" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                        <option value="">Select project (Optional)</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                        <select id="task-priority" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Deadline</label>
+                        <input type="date" id="task-deadline"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-end space-x-3 mt-6">
+                <button id="cancel-assign-task" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                <button id="confirm-assign-task"
+                    class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover">Assign Task</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Project Modal -->
+    <div id="create-project-modal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50"
+        style="display: none;">
+        <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4 animate-fade-in">
+            <h3 class="text-lg font-semibold mb-4">Create New Project</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Project Name</label>
+                    <input type="text" id="project-name" class="w-full border border-gray-300 rounded-lg px-3 py-2"
+                        placeholder="Enter project name">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <textarea id="project-description" rows="3"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2"
+                        placeholder="Brief description of this project"></textarea>
+                </div>
+            </div>
+            <div class="flex justify-end space-x-3 mt-6">
+                <button id="cancel-create-project" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                <button id="confirm-create-project"
+                    class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover">Create Project</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Project Modal -->
+    <div id="view-project-modal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50"
+        style="display: none;">
+        <div class="bg-white rounded-xl p-6 max-w-2xl w-full mx-4 animate-fade-in max-h-[80vh] overflow-y-auto">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h3 id="project-modal-title" class="text-lg font-semibold"></h3>
+                    <p id="project-modal-desc" class="text-gray-500 text-sm mt-1"></p>
+                </div>
+                <button id="close-project-modal" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <input type="hidden" id="project-modal-id">
+
+            <!-- Members Section -->
+            <div class="border-t border-gray-100 pt-4 mt-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h4 class="font-medium text-gray-900">Team Members</h4>
+                    <div class="space-x-2">
+                        <button id="btn-project-notify"
+                            class="text-sm text-blue-600 hover:text-blue-800 font-medium hidden">
+                            Send Notification (<span id="selected-count">0</span>)
+                        </button>
+                        <button id="btn-add-members" class="text-sm text-primary hover:text-primary-hover font-medium">
+                            + Add Members
+                        </button>
+                    </div>
+                </div>
+                <div class="bg-gray-50 p-2 mb-2 rounded flex items-center">
+                    <input type="checkbox" id="select-all-members" class="rounded text-primary focus:ring-primary mr-2">
+                    <label for="select-all-members" class="text-xs text-gray-500 cursor-pointer">Select All</label>
+                </div>
+                <div id="project-members-list" class="space-y-2">
+                    <!-- Members will be loaded here -->
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-100">
+                <button id="delete-project-btn" class="px-4 py-2 text-red-600 hover:text-red-800">Delete
+                    Project</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Targeted Notification Modal -->
+    <div id="targeted-notification-modal"
+        class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50" style="display: none;">
+        <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4 animate-fade-in shadow-2xl">
+            <h3 class="text-lg font-bold mb-4 text-gray-900">Send Notification to Team</h3>
+            <p class="text-sm text-gray-500 mb-4">Sending to <span id="target-count"
+                    class="font-bold text-gray-900">0</span> members.</p>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                    <input type="text" id="target-notif-title"
+                        class="w-full border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        placeholder="Notification Subject">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                    <textarea id="target-notif-content" rows="3"
+                        class="w-full border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        placeholder="Type your message..."></textarea>
+                </div>
+            </div>
+            <div class="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-50">
+                <button id="cancel-target-notif"
+                    class="px-4 py-2 text-gray-500 hover:text-gray-800 font-medium">Cancel</button>
+                <button id="confirm-target-notif"
+                    class="px-6 py-2 bg-primary text-white rounded-lg font-bold hover:bg-primary-hover shadow-md transition-all">Send
+                    Notification</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Members Modal -->
+    <div id="add-members-modal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50"
+        style="display: none;">
+        <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4 animate-fade-in max-h-[80vh] overflow-y-auto">
+            <h3 class="text-lg font-semibold mb-4 text-gray-900">Add Members to Project</h3>
+            <div id="available-users-list" class="space-y-2 max-h-64 overflow-y-auto mb-4">
+                <!-- Available users will be loaded here -->
+            </div>
+            <div class="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-100">
+                <button id="cancel-add-members"
+                    class="px-4 py-2 text-gray-500 hover:text-gray-800 font-medium">Cancel</button>
+                <button id="confirm-add-members"
+                    class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover font-bold shadow-sm transition-all">Add
+                    Selected</button>
+            </div>
+        </div>
+    </div>
+
     <script src="../static/js/api.js"></script>
-    <script src="../static/js/senior.js"></script>
+    <script src="../static/js/notification-popup.js"></script>
+    <!-- Task Comments Modal -->
+    <div id="task-comments-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50">
+        <div class="bg-white border border-gray-200 rounded-xl p-6 max-w-lg w-full mx-4 shadow-xl max-h-[85vh] flex flex-col">
+            <h3 id="task-comments-title" class="text-lg font-semibold mb-3 text-gray-900">Comments</h3>
+            <input type="hidden" id="task-comments-task-id">
+            <div id="task-comments-list" class="flex-1 overflow-y-auto space-y-3 mb-4 min-h-[120px] text-sm text-gray-600"></div>
+            <div class="border-t border-gray-200 pt-3">
+                <textarea id="task-comments-input" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none" rows="2" placeholder="Write a comment..."></textarea>
+                <div class="flex justify-end gap-2 mt-2">
+                    <button id="task-comments-close" class="px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded-lg text-sm">Close</button>
+                    <button id="task-comments-post" class="px-3 py-1.5 bg-primary text-white rounded-lg text-sm hover:bg-primary-hover">Post</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../static/js/directory-search.js"></script>
+    <script src="../static/js/todo-list.js"></script>
+    <script src="../static/js/projects.js"></script>
+    <script src="../static/js/senior.js?v=2"></script>
 </body>
 
 </html>

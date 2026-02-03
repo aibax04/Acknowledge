@@ -8,7 +8,7 @@ Role-based internal operations and workflow management platform.
 1. Navigate to `backend` directory.
 2. Create virtual environment (optional): `python -m venv venv`
 3. Install dependencies: `pip install -r requirements.txt`
-4. Ensure PostgreSQL is running and update `.env` with correct credentials.
+4. Ensure PostgreSQL is running and update `backend/.env` with correct credentials.
 5. Run server: `uvicorn app.main:app --reload`
 
 ### Frontend

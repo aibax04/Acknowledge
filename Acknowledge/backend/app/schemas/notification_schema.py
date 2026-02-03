@@ -8,11 +8,13 @@ class NotificationBase(BaseModel):
     content: str
 
 class NotificationCreate(NotificationBase):
-    pass
+    recipient_ids: Optional[List[int]] = None
+    notification_type: Optional[str] = "BROADCAST"
 
 class NotificationResponse(NotificationBase):
     id: int
-    created_by_id: int
+    notification_type: str
+    created_by_id: Optional[int] = None
     created_at: datetime
     created_by: Optional[UserResponse] = None
     is_acknowledged: Optional[bool] = None  # To be populated dynamically

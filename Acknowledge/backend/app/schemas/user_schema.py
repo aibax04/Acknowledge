@@ -10,10 +10,14 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+    senior_signup_key: Optional[str] = None  # required when role is senior
 
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
+class UserUpdate(BaseModel):
+    full_name: Optional[str] = None
 
 class UserResponse(UserBase):
     id: int

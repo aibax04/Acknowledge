@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Table
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Table, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -17,10 +17,15 @@ class Policy(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, nullable=False)
-    content = Column(String, nullable=False) # Link to doc or text content
+    content = Column(Text, nullable=False)  # Full policy content with formatting
+    image_url = Column(String, nullable=True)  # Optional cover image URL
+    target_audience = Column(String, default="all") # all, employee, manager, intern
     is_active = Column(Boolean, default=True)
+    created_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    # Relationship to see who acknowledged it
+    # Relationships
+    created_by = relationship("User", backref="policies_created", foreign_keys=[created_by_id])
     acknowledged_by = relationship("User", secondary=policy_acknowledgments, backref="acknowledged_policies")
+

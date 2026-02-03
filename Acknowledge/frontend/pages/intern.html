@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acknowledge - Employee Dashboard</title>
+    <script>
+        const originalWarn = console.warn;
+        console.warn = (...args) => {
+            if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) return;
+            originalWarn.apply(console, args);
+        };
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10b981',
+                        'primary-hover': '#059669',
+                        'primary-light': 'rgba(16, 185, 129, 0.1)',
+                        'primary-glow': 'rgba(16, 185, 129, 0.3)',
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f9fafb;
+            color: #1f2937;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .modal {
+            display: none;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .skeleton {
+            background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+
+        @keyframes loading {
+            0% {
+                background-position: 200% 0;
+            }
+
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            min-width: 300px;
+            transform: translateX(400px);
+            transition: transform 0.3s ease-out;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+        }
+
+        .input-dark {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            color: #111827;
+            transition: all 0.3s ease;
+        }
+
+        .input-dark:focus {
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+            outline: none;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-900 flex h-screen overflow-hidden">
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col justify-between">
+        <div>
+            <!-- Logo -->
+            <div class="h-16 flex items-center gap-3 px-8 border-b border-primary/80 bg-primary">
+                <div class="w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center flex-shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+                <span class="font-semibold text-lg tracking-tight text-white">Acknowledge</span>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="mt-8 px-4 space-y-1">
+                <a href="#" data-tab="tasks"
+                    class="nav-link active flex items-center px-4 py-3 bg-primary/15 text-primary rounded-lg font-medium transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    My Tasks
+                </a>
+                <a href="#" data-tab="concerns"
+                    class="nav-link flex items-center px-4 py-3 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-lg font-medium transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    Nudges
+                    <span id="concerns-badge"
+                        class="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-0.5 hidden"></span>
+                </a>
+                <a href="#" data-tab="policies"
+                    class="nav-link flex items-center px-4 py-3 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-lg font-medium transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Policies
+                    <span id="policies-badge"
+                        class="ml-auto bg-blue-500 text-white text-xs rounded-full px-2 py-0.5 hidden"></span>
+                </a>
+                <a href="#" data-tab="schedule"
+                    class="nav-link flex items-center px-4 py-3 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-lg font-medium transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    Weekly Schedule
+                </a>
+                <a href="#" data-tab="projects"
+                    class="nav-link flex items-center px-4 py-3 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-lg font-medium transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    My Projects
+                </a>
+            </nav>
+        </div>
+
+        <!-- User Profile -->
+        <div class="p-4 border-t border-gray-200">
+            <div class="flex items-center">
+                <div id="user-avatar"
+                    class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+                    --
+                </div>
+                <div class="ml-3 flex-1 min-w-0">
+                    <div class="flex items-center gap-1">
+                        <p id="user-name" class="text-sm font-medium text-gray-900 truncate">Loading...</p>
+                        <button type="button" id="edit-name-btn" class="p-0.5 text-gray-400 hover:text-primary rounded flex-shrink-0" title="Edit name" aria-label="Edit name">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                        </button>
+                    </div>
+                    <p id="user-role" class="text-xs text-gray-500">Intern</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Edit Name Modal -->
+    <div id="edit-name-modal" class="hidden fixed inset-0 z-[100] overflow-y-auto" aria-modal="true">
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div class="fixed inset-0 bg-black/40" id="edit-name-backdrop"></div>
+            <div class="relative bg-white rounded-xl shadow-lg max-w-sm w-full p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-3">Edit display name</h3>
+                <input type="text" id="edit-name-input" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary" placeholder="Your name" maxlength="200">
+                <div class="flex justify-end gap-2 mt-4">
+                    <button type="button" id="edit-name-cancel" class="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
+                    <button type="button" id="edit-name-save" class="px-3 py-1.5 text-sm bg-primary text-white rounded-lg hover:bg-primary-hover">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-gray-50">
+        <!-- Header -->
+        <header class="flex items-center justify-between gap-4 px-8 py-6 border-b border-gray-200 bg-white min-h-[72px]">
+            <h1 class="text-2xl font-semibold text-gray-900 flex-shrink-0">My Workspace</h1>
+            <div class="relative flex-1 max-w-md min-w-0 mx-4">
+                <input type="text" id="org-directory-search" placeholder="Search organization directory..."
+                    class="w-full text-sm border border-gray-200 rounded-lg pl-9 pr-3 py-2 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-gray-50 placeholder-gray-500">
+                <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                <div id="org-directory-dropdown" class="hidden absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto"></div>
+            </div>
+            <div class="flex items-center gap-4 flex-shrink-0">
+                <div class="relative flex items-center">
+                    <button id="notifTrayBtn"
+                        class="p-2 text-gray-400 hover:text-primary transition-colors focus:outline-none rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                        <span id="notifBadge"
+                            class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-white">0</span>
+                    </button>
+                    <div id="notifDropdown"
+                        class="hidden absolute right-0 mt-2 top-full w-80 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 overflow-hidden">
+                        <div class="px-4 py-3 border-b border-gray-200 bg-gray-50">
+                            <h3 class="text-sm font-bold text-gray-900">General Notifications</h3>
+                        </div>
+                        <div id="notifItems" class="max-h-96 overflow-y-auto divide-y divide-gray-100">
+                            <!-- Notifications will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+                <button id="logoutBtn" class="text-sm font-medium text-gray-500 hover:text-red-600 transition-colors py-2 px-0">
+                    Logout
+                </button>
+            </div>
+        </header>
+
+        <!-- Dashboard Content -->
+        <div class="flex-1 overflow-auto p-8">
+
+            <!-- Stats Row -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 items-stretch">
+                <div
+                    class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:border-primary/30 transition-colors flex flex-col justify-between">
+                    <p class="text-sm font-medium text-gray-500">Pending Tasks</p>
+                    <p class="text-3xl font-bold text-gray-900 mt-2" id="stat-open-tasks">--</p>
+                </div>
+                <div
+                    class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:border-primary/30 transition-colors flex flex-col justify-between">
+                    <p class="text-sm font-medium text-gray-500">Completed This Week</p>
+                    <p class="text-3xl font-bold text-gray-900 mt-2" id="stat-completed-tasks">--</p>
+                </div>
+            </div>
+
+            <!-- MY TASKS TAB -->
+            <div id="tasks-tab" class="tab-content active">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-lg font-medium text-gray-900">My Tasks</h2>
+                </div>
+                <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Task Name</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Deadline</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Status</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Priority</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tasks-tbody" class="bg-white divide-y divide-gray-200">
+                            <!-- Tasks will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- NUDGES TAB -->
+            <div id="concerns-tab" class="tab-content">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-lg font-medium text-gray-900">My Nudges</h2>
+                    <div class="flex items-center gap-2">
+                        <select id="nudge-filter"
+                            class="text-sm border-gray-300 rounded-lg px-2 py-1 focus:border-primary focus:ring-primary bg-white border">
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                        </select>
+                        <button id="btn-raise-concern"
+                            class="btn-primary text-white px-4 py-2 rounded-lg text-sm font-medium">
+                            Create Nudge
+                        </button>
+                    </div>
+                </div>
+                <div id="concerns-list" class="space-y-4">
+                    <!-- Nudges will be loaded here -->
+                </div>
+            </div>
+
+            <!-- POLICIES TAB -->
+            <div id="policies-tab" class="tab-content">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-lg font-medium text-gray-900">Company Policies</h2>
+                </div>
+                <div id="policies-list" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Policies will be loaded here -->
+                </div>
+            </div>
+
+            <!-- CALENDAR TAB -->
+            <div id="schedule-tab" class="tab-content">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-semibold text-gray-900">My Calendar</h2>
+                        <div class="flex items-center space-x-2">
+                            <button id="calendar-prev" class="p-1 hover:bg-gray-100 rounded">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15 19l-7-7 7-7" />
+                                </svg>
+                            </button>
+                            <span id="calendar-month-year" class="font-medium text-gray-900">Month Year</span>
+                            <button id="calendar-next" class="p-1 hover:bg-gray-100 rounded">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Simple Calendar Grid -->
+                    <div class="grid grid-cols-7 gap-1 text-center text-sm mb-2 text-gray-400">
+                        <div>Sun</div>
+                        <div>Mon</div>
+                        <div>Tue</div>
+                        <div>Wed</div>
+                        <div>Thu</div>
+                        <div>Fri</div>
+                        <div>Sat</div>
+                    </div>
+                    <div id="calendar-grid"
+                        class="grid grid-cols-7 gap-1 text-sm bg-gray-50 border border-gray-100 rounded-lg overflow-hidden min-h-[400px]">
+                        <!-- Calendar days generated by JS -->
+                    </div>
+                    <div class="mt-4 flex items-center gap-4 text-xs">
+                        <div class="flex items-center"><span
+                                class="w-3 h-3 bg-red-100 border border-red-300 rounded-full mr-1"></span> High
+                            Priority</div>
+                        <div class="flex items-center"><span
+                                class="w-3 h-3 bg-yellow-100 border border-yellow-300 rounded-full mr-1"></span>
+                            Medium Priority</div>
+                        <div class="flex items-center"><span
+                                class="w-3 h-3 bg-blue-100 border border-blue-300 rounded-full mr-1"></span> Low
+                            Priority</div>
+                    </div>
+                </div>
+                <!-- My Todo List -->
+                <div id="personal-todo-list-container" class="bg-white border border-gray-200 rounded-xl shadow-sm p-6" data-storage-key="personal_todo_intern">
+                    <h2 class="text-xl font-semibold text-gray-900 mb-4">My Todo List</h2>
+                    <div class="flex gap-2 mb-2">
+                        <input type="text" id="personal-todo-input" placeholder="Add a task..."
+                            class="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                        <button type="button" id="personal-todo-add" class="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-hover transition-colors">Add</button>
+                    </div>
+                    <div class="flex gap-2 mb-4">
+                        <input type="date" id="personal-todo-date" class="text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary flex-1">
+                        <select id="personal-todo-priority" class="text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary w-28">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                    <ul id="personal-todo-list" class="space-y-2 max-h-[320px] overflow-y-auto">
+                        <!-- Todo items rendered by JS -->
+                    </ul>
+                </div>
+                </div>
+            </div>
+
+            <!-- MY PROJECTS TAB -->
+            <div id="projects-tab" class="tab-content">
+                <div class="mb-6">
+                    <h2 class="text-lg font-medium text-gray-900">My Projects</h2>
+                    <p class="text-sm text-gray-500 mt-1">Projects you have been added to by your manager or senior</p>
+                </div>
+                <div id="my-projects-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Projects loaded by JS -->
+                </div>
+            </div>
+        </div>
+        </div>
+    </main>
+
+    <!-- Update Task Modal -->
+    <div id="update-task-modal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50">
+        <div class="bg-white border border-gray-200 rounded-xl p-6 max-w-md w-full mx-4 animate-fade-in shadow-xl">
+            <h3 class="text-lg font-semibold mb-4 text-gray-900">Update Task Status</h3>
+            <input type="hidden" id="modal-task-id">
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <select id="modal-task-status" class="input-dark w-full rounded-lg px-3 py-2">
+                    <option value="pending">Pending</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="review">Ready for Review</option>
+                    <option value="completed">Completed</option>
+                </select>
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button id="cancel-update-task" class="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
+                <button id="confirm-update-task" class="btn-primary px-4 py-2 text-white rounded-lg">Update</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Comments Modal -->
+    <div id="task-comments-modal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50">
+        <div class="bg-white border border-gray-200 rounded-xl p-6 max-w-lg w-full mx-4 animate-fade-in shadow-xl max-h-[85vh] flex flex-col">
+            <h3 id="task-comments-title" class="text-lg font-semibold mb-3 text-gray-900">Comments</h3>
+            <input type="hidden" id="task-comments-task-id">
+            <div id="task-comments-list" class="flex-1 overflow-y-auto space-y-3 mb-4 min-h-[120px] text-sm text-gray-600"></div>
+            <div class="border-t border-gray-200 pt-3">
+                <textarea id="task-comments-input" class="input-dark w-full rounded-lg px-3 py-2 text-sm resize-none" rows="2" placeholder="Write a comment..."></textarea>
+                <div class="flex justify-end gap-2 mt-2">
+                    <button id="task-comments-close" class="px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded-lg text-sm">Close</button>
+                    <button id="task-comments-post" class="btn-primary px-3 py-1.5 text-white rounded-lg text-sm">Post</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Nudge Modal -->
+    <div id="raise-concern-modal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50">
+        <div
+            class="bg-white border border-gray-200 rounded-xl p-6 max-w-md w-full mx-4 animate-fade-in max-h-[90vh] overflow-y-auto shadow-xl">
+            <h3 class="text-lg font-semibold mb-4 text-gray-900">Create a Nudge</h3>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+                <input type="text" id="concern-subject" class="input-dark w-full rounded-lg px-3 py-2"
+                    placeholder="Brief description">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <textarea id="concern-description" rows="4" class="input-dark w-full rounded-lg px-3 py-2"
+                    placeholder="Detailed explanation"></textarea>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Notify (Select people to notify)</label>
+                <div id="notify-users-list"
+                    class="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 max-h-48 overflow-y-auto space-y-2">
+                    <!-- User checkboxes will be loaded here -->
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Select one or more people to notify about this nudge</p>
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button id="cancel-raise-concern" class="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
+                <button id="confirm-raise-concern" class="btn-primary px-4 py-2 text-white rounded-lg">Create
+                    Nudge</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Policy Modal -->
+    <div id="view-policy-modal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50">
+        <div
+            class="bg-white border border-gray-200 rounded-xl p-6 max-w-2xl w-full mx-4 animate-fade-in max-h-[80vh] overflow-y-auto shadow-xl">
+            <h3 id="policy-modal-title" class="text-2xl font-bold text-gray-900 mb-4"></h3>
+            <div id="policy-modal-image-container" class="hidden mb-6"></div>
+            <div id="policy-modal-content" class="text-gray-600 mb-6 leading-relaxed"></div>
+            <input type="hidden" id="policy-modal-id">
+            <div class="flex justify-end space-x-3">
+                <button id="close-policy-modal" class="px-4 py-2 text-gray-400 hover:text-white">Close</button>
+                <button id="acknowledge-policy-btn"
+                    class="btn-primary px-4 py-2 text-white rounded-lg">Acknowledge</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../static/js/api.js"></script>
+    <script src="../static/js/notification-popup.js"></script>
+    <script src="../static/js/directory-search.js"></script>
+    <script src="../static/js/todo-list.js"></script>
+    <script src="../static/js/intern.js"></script>
+</body>
+
+</html>

@@ -9,6 +9,8 @@ services:
       - POSTGRES_DB=${DB_NAME:-Acknowledge_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
     restart: always
 
   backend:
@@ -19,9 +21,18 @@ services:
       - DATABASE_URL=postgresql+asyncpg://${DB_USER:-postgres}:${DB_PASSWORD:-postflow}@db:5432/${DB_NAME:-Acknowledge_db}
       - SECRET_KEY=${SECRET_KEY}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*}
+      - MICROSOFT_CLIENT_ID=${MICROSOFT_CLIENT_ID:-}
+      - MICROSOFT_CLIENT_SECRET=${MICROSOFT_CLIENT_SECRET:-}
+      - MICROSOFT_TENANT_ID=${MICROSOFT_TENANT_ID:-common}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - SENIOR_SIGNUP_KEY=${SENIOR_SIGNUP_KEY:-}
+    volumes:
+      - policy_uploads:/app/static/uploads
     depends_on:
       - db
     restart: always
+    command: gunicorn app.main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --timeout 120
 
   nginx:
     image: nginx:alpine
@@ -30,9 +41,11 @@ services:
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
       - ./frontend:/usr/share/nginx/html
+      - policy_uploads:/usr/share/nginx/html/static/uploads
     depends_on:
       - backend
     restart: always
 
 volumes:
   postgres_data:
+  policy_uploads:
