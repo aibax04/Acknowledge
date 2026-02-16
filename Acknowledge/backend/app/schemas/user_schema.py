@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, date
 from app.models.user import UserRole
 
 class UserBase(BaseModel):
@@ -18,11 +18,20 @@ class UserLogin(BaseModel):
 
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None
+    office: Optional[str] = None
+    joining_date: Optional[date] = None
+    is_on_probation: Optional[bool] = None
+
+class UserPromote(BaseModel):
+    new_role: UserRole
 
 class UserResponse(UserBase):
     id: int
     is_active: bool
     created_at: datetime
+    office: Optional[str] = None
+    joining_date: Optional[date] = None
+    is_on_probation: Optional[bool] = None
 
     class Config:
         from_attributes = True

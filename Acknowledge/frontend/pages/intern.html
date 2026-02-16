@@ -198,7 +198,26 @@
                     </svg>
                     My Projects
                 </a>
+                <a href="#" data-tab="attendance"
+                    class="nav-link flex items-center px-4 py-3 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-lg font-medium transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Attendance
+                </a>
+                <a href="#" data-tab="leaves"
+                    class="nav-link flex items-center px-4 py-3 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-lg font-medium transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    Leaves
+                </a>
             </nav>
+        </div>
+
+        <!-- Clock Widget -->
+        <div class="px-4 py-3 border-t border-gray-200 bg-gray-50">
+            <div id="clock-widget"><p class="text-xs text-gray-400 text-center">Loading...</p></div>
         </div>
 
         <!-- User Profile -->
@@ -430,6 +449,32 @@
                 </div>
             </div>
 
+            <!-- ATTENDANCE TAB -->
+            <div id="attendance-tab" class="tab-content">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-lg font-medium text-gray-900">My Attendance</h2>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="attendancePrevMonth()" class="p-1 hover:bg-gray-100 rounded"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></button>
+                        <span id="attendance-month-label" class="font-medium text-gray-900 min-w-[140px] text-center">Month Year</span>
+                        <button onclick="attendanceNextMonth()" class="p-1 hover:bg-gray-100 rounded"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></button>
+                    </div>
+                </div>
+                <div id="attendance-monthly-view" class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm"></div>
+            </div>
+
+            <!-- LEAVES TAB -->
+            <div id="leaves-tab" class="tab-content">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-lg font-medium text-gray-900">Leave Management</h2>
+                    <button onclick="openApplyLeaveModal()" class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors shadow-sm">Apply for Unpaid Leave</button>
+                </div>
+                <div id="leave-balance-container" class="mb-6"></div>
+                <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-200"><h3 class="text-sm font-semibold text-gray-700">My Leave Requests</h3></div>
+                    <div id="my-leaves-list"></div>
+                </div>
+            </div>
+
             <!-- MY PROJECTS TAB -->
             <div id="projects-tab" class="tab-content">
                 <div class="mb-6">
@@ -443,6 +488,66 @@
         </div>
         </div>
     </main>
+
+    <!-- Office Setup Modal -->
+    <div id="office-setup-modal" class="hidden fixed inset-0 z-[100] overflow-y-auto" aria-modal="true">
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div class="fixed inset-0 bg-black/40" onclick="document.getElementById('office-setup-modal').classList.add('hidden')"></div>
+            <div class="relative bg-white rounded-xl shadow-lg max-w-sm w-full p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-3">Select Your Office</h3>
+                <p class="text-sm text-gray-500 mb-4">This determines your weekly off schedule.</p>
+                <div class="space-y-3">
+                    <button onclick="saveOffice('panscience')" class="w-full text-left p-4 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5"><p class="font-medium text-gray-900">Panscience</p><p class="text-xs text-gray-500">Saturday & Sunday off</p></button>
+                    <button onclick="saveOffice('eigen')" class="w-full text-left p-4 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5"><p class="font-medium text-gray-900">Eigen</p><p class="text-xs text-gray-500">Sunday off</p></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Update Request Modal -->
+    <div id="attendance-update-modal" class="hidden fixed inset-0 z-[100] overflow-y-auto" aria-modal="true">
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div class="fixed inset-0 bg-black/40" onclick="document.getElementById('attendance-update-modal').classList.add('hidden')"></div>
+            <div class="relative bg-white rounded-xl shadow-lg max-w-md w-full p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Request Attendance Update</h3>
+                <input type="hidden" id="update-att-date">
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Clock In</label><input type="time" id="update-att-clock-in" value="09:00" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Clock Out</label><input type="time" id="update-att-clock-out" value="18:00" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+                    </div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">Send to Manager</label><select id="update-att-manager" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"><option value="">Select...</option></select></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">Reason</label><textarea id="update-att-reason" rows="3" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Why was attendance missed?"></textarea></div>
+                </div>
+                <div class="flex justify-end gap-2 mt-4">
+                    <button onclick="document.getElementById('attendance-update-modal').classList.add('hidden')" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
+                    <button onclick="submitAttendanceUpdate()" class="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary-hover">Submit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Apply Leave Modal -->
+    <div id="apply-leave-modal" class="hidden fixed inset-0 z-[100] overflow-y-auto" aria-modal="true">
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div class="fixed inset-0 bg-black/40" onclick="document.getElementById('apply-leave-modal').classList.add('hidden')"></div>
+            <div class="relative bg-white rounded-xl shadow-lg max-w-md w-full p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Apply for Leave</h3>
+                <div class="space-y-4">
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">Leave Type</label><select id="leave-type-select" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"><option value="">Select...</option></select></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">From</label><input type="date" id="leave-start-date" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">To</label><input type="date" id="leave-end-date" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+                    </div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">Reason</label><textarea id="leave-reason" rows="3" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Reason for leave"></textarea></div>
+                </div>
+                <div class="flex justify-end gap-2 mt-4">
+                    <button onclick="document.getElementById('apply-leave-modal').classList.add('hidden')" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
+                    <button onclick="submitLeaveApplication()" class="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary-hover">Apply</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Update Task Modal -->
     <div id="update-task-modal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50">
@@ -532,6 +637,8 @@
     <script src="../static/js/notification-popup.js"></script>
     <script src="../static/js/directory-search.js"></script>
     <script src="../static/js/todo-list.js"></script>
+    <script src="../static/js/attendance-clock.js"></script>
+    <script src="../static/js/leaves-tab.js"></script>
     <script src="../static/js/intern.js"></script>
 </body>
 

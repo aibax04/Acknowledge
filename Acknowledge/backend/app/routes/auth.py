@@ -316,11 +316,28 @@ async def read_users_me(current_user: User = Depends(get_current_user)):
 
 async def _do_update_profile(update: UserUpdate, current_user: User, db: AsyncSession):
     """Shared logic for PATCH/POST profile update."""
+    changed = False
     if update.full_name is not None:
         name = (update.full_name or "").strip()
         if not name:
             raise HTTPException(status_code=400, detail="Name cannot be empty")
         current_user.full_name = name
+        changed = True
+    if update.office is not None:
+        office = (update.office or "").strip().lower()
+        if office == "igen":
+            office = "eigen"
+        if office not in ("panscience", "eigen"):
+            raise HTTPException(status_code=400, detail="Office must be 'panscience' or 'eigen'")
+        current_user.office = office
+        changed = True
+    if update.joining_date is not None:
+        current_user.joining_date = update.joining_date
+        changed = True
+    if update.is_on_probation is not None:
+        current_user.is_on_probation = update.is_on_probation
+        changed = True
+    if changed:
         db.add(current_user)
         await db.commit()
         await db.refresh(current_user)
@@ -366,6 +383,7 @@ async def get_all_users(db: AsyncSession = Depends(get_db), current_user: User =
 @router.delete("/users/{user_id}")
 async def delete_user(user_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     from sqlalchemy.future import select
+    from sqlalchemy import update, delete
     
     # Only seniors can delete users
     if current_user.role != UserRole.SENIOR:
@@ -381,6 +399,79 @@ async def delete_user(user_id: int, db: AsyncSession = Depends(get_db), current_
     if user.id == current_user.id:
         raise HTTPException(status_code=400, detail="Cannot delete yourself")
     
+    # Handle related records before deleting user
+    # This works for all users regardless of authentication method (Microsoft, Google, or regular)
+    
+    # Delete task comments by this user
+    from app.models.task import TaskComment
+    await db.execute(delete(TaskComment).where(TaskComment.user_id == user_id))
+    
+    # Set task foreign keys to NULL (tasks assigned to or created by this user)
+    from app.models.task import Task
+    await db.execute(
+        update(Task)
+        .where(Task.assigned_to_id == user_id)
+        .values(assigned_to_id=None)
+    )
+    await db.execute(
+        update(Task)
+        .where(Task.created_by_id == user_id)
+        .values(created_by_id=None)
+    )
+    
+    # Delete notification acknowledgments by this user
+    from app.models.notification import notification_acknowledgments, notification_recipients
+    await db.execute(
+        delete(notification_acknowledgments)
+        .where(notification_acknowledgments.c.user_id == user_id)
+    )
+    
+    # Delete notification recipients (targeted notifications)
+    await db.execute(
+        delete(notification_recipients)
+        .where(notification_recipients.c.user_id == user_id)
+    )
+    
+    # Set notification created_by to NULL if this user created it
+    from app.models.notification import Notification
+    await db.execute(
+        update(Notification)
+        .where(Notification.created_by_id == user_id)
+        .values(created_by_id=None)
+    )
+    
+    # Delete policy acknowledgments by this user
+    from app.models.policy import policy_acknowledgments
+    await db.execute(
+        delete(policy_acknowledgments)
+        .where(policy_acknowledgments.c.user_id == user_id)
+    )
+    
+    # Delete concern acknowledgments and set foreign keys to NULL
+    from app.models.concern import Concern, concern_acknowledgments, concern_notified_users
+    await db.execute(
+        delete(concern_acknowledgments)
+        .where(concern_acknowledgments.c.user_id == user_id)
+    )
+    
+    # Delete concern notified users
+    await db.execute(
+        delete(concern_notified_users)
+        .where(concern_notified_users.c.user_id == user_id)
+    )
+    
+    await db.execute(
+        update(Concern)
+        .where(Concern.raised_by_id == user_id)
+        .values(raised_by_id=None)
+    )
+    await db.execute(
+        update(Concern)
+        .where(Concern.resolved_by_id == user_id)
+        .values(resolved_by_id=None)
+    )
+    
+    # Delete the user (works for Microsoft, Google, and regular signup users)
     await db.delete(user)
     await db.commit()
     return {"message": "User credentials deleted successfully"}

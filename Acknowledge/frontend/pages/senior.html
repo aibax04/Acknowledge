@@ -35,6 +35,20 @@
             background: #f9fafb;
             color: #1f2937;
         }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            min-width: 300px;
+            transform: translateX(400px);
+            transition: transform 0.3s ease-out;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
     </style>
 </head>
 
@@ -100,6 +114,24 @@
                             d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                     Strategic Reports
+                </button>
+                <button onclick="switchTab('track')" id="nav-track"
+                    class="w-full flex items-center px-4 py-3 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-lg font-medium transition-colors text-left">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    Track
+                </button>
+                <button onclick="switchTab('leaves')" id="nav-leaves"
+                    class="w-full flex items-center px-4 py-3 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-lg font-medium transition-colors text-left">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    Leave Approvals
                 </button>
                 <button onclick="switchTab('calendar')" id="nav-calendar"
                     class="w-full flex items-center px-4 py-3 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-lg font-medium transition-colors text-left">
@@ -403,6 +435,97 @@
             </div>
 
             <!-- TAB 6: STRATEGIC REPORTS -->
+            <!-- TRACK TAB -->
+            <div id="view-track" class="hidden space-y-8 animate-fade-in">
+                <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                    <h2 class="text-xl font-bold text-gray-900 mb-6">Activity Tracking & Analytics</h2>
+                    
+                    <!-- Task Assignments Section -->
+                    <div class="mb-8">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Task Assignments</h3>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                            <div class="bg-gray-50 rounded-lg p-4">
+                                <h4 class="text-sm font-medium text-gray-700 mb-3">Who Assigned Tasks</h4>
+                                <div id="task-assignments-list" class="space-y-2">
+                                    <div class="text-center text-gray-500 py-4">Loading...</div>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 rounded-lg p-4">
+                                <h4 class="text-sm font-medium text-gray-700 mb-3">Assignment Breakdown</h4>
+                                <div id="task-breakdown-list" class="space-y-2 max-h-64 overflow-y-auto">
+                                    <div class="text-center text-gray-500 py-4">Loading...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notifications Section -->
+                    <div class="mb-8">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Notifications Issued</h3>
+                        <div id="notifications-issued-list" class="bg-gray-50 rounded-lg p-4">
+                            <div class="text-center text-gray-500 py-4">Loading...</div>
+                        </div>
+                    </div>
+
+                    <!-- Acknowledgments Section -->
+                    <div class="mb-8">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Acknowledgments</h3>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div class="bg-gray-50 rounded-lg p-4">
+                                <h4 class="text-sm font-medium text-gray-700 mb-3">Policy Acknowledgments</h4>
+                                <div id="policy-acknowledgments-list" class="space-y-2 max-h-64 overflow-y-auto">
+                                    <div class="text-center text-gray-500 py-4">Loading...</div>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 rounded-lg p-4">
+                                <h4 class="text-sm font-medium text-gray-700 mb-3">Notification Acknowledgments</h4>
+                                <div id="notification-acknowledgments-list" class="space-y-2 max-h-64 overflow-y-auto">
+                                    <div class="text-center text-gray-500 py-4">Loading...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Activity & Performance Section -->
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Activity & Performance Metrics</h3>
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <div id="activity-metrics-list" class="space-y-3">
+                                <div class="text-center text-gray-500 py-4">Loading...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: LEAVE APPROVALS + CUSTOM POLICIES (Director only) -->
+            <div id="view-leaves" class="hidden space-y-8 animate-fade-in">
+                <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h2 class="text-lg font-semibold text-gray-900">Leave Approvals</h2>
+                        <p class="text-sm text-gray-500 mt-1">Review and approve or deny pending leave requests.</p>
+                    </div>
+                    <div class="p-6">
+                        <div id="pending-leaves-list">
+                            <p class="text-center text-gray-500 py-8">Loading...</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Custom Leave Policies (directors create; employees/interns/managers apply; director approves) -->
+                <div id="custom-leave-policies-section" class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                        <div>
+                            <h3 class="text-sm font-semibold text-gray-700">Custom Leave Policies</h3>
+                            <p class="text-xs text-gray-500 mt-0.5">Create leave types with prior days and who can use them. Applications are approved by you.</p>
+                        </div>
+                        <button type="button" onclick="openCreateCustomPolicyModal()" class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors shadow-sm">+ Create Policy</button>
+                    </div>
+                    <div id="custom-leave-policies-list" class="p-6">
+                        <p class="text-gray-500 text-sm text-center py-4">Loading...</p>
+                    </div>
+                </div>
+            </div>
+
             <div id="view-reports" class="hidden space-y-8 animate-fade-in">
                 <div class="flex items-center justify-between">
                     <h2 class="text-lg font-medium text-gray-900">Strategic Performance Analysis</h2>
@@ -1039,8 +1162,74 @@ Explain the compliance requirements and consequences."
         </div>
     </div>
 
+    <!-- Create Custom Leave Policy Modal (directors only) -->
+    <div id="create-custom-policy-modal" class="hidden fixed inset-0 z-[100] overflow-y-auto" aria-modal="true">
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div class="fixed inset-0 bg-black/40" onclick="document.getElementById('create-custom-policy-modal').classList.add('hidden')"></div>
+            <div class="relative bg-white rounded-xl shadow-lg max-w-md w-full p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Create Custom Leave Policy</h3>
+                <p class="text-xs text-gray-500 mb-4">Leave applications under this policy will be approved by you.</p>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Heading / Title</label>
+                        <input type="text" id="custom-policy-title" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="e.g. Bereavement Leave">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Prior days (advance notice required)</label>
+                        <input type="number" id="custom-policy-prior-days" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="0 = anytime">
+                        <p class="text-xs text-gray-500 mt-1">Number of calendar days in advance the employee must apply (0 = can apply anytime).</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Available for</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center gap-2"><input type="checkbox" id="custom-policy-role-employee" class="rounded border-gray-300 text-primary focus:ring-primary"> <span class="text-sm">Employees</span></label>
+                            <label class="flex items-center gap-2"><input type="checkbox" id="custom-policy-role-intern" class="rounded border-gray-300 text-primary focus:ring-primary"> <span class="text-sm">Interns</span></label>
+                            <label class="flex items-center gap-2"><input type="checkbox" id="custom-policy-role-manager" class="rounded border-gray-300 text-primary focus:ring-primary"> <span class="text-sm">Managers</span></label>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 mt-6">
+                    <button type="button" onclick="document.getElementById('create-custom-policy-modal').classList.add('hidden')" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
+                    <button type="button" onclick="submitCreateCustomPolicy()" class="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary-hover">Create Policy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="../static/js/api.js"></script>
     <script src="../static/js/notification-popup.js"></script>
+    <!-- Promote User Modal -->
+    <div id="promote-user-modal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50" style="display: none;">
+        <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4 animate-fade-in shadow-2xl">
+            <h3 class="text-lg font-bold mb-4 text-gray-900">Promote User</h3>
+            <div class="space-y-4">
+                <div>
+                    <p class="text-sm text-gray-600 mb-2">
+                        Promoting: <span id="promote-user-name" class="font-semibold text-gray-900"></span>
+                    </p>
+                    <p class="text-xs text-gray-500 mb-4">
+                        Current Role: <span id="promote-current-role" class="font-medium"></span>
+                    </p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">New Role</label>
+                    <select id="promote-new-role" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                        <option value="">Select new role...</option>
+                        <option value="employee">Employee</option>
+                        <option value="manager">Manager</option>
+                        <option value="intern">Intern</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-2">Note: Cannot promote to Senior role. Cannot demote Senior users.</p>
+                </div>
+            </div>
+            <input type="hidden" id="promote-user-id">
+            <div class="flex justify-end space-x-3 mt-6">
+                <button id="cancel-promote-user" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                <button id="confirm-promote-user" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover">Promote</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Task Comments Modal -->
     <div id="task-comments-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50">
         <div class="bg-white border border-gray-200 rounded-xl p-6 max-w-lg w-full mx-4 shadow-xl max-h-[85vh] flex flex-col">
@@ -1060,6 +1249,7 @@ Explain the compliance requirements and consequences."
     <script src="../static/js/directory-search.js"></script>
     <script src="../static/js/todo-list.js"></script>
     <script src="../static/js/projects.js"></script>
+    <script src="../static/js/leaves-tab.js"></script>
     <script src="../static/js/senior.js?v=2"></script>
 </body>
 

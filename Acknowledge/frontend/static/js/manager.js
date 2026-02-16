@@ -691,10 +691,16 @@ function renderAllTasks(tasks) {
             <td class="px-6 py-4 whitespace-nowrap text-sm">
                 <div class="flex items-center gap-3">
                     <div class="flex items-center gap-2">
-                        ${task.assigned_to_id === currentUser?.id && !task.acknowledged_at ? 
+                        ${((task.assigned_to_id === currentUser?.id) || (task.assigned_to && task.assigned_to.id === currentUser?.id)) && !task.acknowledged_at ? 
                             `<button type="button" onclick="acknowledgeTask(${task.id})" class="px-2.5 py-1 rounded-md text-primary hover:bg-primary/10 font-medium transition-colors">Acknowledge</button>` :
-                            task.created_by_id === currentUser?.id && task.acknowledged_at ?
+                            ((task.assigned_to_id === currentUser?.id) || (task.assigned_to && task.assigned_to.id === currentUser?.id)) && task.acknowledged_at && task.status !== 'completed' && task.status !== 'review' ?
                             `<span class="text-xs text-green-600 font-medium px-2.5 py-1">✓ Acknowledged</span>` :
+                            ((task.created_by_id === currentUser?.id) || (task.created_by && task.created_by.id === currentUser?.id)) && task.acknowledged_at ?
+                            `<span class="text-xs text-green-600 font-medium px-2.5 py-1">✓ Acknowledged</span>` :
+                            ''
+                        }
+                        ${((task.assigned_to_id === currentUser?.id) || (task.assigned_to && task.assigned_to.id === currentUser?.id)) && task.status !== 'completed' && task.status !== 'review' ?
+                            `<button type="button" onclick="markTaskComplete(${task.id})" class="px-2.5 py-1 rounded-md text-green-600 hover:bg-green-50 font-medium transition-colors">Mark Complete</button>` :
                             ''
                         }
                         <button type="button" class="task-comment-btn px-2.5 py-1 rounded-md text-gray-600 hover:text-primary hover:bg-primary/10 font-medium transition-colors inline-flex items-center gap-1" data-task-id="${task.id}" data-task-title="${(task.title || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;')}">Comment${hasUnseen ? '<span class="inline-block w-2 h-2 rounded-full bg-red-500" aria-label="Unseen comments"></span>' : ''}</button>
@@ -736,6 +742,20 @@ async function approveTask(taskId) {
     } catch (error) {
         console.error('Failed to approve task:', error);
         showToast('Failed to approve task', 'error');
+    }
+}
+
+async function markTaskComplete(taskId) {
+    if (!confirm('Mark this task as completed?')) return;
+
+    try {
+        await Api.put(`/tasks/${taskId}`, { status: 'completed' });
+        showToast('Task marked as completed!', 'success');
+        await loadOverview();
+        await loadAllTasks();
+    } catch (error) {
+        console.error('Failed to mark task as complete:', error);
+        showToast('Failed to mark task as complete', 'error');
     }
 }
 
@@ -918,10 +938,19 @@ function switchTab(tabName) {
         loadManageNudges();
     } else if (tabName === 'projects') {
         if (typeof loadProjects === 'function') loadProjects();
+    } else if (tabName === 'policies') {
+        loadPolicies();
     } else if (tabName === 'calendar') {
         loadPersonalCalendar();
     } else if (tabName === 'extra') {
         loadResolvedConcerns();
+    } else if (tabName === 'attendance') {
+        loadAttendanceTab();
+        loadPendingAttendanceRequests();
+    } else if (tabName === 'leaves') {
+        loadLeavesTab();
+    } else if (tabName === 'holidays') {
+        loadHolidays();
     }
 }
 
@@ -1061,6 +1090,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Load initial data
     await loadOverview();
     startTaskAssignmentWatcher();
+    initAttendanceClock();
 
     // Setup tab navigation
     document.querySelectorAll('.nav-link').forEach(link => {
@@ -1612,7 +1642,7 @@ function renderPersonalTodoList() {
             <p class="text-xs text-gray-500 mt-1 line-clamp-2">${t.description || ''}</p>
             <div class="flex justify-between items-center mt-2">
                 <span class="text-[10px] text-red-500">${t.deadline ? 'Due ' + new Date(t.deadline).toLocaleDateString() : 'No deadline'}</span>
-                <button onclick="approveTask(${t.id})" class="text-xs text-primary font-medium hover:underline">Complete</button>
+                <button onclick="markTaskComplete(${t.id})" class="text-xs text-primary font-medium hover:underline">Complete</button>
             </div>
         </div>
     `).join('');

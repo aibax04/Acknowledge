@@ -1,5 +1,29 @@
 let currentUser = null;
 
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    if (!container) {
+        console.warn('Toast container not found');
+        alert(message); // Fallback to alert
+        return;
+    }
+    const toast = document.createElement('div');
+    toast.className = `toast ${type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'} text-white px-6 py-4 rounded-lg shadow-lg`;
+    toast.innerHTML = `
+        <div class="flex items-center">
+            <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">×</button>
+        </div>
+    `;
+    container.appendChild(toast);
+
+    setTimeout(() => toast.classList.add('show'), 100);
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Auth & Session Validation
     const token = localStorage.getItem('access_token');
@@ -67,6 +91,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('task-comments-modal').classList.add('hidden');
     });
     document.getElementById('task-comments-post')?.addEventListener('click', postTaskComment);
+    
+    // Promote User Modal Listeners
+    document.getElementById('cancel-promote-user')?.addEventListener('click', () => {
+        document.getElementById('promote-user-modal').style.display = 'none';
+    });
+    document.getElementById('confirm-promote-user')?.addEventListener('click', promoteUser);
+    
+    // Close promote modal when clicking outside
+    const promoteModal = document.getElementById('promote-user-modal');
+    if (promoteModal) {
+        promoteModal.addEventListener('click', (e) => {
+            if (e.target === promoteModal) {
+                promoteModal.style.display = 'none';
+            }
+        });
+    }
 });
 
 function updateUserDisplay() {
@@ -127,9 +167,13 @@ function switchTab(tabId) {
     if (calendarView) calendarView.classList.add('hidden');
     const reportsView = document.getElementById('view-reports');
     if (reportsView) reportsView.classList.add('hidden');
+    const trackView = document.getElementById('view-track');
+    if (trackView) trackView.classList.add('hidden');
+    const leavesView = document.getElementById('view-leaves');
+    if (leavesView) leavesView.classList.add('hidden');
 
     // Reset nav styles
-    const navs = ['nav-stats', 'nav-compliance', 'nav-workforce', 'nav-projects', 'nav-calendar', 'nav-reports'];
+    const navs = ['nav-stats', 'nav-compliance', 'nav-workforce', 'nav-projects', 'nav-calendar', 'nav-reports', 'nav-track', 'nav-leaves'];
     navs.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -157,7 +201,12 @@ function switchTab(tabId) {
     if (tabId === 'workforce') loadWorkforce();
     if (tabId === 'compliance') loadPolicyAudit();
     if (tabId === 'reports') loadReports();
+    if (tabId === 'track') loadTrackData();
     if (tabId === 'projects' && typeof loadProjects === 'function') loadProjects();
+    if (tabId === 'leaves') {
+        if (typeof loadPendingLeaves === 'function') loadPendingLeaves();
+        if (typeof loadCustomPolicies === 'function') loadCustomPolicies();
+    }
 }
 
 async function refreshDashboard() {
@@ -898,6 +947,12 @@ async function loadWorkforce() {
                                     </svg>
                                     Assign Task
                                 </button>
+                                <button type="button" onclick="openPromoteUserModal(${user.id}, '${fullNameEsc}', '${user.role}')" class="w-full text-left px-4 py-2 text-sm text-primary hover:bg-primary/5 flex items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                    </svg>
+                                    Promote
+                                </button>
                                 <button type="button" onclick="deleteUser(${user.id}, '${fullNameEsc}')" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -1484,5 +1539,267 @@ async function postTaskComment() {
     } finally {
         btn.disabled = false;
         btn.textContent = 'Post';
+    }
+}
+
+async function loadTrackData() {
+    try {
+        const data = await Api.get('/dashboard/senior/track');
+        
+        // Render Task Assignments
+        const taskAssignmentsEl = document.getElementById('task-assignments-list');
+        if (taskAssignmentsEl) {
+            if (data.task_assignments && data.task_assignments.length > 0) {
+                taskAssignmentsEl.innerHTML = data.task_assignments.map(item => `
+                    <div class="flex items-center justify-between p-2 bg-white rounded border border-gray-200">
+                        <div>
+                            <span class="font-medium text-gray-900">${escapeHtml(item.assigner_name)}</span>
+                            <span class="text-xs text-gray-500 ml-2">(${item.assigner_role})</span>
+                        </div>
+                        <span class="font-bold text-primary">${item.tasks_assigned} tasks</span>
+                    </div>
+                `).join('');
+            } else {
+                taskAssignmentsEl.innerHTML = '<div class="text-center text-gray-500 py-4">No task assignments found</div>';
+            }
+        }
+        
+        // Render Task Breakdown
+        const taskBreakdownEl = document.getElementById('task-breakdown-list');
+        if (taskBreakdownEl) {
+            if (data.task_breakdown && data.task_breakdown.length > 0) {
+                taskBreakdownEl.innerHTML = data.task_breakdown.map(item => `
+                    <div class="flex items-center justify-between p-2 bg-white rounded border border-gray-200 text-sm">
+                        <div>
+                            <span class="font-medium text-gray-900">${escapeHtml(item.assigner)}</span>
+                            <span class="text-gray-500"> → </span>
+                            <span class="font-medium text-gray-700">${escapeHtml(item.assignee)}</span>
+                            <span class="text-xs text-gray-500 ml-1">(${item.assignee_role})</span>
+                        </div>
+                        <span class="font-bold text-primary">${item.task_count}</span>
+                    </div>
+                `).join('');
+            } else {
+                taskBreakdownEl.innerHTML = '<div class="text-center text-gray-500 py-4">No task breakdown found</div>';
+            }
+        }
+        
+        // Render Notifications Issued
+        const notificationsEl = document.getElementById('notifications-issued-list');
+        if (notificationsEl) {
+            if (data.notifications_issued && data.notifications_issued.length > 0) {
+                notificationsEl.innerHTML = data.notifications_issued.map(item => `
+                    <div class="flex items-center justify-between p-3 bg-white rounded border border-gray-200 mb-2">
+                        <div>
+                            <span class="font-medium text-gray-900">${escapeHtml(item.creator_name)}</span>
+                            <span class="text-xs text-gray-500 ml-2">(${item.creator_role})</span>
+                        </div>
+                        <span class="font-bold text-blue-600">${item.notifications_created} notifications</span>
+                    </div>
+                `).join('');
+            } else {
+                notificationsEl.innerHTML = '<div class="text-center text-gray-500 py-4">No notifications issued</div>';
+            }
+        }
+        
+        // Render Policy Acknowledgments
+        const policyAcksEl = document.getElementById('policy-acknowledgments-list');
+        if (policyAcksEl) {
+            if (data.policy_acknowledgments && data.policy_acknowledgments.length > 0) {
+                policyAcksEl.innerHTML = data.policy_acknowledgments.map(item => {
+                    const statusClass = item.acknowledgment_rate >= 80 ? 'text-green-600' : item.acknowledgment_rate >= 50 ? 'text-yellow-600' : 'text-red-600';
+                    return `
+                        <div class="flex items-center justify-between p-2 bg-white rounded border border-gray-200 mb-2">
+                            <div>
+                                <span class="font-medium text-gray-900">${escapeHtml(item.user_name)}</span>
+                                <span class="text-xs text-gray-500 ml-1">(${item.user_role})</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="font-bold ${statusClass}">${item.acknowledgment_rate}%</span>
+                                <div class="text-xs text-gray-500">${item.acknowledged}/${item.total_policies}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                policyAcksEl.innerHTML = '<div class="text-center text-gray-500 py-4">No policy acknowledgment data</div>';
+            }
+        }
+        
+        // Render Notification Acknowledgments
+        const notifAcksEl = document.getElementById('notification-acknowledgments-list');
+        if (notifAcksEl) {
+            if (data.notification_acknowledgments && data.notification_acknowledgments.length > 0) {
+                notifAcksEl.innerHTML = data.notification_acknowledgments.map(item => {
+                    const statusClass = item.acknowledgment_rate >= 80 ? 'text-green-600' : item.acknowledgment_rate >= 50 ? 'text-yellow-600' : 'text-red-600';
+                    return `
+                        <div class="flex items-center justify-between p-2 bg-white rounded border border-gray-200 mb-2">
+                            <div>
+                                <span class="font-medium text-gray-900">${escapeHtml(item.user_name)}</span>
+                                <span class="text-xs text-gray-500 ml-1">(${item.user_role})</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="font-bold ${statusClass}">${item.acknowledgment_rate}%</span>
+                                <div class="text-xs text-gray-500">${item.notifications_acknowledged}/${item.total_notifications}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                notifAcksEl.innerHTML = '<div class="text-center text-gray-500 py-4">No notification acknowledgment data</div>';
+            }
+        }
+        
+        // Render Activity Metrics
+        const activityEl = document.getElementById('activity-metrics-list');
+        if (activityEl) {
+            if (data.activity_metrics && data.activity_metrics.length > 0) {
+                activityEl.innerHTML = data.activity_metrics.map(item => {
+                    let statusBadge = '';
+                    let statusColor = '';
+                    if (item.status === 'high_performer') {
+                        statusBadge = 'High Performer';
+                        statusColor = 'bg-green-100 text-green-700 border-green-200';
+                    } else if (item.status === 'needs_attention') {
+                        statusBadge = 'Needs Attention';
+                        statusColor = 'bg-red-100 text-red-700 border-red-200';
+                    } else if (item.status === 'inactive') {
+                        statusBadge = 'Inactive';
+                        statusColor = 'bg-gray-100 text-gray-700 border-gray-200';
+                    } else {
+                        statusBadge = 'Normal';
+                        statusColor = 'bg-blue-100 text-blue-700 border-blue-200';
+                    }
+                    
+                    return `
+                        <div class="bg-white rounded-lg border border-gray-200 p-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <div>
+                                    <span class="font-bold text-gray-900">${escapeHtml(item.user_name)}</span>
+                                    <span class="text-xs text-gray-500 ml-2">(${item.user_role})</span>
+                                </div>
+                                <span class="px-2 py-1 rounded-full text-xs font-bold border ${statusColor}">${statusBadge}</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-gray-600">Total Tasks:</span>
+                                    <span class="font-bold text-gray-900 ml-2">${item.total_tasks}</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-600">Completed:</span>
+                                    <span class="font-bold text-green-600 ml-2">${item.completed_tasks}</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-600">On Time:</span>
+                                    <span class="font-bold text-blue-600 ml-2">${item.on_time_tasks}</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-600">Late:</span>
+                                    <span class="font-bold text-red-600 ml-2">${item.late_tasks}</span>
+                                </div>
+                            </div>
+                            <div class="mt-3 pt-3 border-t border-gray-100">
+                                <div class="flex items-center justify-between text-sm">
+                                    <span class="text-gray-600">Completion Rate:</span>
+                                    <span class="font-bold text-gray-900">${item.completion_rate}%</span>
+                                </div>
+                                <div class="flex items-center justify-between text-sm mt-1">
+                                    <span class="text-gray-600">On-Time Rate:</span>
+                                    <span class="font-bold text-gray-900">${item.on_time_rate}%</span>
+                                </div>
+                                <div class="flex items-center justify-between text-sm mt-2 pt-2 border-t border-gray-100">
+                                    <span class="font-medium text-gray-700">Activity Score:</span>
+                                    <span class="font-bold text-primary text-lg">${item.activity_score}%</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                activityEl.innerHTML = '<div class="text-center text-gray-500 py-4">No activity data available</div>';
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load track data:', error);
+        const errorMsg = error.message || 'Failed to load tracking data';
+        ['task-assignments-list', 'task-breakdown-list', 'notifications-issued-list', 
+         'policy-acknowledgments-list', 'notification-acknowledgments-list', 'activity-metrics-list'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = `<div class="text-center text-red-500 py-4">Error: ${escapeHtml(errorMsg)}</div>`;
+        });
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function openPromoteUserModal(userId, userName, currentRole) {
+    document.getElementById('promote-user-id').value = userId;
+    document.getElementById('promote-user-name').textContent = userName;
+    document.getElementById('promote-current-role').textContent = currentRole.charAt(0).toUpperCase() + currentRole.slice(1);
+    document.getElementById('promote-new-role').value = '';
+    
+    // Disable current role in dropdown
+    const select = document.getElementById('promote-new-role');
+    Array.from(select.options).forEach(option => {
+        option.disabled = option.value === currentRole;
+    });
+    
+    document.getElementById('promote-user-modal').style.display = 'flex';
+}
+
+async function promoteUser() {
+    const userId = document.getElementById('promote-user-id').value;
+    const newRole = document.getElementById('promote-new-role').value;
+    
+    if (!newRole) {
+        alert('Please select a new role');
+        return;
+    }
+    
+    const userName = document.getElementById('promote-user-name').textContent;
+    const currentRole = document.getElementById('promote-current-role').textContent.toLowerCase();
+    
+    if (newRole === currentRole) {
+        alert('User already has this role');
+        return;
+    }
+    
+    if (newRole === 'senior') {
+        alert('Cannot promote to Senior role. Use signup process instead.');
+        return;
+    }
+    
+    if (currentRole === 'senior') {
+        alert('Cannot demote Senior users');
+        return;
+    }
+    
+    const confirmMsg = `Are you sure you want to promote ${userName} from ${currentRole} to ${newRole}? This will update their dashboard and access permissions.`;
+    if (!confirm(confirmMsg)) {
+        return;
+    }
+    
+    const btn = document.getElementById('confirm-promote-user');
+    btn.disabled = true;
+    btn.textContent = 'Promoting...';
+    
+    try {
+        await Api.put(`/dashboard/senior/users/${userId}/promote`, { new_role: newRole });
+        showToast(`${userName} has been promoted to ${newRole}!`, 'success');
+        document.getElementById('promote-user-modal').style.display = 'none';
+        
+        // Refresh workforce list to show updated role
+        await loadWorkforce();
+    } catch (error) {
+        console.error('Failed to promote user:', error);
+        const errorMsg = error.message || 'Failed to promote user';
+        showToast(errorMsg, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Promote';
     }
 }

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Enum, DateTime, Boolean
+from sqlalchemy import Column, Integer, String, Enum, DateTime, Boolean, Date
 from sqlalchemy.sql import func
 from app.database import Base
 import enum
@@ -19,3 +19,6 @@ class User(Base):
     role = Column(Enum(UserRole), default=UserRole.EMPLOYEE, nullable=False)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    office = Column(String, nullable=True)  # "panscience" or "eigen"
+    joining_date = Column(Date, nullable=True)
+    is_on_probation = Column(Boolean, default=False, nullable=True)

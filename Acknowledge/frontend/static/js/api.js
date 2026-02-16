@@ -98,7 +98,13 @@ class Api {
         });
 
         if (!response.ok) {
-            throw new Error('Login failed');
+            const err = await response.json().catch(() => ({}));
+            const detail = typeof err.detail === 'string' ? err.detail : (Array.isArray(err.detail) ? err.detail[0]?.msg : null) || err.detail;
+            let msg = detail || response.statusText || 'Login failed';
+            if ((response.status === 502 || response.status === 503) && !detail) {
+                msg = 'Service temporarily unavailable. The database may be unreachable—try again in a moment.';
+            }
+            throw new Error(msg);
         }
         return response.json();
     }

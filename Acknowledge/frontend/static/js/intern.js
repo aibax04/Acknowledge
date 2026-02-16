@@ -743,6 +743,10 @@ function switchTab(tabName) {
         renderCalendar();
     } else if (tabName === 'projects') {
         loadMyProjects();
+    } else if (tabName === 'attendance') {
+        loadAttendanceTab();
+    } else if (tabName === 'leaves') {
+        loadLeavesTab();
     }
 }
 
@@ -832,6 +836,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadTasks();
     await loadNotifications();
     startTaskAssignmentWatcher();
+    initAttendanceClock();
 
     // Setup tab navigation
     document.querySelectorAll('.nav-link').forEach(link => {

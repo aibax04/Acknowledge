@@ -200,13 +200,13 @@ async def add_task_comment(task_id: int, comment: TaskCommentCreate, db: AsyncSe
 
 @router.patch("/{task_id:int}/acknowledge", response_model=TaskResponse)
 async def acknowledge_task(task_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    """Acknowledge a task - only the assigned user can acknowledge"""
+    """Acknowledge a task - the assigned user (including managers) can acknowledge"""
     result = await db.execute(select(Task).filter(Task.id == task_id))
     task = result.scalars().first()
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     
-    # Only the assigned user can acknowledge
+    # The assigned user (including managers) can acknowledge
     if task.assigned_to_id != current_user.id:
         raise HTTPException(status_code=403, detail="Only the assigned user can acknowledge this task")
     
