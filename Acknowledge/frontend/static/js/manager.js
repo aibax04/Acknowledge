@@ -674,7 +674,7 @@ function renderAllTasks(tasks) {
         <tr class="hover:bg-gray-50">
             <td class="px-6 py-4">
                 <div class="text-sm font-medium text-gray-900">${escapeHtml(task.title)}</div>
-                <div class="text-xs text-gray-500">${task.description || ''}</div>
+                <div class="text-xs text-gray-500">${escapeHtml(task.description || '')}</div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 ${task.assigned_to ? task.assigned_to.full_name : 'Unassigned'}
