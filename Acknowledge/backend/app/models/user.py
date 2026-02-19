@@ -21,4 +21,4 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     office = Column(String, nullable=True)  # "panscience" or "eigen"
     joining_date = Column(Date, nullable=True)
-    is_on_probation = Column(Boolean, default=False, nullable=True)
+    is_on_probation = Column(Boolean, default=False, nullable=False)
