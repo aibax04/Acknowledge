@@ -377,25 +377,8 @@ function formatDate(dateStr) {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-function showToast(message, type = 'success') {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
-
-    const toast = document.createElement('div');
-    toast.className = `toast bg-white border-l-4 ${type === 'success' ? 'border-green-500' : 'border-red-500'} p-4 rounded-lg shadow-lg mb-2`;
-    toast.innerHTML = `
-        <div class="flex items-center">
-            <span class="${type === 'success' ? 'text-green-600' : 'text-red-600'} font-medium">${message}</span>
-        </div>
-    `;
-    container.appendChild(toast);
-
-    setTimeout(() => toast.classList.add('show'), 10);
-    setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
-}
+// This showToast function is a duplicate and should be removed to avoid global scope pollution.
+// The application should use a single, shared showToast utility, likely from manager.js or a dedicated utility file.
 
 // ========== EVENT HANDLERS INITIALIZATION ==========
 
