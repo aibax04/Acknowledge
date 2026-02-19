@@ -15,6 +15,13 @@ let lastCommentAtByTaskId = {};
 // UTILITY FUNCTIONS
 // ============================================
 
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
