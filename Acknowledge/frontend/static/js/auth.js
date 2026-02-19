@@ -21,6 +21,7 @@ if (tabIndicator) {
 // Switch to Login Tab
 loginTabBtn?.addEventListener('click', () => {
     loginTabBtn.classList.add('active');
+    loginTabBtn.classList.remove('text-gray-500'); // Added this line
     signupTabBtn.classList.remove('active');
     signupTabBtn.classList.add('text-gray-500');
     loginTab.classList.add('active');
