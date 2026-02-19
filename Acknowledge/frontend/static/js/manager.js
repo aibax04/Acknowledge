@@ -1643,7 +1643,7 @@ function renderPersonalTodoList() {
     list.innerHTML = todos.map(t => `
         <div class="p-3 bg-gray-50 rounded-lg border border-gray-100 hover:shadow-sm transition-shadow">
             <div class="flex justify-between items-start">
-                <h4 class="text-sm font-medium text-gray-900 line-clamp-1">${t.title}</h4>
+                <h4 class="text-sm font-medium text-gray-900 line-clamp-1">${escapeHtml(t.title)}</h4>
                 <span class="text-[10px] uppercase font-bold ${getPriorityColor(t.priority)}">${t.priority}</span>
             </div>
             <p class="text-xs text-gray-500 mt-1 line-clamp-2">${t.description || ''}</p>
