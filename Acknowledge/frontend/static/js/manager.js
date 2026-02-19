@@ -1623,7 +1623,7 @@ function renderCalendar() {
 
 function renderPersonalTodoList() {
     const list = document.getElementById('personal-todo-list');
-    if (!list || list.closest('#personal-todo-list-container')) return;
+    if (!list) return;
 
     // Filter pending/in_progress tasks
     const todos = personalTasks.filter(t => t.status !== 'completed' && t.status !== 'review');
