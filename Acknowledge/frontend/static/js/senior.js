@@ -1012,12 +1012,7 @@ async function loadReports() {
     }
 }
 
-function getPriorityColor(p) {
-    p = (p || 'low').toLowerCase();
-    if (p === 'high') return 'bg-red-500 text-red-600';
-    if (p === 'medium') return 'bg-yellow-500 text-yellow-600';
-    return 'bg-blue-500 text-blue-600';
-}
+/* Original getPriorityColor function (first definition) - removed due to duplication. The second definition is kept as it's used by the calendar rendering. If different behaviors are needed, rename one or refactor. */
 
 function toggleActionMenu(userId) {
     const menus = document.querySelectorAll('[id^="action-menu-"]');
