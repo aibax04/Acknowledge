@@ -54,7 +54,7 @@
             position: fixed;
             inset: 0;
             z-index: 0;
-            background: linear-gradient(160deg, #d1fae5 0%, #a7f3d0 18%, #f0fdf4 38%, #ffffff 55%, #ecfdf5 75%, #ccfbf1 100%);
+            background: linear-gradient(140deg, #e4fbf1 0%, #d1fae5 25%, #f8fafc 50%, #f0fdf4 75%, #ccfbf1 100%);
             pointer-events: none;
         }
 
@@ -65,11 +65,11 @@
             inset: 0;
             z-index: 0;
             pointer-events: none;
-            background: 
-                radial-gradient(ellipse 80% 50% at 20% 40%, rgba(16, 185, 129, 0.12) 0%, transparent 50%),
-                radial-gradient(ellipse 60% 40% at 80% 20%, rgba(6, 182, 212, 0.1) 0%, transparent 45%),
-                radial-gradient(ellipse 50% 60% at 70% 80%, rgba(16, 185, 129, 0.08) 0%, transparent 45%),
-                radial-gradient(ellipse 40% 50% at 10% 90%, rgba(20, 184, 166, 0.09) 0%, transparent 40%);
+            background:
+                radial-gradient(circle 800px at 15% 30%, rgba(16, 185, 129, 0.08) 0%, transparent 100%),
+                radial-gradient(circle 600px at 85% 20%, rgba(20, 184, 166, 0.06) 0%, transparent 100%),
+                radial-gradient(circle 900px at 80% 80%, rgba(16, 185, 129, 0.07) 0%, transparent 100%),
+                radial-gradient(circle 700px at 10% 90%, rgba(6, 182, 212, 0.05) 0%, transparent 100%);
         }
 
         .login-page-bg-pattern {
@@ -104,6 +104,7 @@
                 opacity: 0;
                 transform: translateY(24px) scale(0.98);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0) scale(1);
@@ -121,6 +122,7 @@
                 opacity: 0;
                 transform: translateX(-20px);
             }
+
             to {
                 opacity: 1;
                 transform: translateX(0);
@@ -128,19 +130,39 @@
         }
 
         /* Right panel (form) entrance */
-        .form-panel-enter {
-            animation: formPanelEnter 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.2s forwards;
-            opacity: 0;
+        @media (min-width: 768px) {
+            .form-panel-enter {
+                animation: formPanelEnter 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.2s forwards;
+                opacity: 0;
+            }
+
+            @keyframes formPanelEnter {
+                from {
+                    opacity: 0;
+                    transform: translateX(16px);
+                }
+
+                to {
+                    opacity: 1;
+                    transform: translateX(0);
+                }
+            }
         }
 
-        @keyframes formPanelEnter {
-            from {
+        @media (max-width: 767px) {
+            .form-panel-enter {
+                animation: formPanelEnterMobile 0.6s ease 0.2s forwards;
                 opacity: 0;
-                transform: translateX(16px);
             }
-            to {
-                opacity: 1;
-                transform: translateX(0);
+
+            @keyframes formPanelEnterMobile {
+                from {
+                    opacity: 0;
+                }
+
+                to {
+                    opacity: 1;
+                }
             }
         }
 
@@ -154,8 +176,15 @@
         }
 
         @keyframes tabFadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         /* Animated tab underline */
@@ -189,49 +218,100 @@
         }
 
         /* Staggered form elements */
-        .login-form-stagger > * {
+        .login-form-stagger>* {
             opacity: 0;
-            animation: staggerIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            animation: staggerIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
 
-        .login-form-stagger > *:nth-child(1) { animation-delay: 0.05s; }
-        .login-form-stagger > *:nth-child(2) { animation-delay: 0.1s; }
-        .login-form-stagger > *:nth-child(3) { animation-delay: 0.15s; }
-        .login-form-stagger > *:nth-child(4) { animation-delay: 0.2s; }
-        .login-form-stagger > *:nth-child(5) { animation-delay: 0.25s; }
-        .login-form-stagger > *:nth-child(6) { animation-delay: 0.3s; }
-        .login-form-stagger > *:nth-child(7) { animation-delay: 0.35s; }
-        .login-form-stagger > *:nth-child(8) { animation-delay: 0.4s; }
+        .login-form-stagger>*:nth-child(1) {
+            animation-delay: 0.1s;
+        }
+
+        .login-form-stagger>*:nth-child(2) {
+            animation-delay: 0.18s;
+        }
+
+        .login-form-stagger>*:nth-child(3) {
+            animation-delay: 0.26s;
+        }
+
+        .login-form-stagger>*:nth-child(4) {
+            animation-delay: 0.34s;
+        }
+
+        .login-form-stagger>*:nth-child(5) {
+            animation-delay: 0.42s;
+        }
+
+        .login-form-stagger>*:nth-child(6) {
+            animation-delay: 0.5s;
+        }
+
+        .login-form-stagger>*:nth-child(7) {
+            animation-delay: 0.58s;
+        }
+
+        .login-form-stagger>*:nth-child(8) {
+            animation-delay: 0.66s;
+        }
 
         @keyframes staggerIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         @keyframes pulse-glow {
-            0%, 100% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.25); }
-            50% { box-shadow: 0 0 35px rgba(16, 185, 129, 0.4); }
+
+            0%,
+            100% {
+                box-shadow: 0 0 20px rgba(16, 185, 129, 0.25);
+            }
+
+            50% {
+                box-shadow: 0 0 35px rgba(16, 185, 129, 0.4);
+            }
         }
 
-        .glow-effect { animation: pulse-glow 3s ease-in-out infinite; }
+        .glow-effect {
+            animation: pulse-glow 3s ease-in-out infinite;
+        }
 
         .ms-btn {
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
+
         .ms-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
         }
+
         .ms-btn:active {
             transform: translateY(0);
         }
 
-        .card-hover { transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; }
+        .card-hover {
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+
         .card-hover:hover {
             transform: translateY(-1px);
             box-shadow: 0 8px 24px rgba(16, 185, 129, 0.12);
@@ -244,6 +324,7 @@
             margin: 1.25rem 0;
             gap: 1rem;
         }
+
         .divider-text::before,
         .divider-text::after {
             content: '';
@@ -262,40 +343,57 @@
         }
 
         .input-dark {
-            background: #ffffff;
-            border: 1px solid #e5e7eb;
+            background: #f9fafb;
+            border: 1.5px solid #e5e7eb;
             color: #111827;
-            transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
         }
+
+        .input-dark:hover {
+            border-color: #d1d5db;
+        }
+
         .input-dark:focus {
+            background: #ffffff;
             border-color: #10b981;
-            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
             outline: none;
         }
-        .input-dark::placeholder { color: #9ca3af; }
+
+        .input-dark::placeholder {
+            color: #9ca3af;
+        }
 
         .btn-primary {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            transition: transform 0.25s ease, box-shadow 0.25s ease;
+            background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
         }
+
         .btn-primary:hover {
-            transform: translateY(-2px);
+            transform: translateY(-2px) scale(1.01);
             box-shadow: 0 10px 24px rgba(16, 185, 129, 0.4);
         }
+
         .btn-primary:active {
-            transform: translateY(0);
+            transform: translateY(0) scale(0.99);
         }
+
         .btn-primary::before {
             content: '';
             position: absolute;
-            top: 0; left: -100%;
-            width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
             transition: left 0.5s ease;
         }
-        .btn-primary:hover::before { left: 100%; }
+
+        .btn-primary:hover::before {
+            left: 100%;
+        }
 
         /* Card container: glass + subtle breathe */
         .glass-effect {
@@ -314,7 +412,9 @@
         }
 
         @keyframes cardShadowBreathe {
-            0%, 100% {
+
+            0%,
+            100% {
                 box-shadow:
                     0 0 0 1px rgba(16, 185, 129, 0.06),
                     0 2px 4px rgba(0, 0, 0, 0.04),
@@ -322,6 +422,7 @@
                     0 24px 48px -12px rgba(0, 0, 0, 0.1),
                     0 32px 64px -16px rgba(16, 185, 129, 0.08);
             }
+
             50% {
                 box-shadow:
                     0 0 0 1px rgba(16, 185, 129, 0.1),
@@ -335,6 +436,7 @@
         .role-card {
             transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease, border-color 0.25s ease;
         }
+
         .role-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
@@ -345,303 +447,197 @@
             opacity: 0;
             animation: roleCardIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
-        .role-cards-stagger .role-card:nth-child(1) { animation-delay: 0.05s; }
-        .role-cards-stagger .role-card:nth-child(2) { animation-delay: 0.1s; }
-        .role-cards-stagger .role-card:nth-child(3) { animation-delay: 0.15s; }
-        .role-cards-stagger .role-card:nth-child(4) { animation-delay: 0.2s; }
+
+        .role-cards-stagger .role-card:nth-child(1) {
+            animation-delay: 0.05s;
+        }
+
+        .role-cards-stagger .role-card:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .role-cards-stagger .role-card:nth-child(3) {
+            animation-delay: 0.15s;
+        }
+
+        .role-cards-stagger .role-card:nth-child(4) {
+            animation-delay: 0.2s;
+        }
 
         @keyframes roleCardIn {
-            from { opacity: 0; transform: translateX(-12px); }
-            to { opacity: 1; transform: translateX(0); }
+            from {
+                opacity: 0;
+                transform: translateX(-12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
         }
 
         /* Left panel decorative orbs – gentle drift */
         .brand-orb {
             animation: brandOrbFloat 10s ease-in-out infinite;
         }
+
         .brand-orb-2 {
             animation-delay: -5s;
             animation-duration: 12s;
         }
+
         @keyframes brandOrbFloat {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            50% { transform: translate(6px, -4px) scale(1.03); }
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            50% {
+                transform: translate(6px, -4px) scale(1.03);
+            }
         }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 
-<body class="min-h-screen flex items-center justify-center p-4 sm:p-6">
+<body
+    class="min-h-[100dvh] md:min-h-screen flex m-0 p-0 bg-white overflow-hidden md:overflow-y-auto md:overflow-x-hidden">
 
     <!-- Background pattern (optional subtle grid) -->
     <div class="login-page-bg-pattern" aria-hidden="true"></div>
 
     <!-- Main Container -->
-    <div class="login-page-content w-full max-w-5xl glass-effect rounded-2xl overflow-hidden flex flex-col md:flex-row min-h-[560px] md:min-h-[600px] login-card-enter">
+    <div
+        class="login-page-content w-full h-[100dvh] md:h-auto md:min-h-screen flex flex-col md:flex-row login-card-enter">
 
         <!-- Left Side: Branding & Context -->
-        <div class="md:w-1/2 bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 p-8 md:p-10 text-white flex flex-col items-center justify-center text-center relative overflow-hidden min-h-[240px] md:min-h-0 brand-panel-enter">
-            <!-- Decorative background elements -->
-            <div class="absolute inset-0 overflow-hidden opacity-20 pointer-events-none">
-                <div class="absolute top-1/4 left-1/4 w-40 h-40 bg-white rounded-full mix-blend-overlay filter blur-3xl brand-orb brand-orb-1"></div>
-                <div class="absolute bottom-1/4 right-1/4 w-48 h-48 bg-teal-300 rounded-full mix-blend-overlay filter blur-3xl brand-orb brand-orb-2"></div>
-            </div>
+        <div
+            class="w-full md:w-1/2 relative flex flex-col items-center justify-center text-center h-[100dvh] md:min-h-screen brand-panel-enter pb-[100px] md:pb-0 overflow-hidden">
+            <!-- New Background Image -->
+            <img src="../static/images/image.png" alt="Acknowledge Platform"
+                class="absolute inset-0 w-full h-full object-cover z-0">
 
-            <div class="relative z-10 w-full max-w-sm">
-                <div class="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white/15 backdrop-blur-sm mb-5 border border-white/20 shadow-lg">
-                    <img src="../static/images/psi_logo_white.png" alt="PanScience" class="h-8 md:h-9 w-auto object-contain">
+            <div
+                class="relative z-10 w-full max-w-md p-8 md:p-12 flex flex-col h-full justify-center pb-12 items-center">
+                <div
+                    class="inline-flex items-center justify-center w-20 h-20 md:w-24 md:h-24 rounded-[1.5rem] bg-white/70 backdrop-blur-md mb-8 border border-white/40 shadow-xl transition-transform hover:scale-105 duration-300">
+                    <img src="../static/images/psi_logo_white.png" alt="PanScience"
+                        class="h-10 md:h-12 w-auto object-contain brightness-0">
                 </div>
-                <h1 class="text-3xl md:text-4xl font-bold mb-3 tracking-tight">Acknowledge</h1>
-                <p class="text-base md:text-lg text-emerald-50/95 mb-6 tracking-wide">
-                    Built to scale with the way PanScience works
+                <h1 class="text-4xl md:text-5xl font-bold mb-4 tracking-tight text-emerald-700">
+                    Acknowledge</h1>
+                <p class="text-lg md:text-xl text-gray-600 mb-10 tracking-wide font-medium leading-relaxed max-w-sm">
+                    Built to scale with the way<br>PanScience works
                 </p>
-                <div class="flex gap-2 justify-center opacity-80">
-                    <span class="w-2 h-2 rounded-full bg-white/90"></span>
-                    <span class="w-2 h-2 rounded-full bg-white/90"></span>
-                    <span class="w-2 h-2 rounded-full bg-white/90"></span>
+                <div class="flex gap-2.5 justify-center mb-10">
+                    <span class="w-2.5 h-2.5 rounded-full bg-white shadow-sm border border-gray-100"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-black/10"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-black/10"></span>
                 </div>
-                <p class="mt-8 md:mt-10 italic text-emerald-200/90 font-medium text-lg md:text-xl">
+                <p class="italic text-emerald-700/80 font-medium text-lg md:text-lg tracking-wider select-none">
                     #We Build The Future
                 </p>
             </div>
         </div>
 
         <!-- Right Side: Login UI -->
-        <div class="md:w-1/2 bg-white flex flex-col form-panel-enter">
+        <div id="auth-bottom-sheet"
+            class="w-full md:w-1/2 bg-white flex flex-col form-panel-enter fixed md:relative bottom-0 left-0 right-0 z-50 shadow-[0_-15px_40px_rgba(0,0,0,0.15)] md:shadow-[-20px_0_40px_rgba(0,0,0,0.06)] justify-start md:justify-center rounded-t-[2.5rem] md:rounded-none will-change-transform md:!transform-none h-[88dvh] md:h-auto pb-10 md:pb-0"
+            style="transform: translateY(calc(100% - 90px));">
 
-            <!-- Tab Navigation -->
-            <div class="tabs-wrap flex border-b border-gray-200 shrink-0 relative">
-                <button id="loginTabBtn" class="tab-btn active flex-1 py-4 px-4 text-sm font-semibold text-center" data-tab="login">
-                    Sign In
-                </button>
-                <button id="signupTabBtn" class="tab-btn flex-1 py-4 px-4 text-sm font-semibold text-center" data-tab="signup">
-                    Create Account
-                </button>
-                <span id="tabIndicator" class="tab-indicator" aria-hidden="true"></span>
+            <!-- Mobile Swipe Handle -->
+            <div id="swipe-handle"
+                class="md:hidden w-full h-[90px] flex flex-col justify-start pt-5 items-center cursor-pointer shrink-0 absolute top-0 left-0 right-0 z-20 bg-white/90 backdrop-blur-md rounded-t-[2.5rem] border-b border-gray-100">
+                <div class="w-12 h-1.5 bg-gray-300 rounded-full mb-2"></div>
+                <span id="swipe-text"
+                    class="text-[13px] font-bold text-gray-400 uppercase tracking-wide pointer-events-none transition-all duration-300">Swipe
+                    up to login</span>
             </div>
 
-            <!-- Tab Contents -->
-            <div class="p-6 sm:p-8 md:p-10 flex-1 overflow-auto">
-
-                <!-- LOGIN TAB -->
-                <div id="loginTab" class="tab-content active">
-
-                    <div class="mb-6">
-                        <h2 class="text-2xl font-bold text-gray-900">Welcome back</h2>
-                        <p class="text-sm text-gray-500 mt-1">Please enter your details to sign in.</p>
-                    </div>
-
-                    <!-- Login Form -->
-                    <form id="loginForm" class="space-y-5 login-form-stagger">
-                        <div>
-                            <label for="email" class="block text-sm font-medium text-gray-700 mb-1.5">Email Address</label>
-                            <input type="email" id="email" name="email" required
-                                class="input-dark w-full px-4 py-2.5 rounded-xl border transition-colors"
-                                placeholder="name@company.com">
-                        </div>
-
-                        <div>
-                            <label for="password" class="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
-                            <input type="password" id="password" name="password" required
-                                class="input-dark w-full px-4 py-2.5 rounded-xl border transition-colors"
-                                placeholder="••••••••">
-                        </div>
-
-                        <div class="flex items-center justify-between text-sm gap-4">
-                            <label class="flex items-center gap-2 text-gray-600 cursor-pointer select-none">
-                                <input type="checkbox" class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary focus:ring-2">
-                                Remember me
-                            </label>
-                            <a href="#" class="text-primary hover:text-primary-hover font-medium whitespace-nowrap">Forgot password?</a>
-                        </div>
-
-                        <button type="submit" class="btn-primary w-full text-white py-3 rounded-xl font-semibold text-sm">
-                            Sign In
-                        </button>
-                    </form>
-
-                    <div class="divider-text">
-                        <span class="bg-white">or sign in with</span>
-                    </div>
-
-                    <!-- Microsoft Sign-In Button -->
-                    <button id="microsoftLoginBtn" type="button"
-                        class="ms-btn w-full flex items-center justify-center gap-3 bg-microsoft text-white py-2.5 px-4 rounded-xl font-medium hover:bg-microsoft-hover">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 23 23">
-                            <path fill="#f35325" d="M1 1h10v10H1z" />
-                            <path fill="#81bc06" d="M12 1h10v10H12z" />
-                            <path fill="#05a6f0" d="M1 12h10v10H1z" />
-                            <path fill="#ffba08" d="M12 12h10v10H12z" />
-                        </svg>
-                        Sign in with Microsoft
+            <div
+                class="w-full max-w-lg mx-auto flex flex-col h-full md:h-auto mt-[90px] md:mt-0 relative z-10 overflow-auto md:overflow-visible flex-1 md:flex-none">
+                <!-- Tab Navigation -->
+                <div
+                    class="tabs-wrap flex border-b border-gray-200 shrink-0 relative mt-8 md:mt-0 px-6 sm:px-8 md:px-10">
+                    <button id="loginTabBtn" class="tab-btn active flex-1 py-4 px-4 text-sm font-semibold text-center"
+                        data-tab="login">
+                        Sign In
                     </button>
-
-                    <!-- Google Sign-In Button (For Interns mainly) -->
-                    <button id="googleLoginBtn" type="button"
-                        class="ms-btn w-full flex items-center justify-center gap-3 bg-white border border-gray-200 text-gray-700 py-2.5 px-4 rounded-xl font-medium hover:bg-gray-50 mt-3 hidden">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48">
-                            <path fill="#EA4335"
-                                d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
-                            <path fill="#4285F4"
-                                d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
-                            <path fill="#FBBC05"
-                                d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
-                            <path fill="#34A853"
-                                d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
-                        </svg>
-                        Sign in with Google
+                    <button id="signupTabBtn" class="tab-btn flex-1 py-4 px-4 text-sm font-semibold text-center"
+                        data-tab="signup">
+                        Create Account
                     </button>
-
+                    <span id="tabIndicator" class="tab-indicator ml-6 sm:ml-8 md:ml-10" aria-hidden="true"
+                        style="width: calc(50% - 24px);"></span>
                 </div>
 
-                <!-- SIGNUP TAB -->
-                <div id="signupTab" class="tab-content">
+                <!-- Tab Contents -->
+                <div class="p-6 sm:p-8 md:p-10 flex-1 md:flex-none overflow-auto">
 
-                    <!-- Step 1: Role Selection (Show First) -->
-                    <div id="step-role" class="block">
-                        <div class="mb-5">
-                            <h2 class="text-xl font-bold text-gray-800">Join Acknowledge</h2>
-                            <p class="text-sm text-gray-500">Choose your account type to get started.</p>
+                    <!-- LOGIN TAB -->
+                    <div id="loginTab" class="tab-content active">
+
+                        <div class="mb-6">
+                            <h2 class="text-2xl font-bold text-gray-900">Welcome back</h2>
+                            <p class="text-sm text-gray-500 mt-1">Please enter your details to sign in.</p>
                         </div>
 
-                        <div class="space-y-3 h-80 overflow-y-auto pr-2 custom-scrollbar role-cards-stagger">
-                            <!-- Senior Card -->
-                            <div onclick="selectRole('senior')"
-                                class="role-card group cursor-pointer border border-gray-200 bg-gray-50/50 rounded-xl p-4 hover:border-purple-500 hover:bg-purple-50 flex items-center shadow-sm transition-all duration-200">
-                                <div
-                                    class="w-10 h-10 rounded-full bg-white border border-gray-100 text-purple-500 flex items-center justify-center group-hover:bg-purple-500 group-hover:text-white transition-colors shadow-sm">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                                        viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                                    </svg>
-                                </div>
-                                <div class="ml-4">
-                                    <h3 class="font-medium text-gray-900">Senior Leadership</h3>
-                                    <p class="text-xs text-gray-500">Global analytics & audit</p>
-                                </div>
-                                <svg xmlns="http://www.w3.org/2000/svg"
-                                    class="h-5 w-5 ml-auto text-gray-400 group-hover:text-purple-500 transition-colors"
-                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M9 5l7 7-7 7" />
-                                </svg>
+                        <!-- Login Form -->
+                        <form id="loginForm" class="space-y-5 login-form-stagger">
+                            <div>
+                                <label for="email" class="block text-sm font-semibold text-gray-700 mb-1.5">Email
+                                    Address</label>
+                                <input type="email" id="email" name="email" required
+                                    class="input-dark w-full px-4 py-3 rounded-xl transition-all"
+                                    placeholder="name@company.com">
                             </div>
 
-                            <!-- Manager Card -->
-                            <div onclick="selectRole('manager')"
-                                class="role-card group cursor-pointer border border-gray-200 bg-gray-50/50 rounded-xl p-4 hover:border-blue-500 hover:bg-blue-50 flex items-center shadow-sm transition-all duration-200">
-                                <div
-                                    class="w-10 h-10 rounded-full bg-white border border-gray-100 text-blue-500 flex items-center justify-center group-hover:bg-blue-500 group-hover:text-white transition-colors shadow-sm">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                                        viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                    </svg>
-                                </div>
-                                <div class="ml-4">
-                                    <h3 class="font-medium text-gray-900">Manager</h3>
-                                    <p class="text-xs text-gray-500">Manage teams & projects</p>
-                                </div>
-                                <svg xmlns="http://www.w3.org/2000/svg"
-                                    class="h-5 w-5 ml-auto text-gray-400 group-hover:text-blue-500 transition-colors"
-                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M9 5l7 7-7 7" />
-                                </svg>
+                            <div>
+                                <label for="password"
+                                    class="block text-sm font-semibold text-gray-700 mb-1.5">Password</label>
+                                <input type="password" id="password" name="password" required
+                                    class="input-dark w-full px-4 py-3 rounded-xl transition-all"
+                                    placeholder="••••••••">
                             </div>
 
-                            <!-- Employee Card -->
-                            <div onclick="selectRole('employee')"
-                                class="role-card group cursor-pointer border border-gray-200 bg-gray-50/50 rounded-xl p-4 hover:border-emerald-500 hover:bg-emerald-50 flex items-center shadow-sm transition-all duration-200">
-                                <div
-                                    class="w-10 h-10 rounded-full bg-white border border-gray-100 text-emerald-500 flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-colors shadow-sm">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                                        viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                    </svg>
-                                </div>
-                                <div class="ml-4">
-                                    <h3 class="font-medium text-gray-900">Employee</h3>
-                                    <p class="text-xs text-gray-500">Access tasks & create nudges</p>
-                                </div>
-                                <svg xmlns="http://www.w3.org/2000/svg"
-                                    class="h-5 w-5 ml-auto text-gray-400 group-hover:text-emerald-500 transition-colors"
-                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M9 5l7 7-7 7" />
-                                </svg>
+                            <div class="flex items-center justify-between text-sm gap-4 mt-2 mb-2">
+                                <label
+                                    class="flex items-center gap-2.5 text-gray-600 cursor-pointer select-none hover:text-gray-800 transition-colors">
+                                    <input type="checkbox"
+                                        class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary focus:ring-2 transition-all">
+                                    <span class="font-medium">Remember me</span>
+                                </label>
+                                <a href="#"
+                                    class="text-primary hover:text-primary-hover font-semibold whitespace-nowrap transition-colors">Forgot
+                                    password?</a>
                             </div>
 
-                            <!-- Intern Card -->
-                            <div onclick="selectRole('intern')"
-                                class="role-card group cursor-pointer border border-gray-200 bg-gray-50/50 rounded-xl p-4 hover:border-yellow-500 hover:bg-yellow-50 flex items-center shadow-sm transition-all duration-200">
-                                <div
-                                    class="w-10 h-10 rounded-full bg-white border border-gray-100 text-yellow-500 flex items-center justify-center group-hover:bg-yellow-500 group-hover:text-white transition-colors shadow-sm">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                                        viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                                    </svg>
-                                </div>
-                                <div class="ml-4">
-                                    <h3 class="font-medium text-gray-900">Intern</h3>
-                                    <p class="text-xs text-gray-500">Mentorship & Policy Tasks</p>
-                                </div>
-                                <svg xmlns="http://www.w3.org/2000/svg"
-                                    class="h-5 w-5 ml-auto text-gray-400 group-hover:text-yellow-500 transition-colors"
-                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M9 5l7 7-7 7" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Step 2: Signup Form with Microsoft Option (Initially Hidden) -->
-                    <div id="step-form" class="hidden">
-                        <!-- Back button and Role indicator -->
-                        <div class="mb-5 flex items-center justify-between">
-                            <button onclick="resetRoleSelection()"
-                                class="flex items-center text-gray-500 hover:text-gray-900 transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none"
-                                    viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M15 19l-7-7 7-7" />
-                                </svg>
-                                <span class="text-sm font-medium">Back</span>
+                            <button type="submit"
+                                class="btn-primary w-full text-white py-3.5 rounded-xl font-bold text-sm tracking-wide shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50">
+                                Sign In
                             </button>
-                            <div class="flex items-center bg-gray-100 px-3 py-1.5 rounded-full border border-gray-200">
-                                <span class="text-xs text-gray-500 mr-2">Account type:</span>
-                                <span id="selectedRoleDisplay"
-                                    class="text-sm font-semibold text-primary">Employee</span>
-                            </div>
+                        </form>
+
+                        <div class="divider-text">
+                            <span class="bg-white">or sign in with</span>
                         </div>
 
-                        <!-- Senior signup key (shown only when Senior Leadership is selected) -->
-                        <div id="senior-key-wrap" class="mb-4 hidden">
-                            <label for="seniorSignupKey" class="block text-sm font-medium text-gray-700 mb-1.5">Senior signup key</label>
-                            <input type="password" id="seniorSignupKey" autocomplete="off"
-                                class="input-dark w-full px-4 py-2.5 rounded-lg border transition-colors"
-                                placeholder="Enter the key to create a Senior account">
-                        </div>
-
-                        <!-- Microsoft Sign-Up Button -->
-                        <button id="microsoftSignupBtn"
-                            class="ms-btn w-full flex items-center justify-center gap-3 bg-microsoft text-white py-3 px-4 rounded-lg font-medium hover:bg-microsoft-hover transition-transform hover:-translate-y-0.5 shadow-md">
+                        <!-- Microsoft Sign-In Button -->
+                        <button id="microsoftLoginBtn" type="button"
+                            class="ms-btn w-full flex items-center justify-center gap-3 bg-microsoft text-white py-2.5 px-4 rounded-xl font-medium hover:bg-microsoft-hover">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 23 23">
                                 <path fill="#f35325" d="M1 1h10v10H1z" />
                                 <path fill="#81bc06" d="M12 1h10v10H12z" />
                                 <path fill="#05a6f0" d="M1 12h10v10H1z" />
                                 <path fill="#ffba08" d="M12 12h10v10H12z" />
                             </svg>
-                            Continue with Microsoft
+                            Sign in with Microsoft
                         </button>
 
-                        <!-- Google Sign-Up Button -->
-                        <button id="googleSignupBtn"
-                            class="ms-btn w-full flex items-center justify-center gap-3 bg-white border border-gray-200 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-50 mt-3 hidden shadow-sm">
+                        <!-- Google Sign-In Button (For Interns mainly) -->
+                        <button id="googleLoginBtn" type="button"
+                            class="ms-btn w-full flex items-center justify-center gap-3 bg-white border border-gray-200 text-gray-700 py-2.5 px-4 rounded-xl font-medium hover:bg-gray-50 mt-3 hidden">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48">
                                 <path fill="#EA4335"
                                     d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
@@ -652,61 +648,341 @@
                                 <path fill="#34A853"
                                     d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
                             </svg>
-                            Continue with Google
+                            Sign in with Google
                         </button>
 
-                        <div class="divider-text">
-                            <span>or sign up with email</span>
+                    </div>
+
+                    <!-- SIGNUP TAB -->
+                    <div id="signupTab" class="tab-content">
+
+                        <!-- Step 1: Role Selection (Show First) -->
+                        <div id="step-role" class="block">
+                            <div class="mb-5">
+                                <h2 class="text-xl font-bold text-gray-800">Join Acknowledge</h2>
+                                <p class="text-sm text-gray-500">Choose your account type to get started.</p>
+                            </div>
+
+                            <div class="space-y-3 h-80 overflow-y-auto pr-2 custom-scrollbar role-cards-stagger">
+                                <!-- Senior Card -->
+                                <div onclick="selectRole('senior')"
+                                    class="role-card group cursor-pointer border border-gray-200 bg-gray-50/50 rounded-xl p-4 hover:border-purple-500 hover:bg-purple-50 flex items-center shadow-sm transition-all duration-200">
+                                    <div
+                                        class="w-10 h-10 rounded-full bg-white border border-gray-100 text-purple-500 flex items-center justify-center group-hover:bg-purple-500 group-hover:text-white transition-colors shadow-sm">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                                            viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                                        </svg>
+                                    </div>
+                                    <div class="ml-4">
+                                        <h3 class="font-medium text-gray-900">Senior Leadership</h3>
+                                        <p class="text-xs text-gray-500">Global analytics & audit</p>
+                                    </div>
+                                    <svg xmlns="http://www.w3.org/2000/svg"
+                                        class="h-5 w-5 ml-auto text-gray-400 group-hover:text-purple-500 transition-colors"
+                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </div>
+
+                                <!-- Manager Card -->
+                                <div onclick="selectRole('manager')"
+                                    class="role-card group cursor-pointer border border-gray-200 bg-gray-50/50 rounded-xl p-4 hover:border-blue-500 hover:bg-blue-50 flex items-center shadow-sm transition-all duration-200">
+                                    <div
+                                        class="w-10 h-10 rounded-full bg-white border border-gray-100 text-blue-500 flex items-center justify-center group-hover:bg-blue-500 group-hover:text-white transition-colors shadow-sm">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                                            viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                        </svg>
+                                    </div>
+                                    <div class="ml-4">
+                                        <h3 class="font-medium text-gray-900">Manager</h3>
+                                        <p class="text-xs text-gray-500">Manage teams & projects</p>
+                                    </div>
+                                    <svg xmlns="http://www.w3.org/2000/svg"
+                                        class="h-5 w-5 ml-auto text-gray-400 group-hover:text-blue-500 transition-colors"
+                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </div>
+
+                                <!-- Employee Card -->
+                                <div onclick="selectRole('employee')"
+                                    class="role-card group cursor-pointer border border-gray-200 bg-gray-50/50 rounded-xl p-4 hover:border-emerald-500 hover:bg-emerald-50 flex items-center shadow-sm transition-all duration-200">
+                                    <div
+                                        class="w-10 h-10 rounded-full bg-white border border-gray-100 text-emerald-500 flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-colors shadow-sm">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                                            viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                    </div>
+                                    <div class="ml-4">
+                                        <h3 class="font-medium text-gray-900">Employee</h3>
+                                        <p class="text-xs text-gray-500">Access tasks & create nudges</p>
+                                    </div>
+                                    <svg xmlns="http://www.w3.org/2000/svg"
+                                        class="h-5 w-5 ml-auto text-gray-400 group-hover:text-emerald-500 transition-colors"
+                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </div>
+
+                                <!-- Intern Card -->
+                                <div onclick="selectRole('intern')"
+                                    class="role-card group cursor-pointer border border-gray-200 bg-gray-50/50 rounded-xl p-4 hover:border-yellow-500 hover:bg-yellow-50 flex items-center shadow-sm transition-all duration-200">
+                                    <div
+                                        class="w-10 h-10 rounded-full bg-white border border-gray-100 text-yellow-500 flex items-center justify-center group-hover:bg-yellow-500 group-hover:text-white transition-colors shadow-sm">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                                            viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                        </svg>
+                                    </div>
+                                    <div class="ml-4">
+                                        <h3 class="font-medium text-gray-900">Intern</h3>
+                                        <p class="text-xs text-gray-500">Mentorship & Policy Tasks</p>
+                                    </div>
+                                    <svg xmlns="http://www.w3.org/2000/svg"
+                                        class="h-5 w-5 ml-auto text-gray-400 group-hover:text-yellow-500 transition-colors"
+                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </div>
+                            </div>
                         </div>
 
-                        <form id="signupForm" class="space-y-4">
-                            <input type="hidden" id="signupRole" name="role">
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                                <input type="text" id="fullname" required
-                                    class="input-dark w-full px-4 py-2.5 rounded-lg focus:ring-primary focus:border-primary"
-                                    placeholder="John Doe">
+                        <!-- Step 2: Signup Form with Microsoft Option (Initially Hidden) -->
+                        <div id="step-form" class="hidden">
+                            <!-- Back button and Role indicator -->
+                            <div class="mb-5 flex items-center justify-between">
+                                <button onclick="resetRoleSelection()"
+                                    class="flex items-center text-gray-500 hover:text-gray-900 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 19l-7-7 7-7" />
+                                    </svg>
+                                    <span class="text-sm font-medium">Back</span>
+                                </button>
+                                <div
+                                    class="flex items-center bg-gray-100 px-3 py-1.5 rounded-full border border-gray-200">
+                                    <span class="text-xs text-gray-500 mr-2">Account type:</span>
+                                    <span id="selectedRoleDisplay"
+                                        class="text-sm font-semibold text-primary">Employee</span>
+                                </div>
                             </div>
 
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                                <input type="email" id="signupEmail" required
-                                    class="input-dark w-full px-4 py-2.5 rounded-lg focus:ring-primary focus:border-primary"
-                                    placeholder="john@example.com">
+                            <!-- Senior signup key (shown only when Senior Leadership is selected) -->
+                            <div id="senior-key-wrap" class="mb-4 hidden">
+                                <label for="seniorSignupKey"
+                                    class="block text-sm font-semibold text-gray-700 mb-1.5">Senior
+                                    signup key</label>
+                                <input type="password" id="seniorSignupKey" autocomplete="off"
+                                    class="input-dark w-full px-4 py-3 rounded-xl transition-all"
+                                    placeholder="Enter the key to create a Senior account">
                             </div>
 
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                                <input type="password" id="signupPassword" required
-                                    class="input-dark w-full px-4 py-2.5 rounded-lg focus:ring-primary focus:border-primary"
-                                    placeholder="Create a password (min 8 characters)">
-                            </div>
-
-                            <button type="submit"
-                                class="btn-primary w-full text-white py-2.5 rounded-lg font-medium shadow-md">
-                                Create Account
+                            <!-- Microsoft Sign-Up Button -->
+                            <button id="microsoftSignupBtn"
+                                class="ms-btn w-full flex items-center justify-center gap-3 bg-microsoft text-white py-3 px-4 rounded-lg font-medium hover:bg-microsoft-hover transition-transform hover:-translate-y-0.5 shadow-md">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 23 23">
+                                    <path fill="#f35325" d="M1 1h10v10H1z" />
+                                    <path fill="#81bc06" d="M12 1h10v10H12z" />
+                                    <path fill="#05a6f0" d="M1 12h10v10H1z" />
+                                    <path fill="#ffba08" d="M12 12h10v10H12z" />
+                                </svg>
+                                Continue with Microsoft
                             </button>
-                        </form>
+
+                            <!-- Google Sign-Up Button -->
+                            <button id="googleSignupBtn"
+                                class="ms-btn w-full flex items-center justify-center gap-3 bg-white border border-gray-200 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-50 mt-3 hidden shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48">
+                                    <path fill="#EA4335"
+                                        d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+                                    <path fill="#4285F4"
+                                        d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+                                    <path fill="#FBBC05"
+                                        d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+                                    <path fill="#34A853"
+                                        d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+                                </svg>
+                                Continue with Google
+                            </button>
+
+                            <div class="divider-text">
+                                <span>or sign up with email</span>
+                            </div>
+
+                            <form id="signupForm" class="space-y-4">
+                                <input type="hidden" id="signupRole" name="role">
+
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Full Name</label>
+                                    <input type="text" id="fullname" required
+                                        class="input-dark w-full px-4 py-3 rounded-xl transition-all"
+                                        placeholder="John Doe">
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Email</label>
+                                    <input type="email" id="signupEmail" required
+                                        class="input-dark w-full px-4 py-3 rounded-xl transition-all"
+                                        placeholder="john@example.com">
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Password</label>
+                                    <input type="password" id="signupPassword" required
+                                        class="input-dark w-full px-4 py-3 rounded-xl transition-all"
+                                        placeholder="Create a password (min 8 characters)">
+                                </div>
+
+                                <button type="submit"
+                                    class="btn-primary w-full text-white py-3.5 mt-2 rounded-xl font-bold text-sm tracking-wide shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50">
+                                    Create Account
+                                </button>
+                            </form>
+                        </div>
                     </div>
+
                 </div>
 
-            </div>
+                <!-- Footer for Form Side -->
+                <div class="text-center py-5 px-6 md:px-8 border-t border-gray-100 shrink-0 mt-auto md:mt-0">
+                    <p class="text-xs text-gray-500">
+                        By continuing, you agree to our
+                        <a href="#" class="text-primary hover:text-primary-hover font-medium">Terms</a> and
+                        <a href="#" class="text-primary hover:text-primary-hover font-medium">Privacy Policy</a>
+                    </p>
+                </div>
 
-            <!-- Footer for Form Side -->
-            <div class="text-center py-5 px-6 md:px-8 border-t border-gray-100 shrink-0">
-                <p class="text-xs text-gray-500">
-                    By continuing, you agree to our
-                    <a href="#" class="text-primary hover:text-primary-hover font-medium">Terms</a> and
-                    <a href="#" class="text-primary hover:text-primary-hover font-medium">Privacy Policy</a>
-                </p>
-            </div>
+            </div> <!-- End inner max-w wrapper -->
         </div>
     </div>
 
     <!-- Link JS -->
     <script src="../static/js/api.js"></script>
+    <script>
+            // Use production API when opening with ?api=<url> (e.g. run on localhost, point to production)
+            (function () {
+                var m = /[?&]api=([^&]+)/.exec(window.location.search);
+                if (m) {
+                    var url = decodeURIComponent(m[1]).replace(/\/$/, '');
+                    localStorage.setItem('API_BASE', url);
+                    if (window.history && window.history.replaceState)
+                        window.history.replaceState({}, '', window.location.pathname + window.location.search.replace(/[?&]api=[^&]+&?/, '?').replace(/\?$/, ''));
+                }
+            })();
+    </script>
     <script src="../static/js/auth.js"></script>
+    <script>
+        // Smooth Mobile Bottom Sheet Interaction
+        document.addEventListener('DOMContentLoaded', () => {
+            const sheet = document.getElementById('auth-bottom-sheet');
+            const handle = document.getElementById('swipe-handle');
+            const swipeText = document.getElementById('swipe-text');
+            let isOpen = false;
+            let isDragging = false;
+            let startY = 0;
+            let currentY = 0;
+
+            if (handle && sheet) {
+                const getClosedOffset = () => sheet.getBoundingClientRect().height - 90;
+
+                const setTransform = (y, transition = '') => {
+                    sheet.style.transition = transition;
+                    sheet.style.transform = `translateY(${y}px)`;
+                };
+
+                // Initialize closed state on mobile
+                const initMobile = () => {
+                    // Only process on mobile
+                    if (window.innerWidth < 768) {
+                        setTransform(getClosedOffset(), 'none');
+                        isOpen = false;
+                        swipeText.style.opacity = '1';
+                        swipeText.style.transform = 'translateY(0)';
+                    } else {
+                        sheet.style.transform = '';
+                        sheet.style.transition = '';
+                    }
+                };
+
+                // Set original layout so layout recalculates correctly
+                setTimeout(initMobile, 50);
+                window.addEventListener('resize', () => requestAnimationFrame(initMobile));
+
+                const openSheet = () => {
+                    if (window.innerWidth >= 768) return;
+                    isOpen = true;
+                    setTransform(0, 'transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)');
+                    swipeText.style.opacity = '0';
+                    swipeText.style.transform = 'translateY(10px)';
+                };
+
+                const closeSheet = () => {
+                    if (window.innerWidth >= 768) return;
+                    isOpen = false;
+                    setTransform(getClosedOffset(), 'transform 0.4s cubic-bezier(0.22, 1, 0.36, 1)');
+                    swipeText.style.opacity = '1';
+                    swipeText.style.transform = 'translateY(0)';
+                };
+
+                handle.addEventListener('click', () => {
+                    if (isOpen) closeSheet();
+                    else openSheet();
+                });
+
+                handle.addEventListener('touchstart', e => {
+                    if (window.innerWidth >= 768) return;
+                    startY = e.touches[0].clientY;
+                    isDragging = true;
+                    sheet.style.transition = 'none'; // remove transition for direct tracking
+                }, { passive: true });
+
+                handle.addEventListener('touchmove', e => {
+                    if (!isDragging || window.innerWidth >= 768) return;
+                    currentY = e.touches[0].clientY;
+                    const deltaY = currentY - startY;
+
+                    let newY = isOpen ? deltaY : getClosedOffset() + deltaY;
+
+                    if (newY < 0) newY = 0; // prevent drag above top
+                    if (newY > getClosedOffset()) newY = getClosedOffset(); // prevent drag below
+
+                    setTransform(newY, 'none');
+
+                    if (!isOpen) {
+                        const progress = Math.max(0, 1 - (Math.abs(deltaY) / 100));
+                        swipeText.style.opacity = progress.toString();
+                    }
+                }, { passive: true });
+
+                handle.addEventListener('touchend', e => {
+                    if (!isDragging || window.innerWidth >= 768) return;
+                    isDragging = false;
+                    const deltaY = currentY - startY;
+
+                    // Calculate velocity-based snapping roughly based on deltaY
+                    if (isOpen) {
+                        if (deltaY > 60) closeSheet();
+                        else openSheet();
+                    } else {
+                        if (deltaY < -60) openSheet();
+                        else closeSheet();
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 
 </html>
