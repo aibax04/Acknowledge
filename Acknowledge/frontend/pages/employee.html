@@ -226,7 +226,7 @@
     <aside id="sidebar"
         class="w-64 bg-white border-r border-slate-200 flex-shrink-0 flex flex-col h-screen shadow-sm fixed inset-y-0 left-0 z-40 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out">
         <!-- Logo (fixed top) -->
-        <div class="h-16 flex items-center gap-3 px-8 border-b border-primary/80 bg-primary flex-shrink-0">
+        <div class="h-16 flex items-center gap-3 px-8 border-b border-emerald-700/30 bg-emerald-600 flex-shrink-0">
             <div class="w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center flex-shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
                     stroke="currentColor">
@@ -258,6 +258,14 @@
                             d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
                     My Projects
+                </a>
+                <!-- 2b. Assign Task -->
+                <a href="#" data-tab="assign-task"
+                    class="nav-link flex items-center px-4 py-2.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900 rounded-lg font-medium transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                    </svg>
+                    Assign Task
                 </a>
                 <!-- 3. Nudges -->
                 <a href="#" data-tab="concerns"
@@ -504,6 +512,24 @@
                 </div>
             </div>
 
+            <!-- ASSIGN TASK TAB (employees can assign to employees & interns) -->
+            <div id="assign-task-tab" class="tab-content">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="section-title">Assign Task</h2>
+                    <button type="button" id="btn-employee-assign-task"
+                        class="btn-primary text-white px-4 py-2.5 rounded-xl text-sm font-medium inline-flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Assign New Task
+                    </button>
+                </div>
+                <div class="card-section p-6">
+                    <p class="text-slate-600 text-sm mb-4">Assign tasks to other employees or interns. They will see the task in their My Tasks list.</p>
+                    <p class="text-slate-500 text-xs">Use the button above to create a new task and choose who it’s assigned to.</p>
+                </div>
+            </div>
+
             <!-- NUDGES TAB -->
             <div id="concerns-tab" class="tab-content">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -641,17 +667,18 @@
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                     <div>
                         <h2 class="text-xl font-bold text-gray-900 tracking-tight">Leave Management</h2>
-                        <p class="text-sm text-gray-500 mt-1">Check your balance and track your applications.</p>
+                        <p class="text-sm text-gray-500 mt-1">Available balance first — used leave is in Ledger.</p>
                     </div>
                     <button onclick="openApplyLeaveModal()"
                         class="bg-primary text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-primary-hover transition-all shadow-sm flex items-center justify-center gap-2 w-full sm:w-auto">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                         </svg>
-                        Apply for Leave
+                        Request Leave
                     </button>
                 </div>
 
+                <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Available balance</h3>
                 <div id="leave-balance-container" class="mb-8"></div>
 
                 <div class="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
@@ -685,6 +712,29 @@
         </div>
         </div>
     </main>
+
+    <!-- Assign Task Modal -->
+    <div id="employee-assign-task-modal" class="hidden fixed inset-0 z-[100] overflow-y-auto" aria-modal="true">
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div class="fixed inset-0 bg-black/50 modal-backdrop" id="employee-assign-task-backdrop"></div>
+            <div class="relative bg-white rounded-2xl shadow-xl max-w-md w-full p-6 animate-fade-in border border-slate-100">
+                <h3 class="text-lg font-semibold text-slate-800 mb-4">Assign New Task</h3>
+                <div class="space-y-4">
+                    <div><label class="block text-sm font-medium text-slate-700 mb-1">Task Title</label><input type="text" id="employee-task-title" placeholder="Enter task title" class="w-full input-dark rounded-xl px-3 py-2 text-sm"></div>
+                    <div><label class="block text-sm font-medium text-slate-700 mb-1">Description</label><textarea id="employee-task-description" rows="3" placeholder="Task details" class="w-full input-dark rounded-xl px-3 py-2 text-sm resize-none"></textarea></div>
+                    <div><label class="block text-sm font-medium text-slate-700 mb-1">Assign To (employees and interns)</label><select id="employee-task-assignee" class="w-full input-dark rounded-xl px-3 py-2 text-sm"><option value="">Select person...</option></select></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="block text-sm font-medium text-slate-700 mb-1">Priority</label><select id="employee-task-priority" class="w-full input-dark rounded-xl px-3 py-2 text-sm"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></div>
+                        <div><label class="block text-sm font-medium text-slate-700 mb-1">Deadline</label><input type="date" id="employee-task-deadline" class="w-full input-dark rounded-xl px-3 py-2 text-sm"></div>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 mt-5">
+                    <button type="button" id="employee-assign-task-cancel" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-xl">Cancel</button>
+                    <button type="button" id="employee-assign-task-confirm" class="btn-primary px-4 py-2 text-sm text-white rounded-xl">Assign Task</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Office Setup Modal -->
     <div id="office-setup-modal" class="hidden fixed inset-0 z-[100] overflow-y-auto" aria-modal="true">
@@ -723,10 +773,10 @@
                 <div class="space-y-4">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div><label class="block text-sm font-medium text-slate-700 mb-1">Clock In</label><input
-                                type="time" id="update-att-clock-in" value="09:00"
+                                type="time" id="update-att-clock-in" value="09:00" min="09:00" max="23:00"
                                 class="w-full input-dark rounded-xl px-3 py-2 text-sm"></div>
                         <div><label class="block text-sm font-medium text-slate-700 mb-1">Clock Out</label><input
-                                type="time" id="update-att-clock-out" value="18:00"
+                                type="time" id="update-att-clock-out" value="18:00" min="09:00" max="23:00"
                                 class="w-full input-dark rounded-xl px-3 py-2 text-sm"></div>
                     </div>
                     <div><label class="block text-sm font-medium text-slate-700 mb-1">Send to Manager</label><select
@@ -761,7 +811,7 @@
                                 d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                     </div>
-                    <h3 class="text-xl font-bold text-gray-900 tracking-tight">Apply for Leave</h3>
+                    <h3 class="text-xl font-bold text-gray-900 tracking-tight">Request Leave</h3>
                 </div>
 
                 <div class="space-y-5">
@@ -803,7 +853,7 @@
                         class="px-5 py-2.5 text-sm font-semibold text-gray-500 hover:bg-gray-50 rounded-xl transition-colors">Cancel</button>
                     <button onclick="submitLeaveApplication()"
                         class="bg-primary text-white px-8 py-2.5 rounded-xl text-sm font-bold hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all">Submit
-                        Application</button>
+                        Request</button>
                 </div>
             </div>
         </div>
@@ -825,7 +875,7 @@
                                     d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
                         </div>
-                        <h3 class="text-xl font-bold text-gray-900 tracking-tight">Leave Application Logs</h3>
+                        <h3 class="text-xl font-bold text-gray-900 tracking-tight">Leave Request Logs</h3>
                     </div>
                     <button onclick="document.getElementById('leave-logs-modal').classList.add('hidden')"
                         class="text-gray-400 hover:text-gray-600 transition-colors">

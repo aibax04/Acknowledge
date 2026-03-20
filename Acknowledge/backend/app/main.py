@@ -53,11 +53,19 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/static/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
 # --- Custom leave policies list: backup routes at app level so they always exist (fixes 404/405 on some deployments) ---
-from fastapi import Depends
+from fastapi import Depends, Query
 from app.database import get_db
 from app.routes.auth import get_current_user
-from app.routes.leaves import _list_custom_leave_policies_impl
+from app.routes.leaves import (
+    _list_custom_leave_policies_impl,
+    list_leave_adjustments,
+    create_leave_adjustment,
+    create_custom_leave_policy,
+    update_custom_leave_policy,
+    delete_custom_leave_policy,
+)
 from app.models.user import User
+from app.schemas.leave_schema import LeaveAdjustmentCreate, CustomLeavePolicyCreate, CustomLeavePolicyUpdate
 
 @app.get("/leaves/custom-policies/list")
 @app.get("/leaves/custom-policies")
@@ -68,6 +76,62 @@ async def list_custom_policies_backup(
 ):
     """Backup routes for listing custom leave policies (same as leaves router)."""
     return await _list_custom_leave_policies_impl(for_apply, db, current_user)
+
+@app.post("/leaves/custom-policies/create")
+async def create_custom_policy_backup(
+    body: CustomLeavePolicyCreate,
+    db=Depends(get_db),
+    current_user: User=Depends(get_current_user),
+):
+    return await create_custom_leave_policy(body=body, db=db, current_user=current_user)
+
+@app.put("/leaves/custom-policies/{policy_id}")
+async def update_custom_policy_backup(
+    policy_id: int,
+    body: CustomLeavePolicyUpdate,
+    db=Depends(get_db),
+    current_user: User=Depends(get_current_user),
+):
+    return await update_custom_leave_policy(policy_id=policy_id, body=body, db=db, current_user=current_user)
+
+@app.delete("/leaves/custom-policies/{policy_id}")
+async def delete_custom_policy_backup(
+    policy_id: int,
+    db=Depends(get_db),
+    current_user: User=Depends(get_current_user),
+):
+    return await delete_custom_leave_policy(policy_id=policy_id, db=db, current_user=current_user)
+
+@app.get("/leaves/adjustments")
+async def list_adjustments_backup(
+    user_id: int = Query(...),
+    year: int = Query(...),
+    db=Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Backup route so GET /leaves/adjustments is always available."""
+    return await list_leave_adjustments(user_id=user_id, year=year, db=db, current_user=current_user)
+
+
+@app.post("/leaves/adjustments")
+async def create_adjustment_backup(
+    body: LeaveAdjustmentCreate,
+    db=Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Backup route so POST /leaves/adjustments is always available (fixes 405 on some deployments)."""
+    return await create_leave_adjustment(body=body, db=db, current_user=current_user)
+
+
+@app.post("/leaves/admin/adjustments")
+async def create_adjustment_alt(
+    body: LeaveAdjustmentCreate,
+    db=Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Alternate path for admin leave adjustment (avoids 405 when primary path is blocked)."""
+    return await create_leave_adjustment(body=body, db=db, current_user=current_user)
+
 
 # Includes (no /api prefix: nginx strips /api and forwards /leaves/..., so backend serves at /leaves/..., /auth/..., etc.)
 app.include_router(auth.router)
@@ -130,6 +194,21 @@ async def startup():
             await conn.execute(text("ALTER TABLE custom_leave_policies ADD COLUMN IF NOT EXISTS shared_annual_limit INTEGER"))
         except Exception:
             pass
+        try:
+            await conn.execute(text("ALTER TABLE custom_leave_policies ADD COLUMN IF NOT EXISTS monthly_allowance INTEGER"))
+        except Exception:
+            pass
+        # Upgrade policy numeric columns to support decimals (e.g. 1.5 days / month)
+        for _col in ("max_days_per_month", "monthly_allowance", "shared_annual_limit"):
+            try:
+                await conn.execute(
+                    text(
+                        f"ALTER TABLE custom_leave_policies ALTER COLUMN {_col} TYPE double precision "
+                        f"USING {_col}::double precision"
+                    )
+                )
+            except Exception:
+                pass
         # Add 'custom'/'CUSTOM' to leavetype enum if missing (required for custom leave policies)
         for _val in ("custom", "CUSTOM"):
             try:

@@ -77,11 +77,12 @@ async def clock_in(
     if holiday:
         raise HTTPException(status_code=400, detail=f"Today is a holiday: {holiday.title}. No clock-in required.")
 
-    # Check working hours (9 AM to 7 PM IST = UTC+5:30)
+    # Check working hours (9:00 AM to 11:00 PM IST = UTC+5:30)
     ist_offset = timedelta(hours=5, minutes=30)
     now_ist = now + ist_offset
-    if now_ist.hour < 9 or now_ist.hour >= 19:
-        raise HTTPException(status_code=400, detail="Clock-in is only allowed between 9:00 AM and 7:00 PM IST")
+    minutes_since_midnight = now_ist.hour * 60 + now_ist.minute
+    if minutes_since_midnight < 9 * 60 or minutes_since_midnight > 23 * 60:
+        raise HTTPException(status_code=400, detail="Clock-in is only allowed between 9:00 AM and 11:00 PM IST")
 
     # Check if already clocked in today
     result = await db.execute(
@@ -126,11 +127,12 @@ async def clock_out(
     now = datetime.now(timezone.utc)
     today = now.date()
 
-    # Check working hours
+    # Check working hours (9:00 AM to 11:00 PM IST)
     ist_offset = timedelta(hours=5, minutes=30)
     now_ist = now + ist_offset
-    if now_ist.hour < 9 or now_ist.hour >= 19:
-        raise HTTPException(status_code=400, detail="Clock-out is only allowed between 9:00 AM and 7:00 PM IST")
+    minutes_since_midnight = now_ist.hour * 60 + now_ist.minute
+    if minutes_since_midnight < 9 * 60 or minutes_since_midnight > 23 * 60:
+        raise HTTPException(status_code=400, detail="Clock-out is only allowed between 9:00 AM and 11:00 PM IST")
 
     result = await db.execute(
         select(Attendance).filter(

@@ -315,13 +315,19 @@ function renderAttentionItems(concerns) {
     // Render open concerns
     openConcerns.forEach(concern => {
         const div = document.createElement('div');
-        div.className = 'p-4 bg-red-50 rounded-lg border border-red-100';
+        div.className = 'p-4 bg-red-50 rounded-lg border border-red-100 cursor-pointer hover:bg-red-100 transition-colors';
+        div.onclick = (e) => {
+            if (e.target.tagName !== 'BUTTON') {
+                switchTab('nudges');
+                viewNudge(concern.id);
+            }
+        };
         div.innerHTML = `
             <div class="flex justify-between items-start">
                 <h4 class="text-sm font-semibold text-red-800">Concern Raised</h4>
                 <span class="text-xs text-red-500">${getTimeAgo(concern.created_at)}</span>
             </div>
-            <p class="text-sm text-red-600 mt-1">"${concern.subject}" - <span class="font-medium">${concern.raised_by ? concern.raised_by.full_name : 'Employee'}</span></p>
+            <p class="text-sm text-red-600 mt-1 line-clamp-2">"${concern.subject}" - <span class="font-medium">${concern.raised_by ? concern.raised_by.full_name : 'Employee'}</span></p>
             <div class="mt-3 flex space-x-2">
                 <button onclick="resolveConcern(${concern.id})" class="text-xs bg-white border border-red-200 text-red-600 px-3 py-1 rounded hover:bg-red-50">Resolve</button>
             </div>
@@ -332,7 +338,13 @@ function renderAttentionItems(concerns) {
     // Render tasks pending review
     reviewTasks.slice(0, 3).forEach(task => {
         const div = document.createElement('div');
-        div.className = 'p-4 bg-primary-bg rounded-lg border border-primary-light';
+        div.className = 'p-4 bg-primary-light/50 rounded-lg border border-primary-light cursor-pointer hover:bg-primary-light transition-colors';
+        div.onclick = (e) => {
+            if (e.target.tagName !== 'BUTTON') {
+                switchTab('team');
+                viewTask(task.id);
+            }
+        };
         div.innerHTML = `
             <div class="flex justify-between items-start">
                 <h4 class="text-sm font-semibold text-primary">Task Review</h4>
@@ -1900,7 +1912,9 @@ async function submitNudge() {
 }
 
 function viewNudge(nudgeId) {
-    const nudge = managerNudgesCache.find(n => n.id === nudgeId);
+    let nudge = null;
+    if (typeof allConcerns !== 'undefined') nudge = allConcerns.find(n => n.id === nudgeId);
+    if (!nudge && typeof managerNudgesCache !== 'undefined') nudge = managerNudgesCache.find(n => n.id === nudgeId);
     if (!nudge) {
         showToast('Nudge not found', 'error');
         return;

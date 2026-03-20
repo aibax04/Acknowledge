@@ -1,16 +1,17 @@
 import logging
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import and_, func, extract
 from app.database import get_db
 from app.models.user import User, UserRole
-from app.models.leave import LeaveRequest, LeaveType, LeaveStatus
+from app.models.leave import LeaveRequest, LeaveType, LeaveStatus, LeaveBalanceAdjustment
 from app.models.custom_leave_policy import CustomLeavePolicy
 from app.routes.auth import get_current_user
 from app.schemas.leave_schema import (
     LeaveApplyRequest, LeaveResponse, LeaveReviewRequest, LeaveBalanceResponse,
-    CustomLeavePolicyCreate, CustomLeavePolicyResponse
+    CustomLeavePolicyCreate, CustomLeavePolicyUpdate, CustomLeavePolicyResponse,
+    LeaveAdjustmentCreate, LeaveAdjustmentResponse
 )
 from datetime import datetime, date, timezone, timedelta
 from typing import List, Optional
@@ -60,6 +61,51 @@ def _working_days_in_year(range_start: date, range_end: date, year: int, office:
     if s > e:
         return 0.0
     return count_working_days(s, e, office)
+
+
+async def _compute_wallet_for_policy(
+    db: AsyncSession,
+    user_id: int,
+    policy: "CustomLeavePolicy",
+    year: int,
+    office: str = "eigen",
+    policy_ids_in_group: Optional[List[int]] = None,
+) -> Optional[float]:
+    """
+    Compute leave wallet (balance) when policy has monthly_allowance.
+    Wallet = (monthly_allowance * months_elapsed_this_year) - used_this_year + adjustments.
+    Unused days from previous months carry over (accrued each month).
+    """
+    monthly_allowance = getattr(policy, "monthly_allowance", None)
+    if monthly_allowance is None or float(monthly_allowance) <= 0:
+        return None
+    today = date.today()
+    if year != today.year:
+        months_elapsed = 12
+    else:
+        months_elapsed = today.month
+    accrued = monthly_allowance * months_elapsed
+    ids = list(policy_ids_in_group) if policy_ids_in_group else [policy.id]
+    year_first = date(year, 1, 1)
+    year_last = date(year, 12, 31)
+    result = await db.execute(
+        select(LeaveRequest).filter(
+            LeaveRequest.user_id == user_id,
+            LeaveRequest.custom_policy_id.in_(ids),
+            LeaveRequest.status.in_([LeaveStatus.APPROVED, LeaveStatus.PENDING]),
+            LeaveRequest.start_date <= year_last,
+            LeaveRequest.end_date >= year_first,
+        )
+    )
+    leaves = result.scalars().all()
+    used = sum(
+        _working_days_in_year(l.start_date, l.end_date, year, office)
+        for l in leaves
+    )
+    adjustments = await _get_adjustments_for_user_year(db, user_id, year)
+    adj_sum = sum(a.adjustment_days for a in adjustments if a.custom_policy_id is not None and a.custom_policy_id in ids)
+    wallet = accrued - used + adj_sum
+    return max(0.0, round(wallet, 2))
 
 
 def compute_leave_balance(user: User, approved_leaves: list, current_year: int):
@@ -115,13 +161,37 @@ def compute_leave_balance(user: User, approved_leaves: list, current_year: int):
     }
 
 
+async def _get_adjustments_for_user_year(db: AsyncSession, user_id: int, year: int):
+    """Fetch all leave balance adjustments for a user in a given year."""
+    result = await db.execute(
+        select(LeaveBalanceAdjustment).filter(
+            LeaveBalanceAdjustment.user_id == user_id,
+            LeaveBalanceAdjustment.year == year
+        ).order_by(LeaveBalanceAdjustment.created_at.desc())
+    )
+    return result.scalars().all()
+
+
 @router.get("/balance")
 async def get_leave_balance(
+    user_id: Optional[int] = Query(None, description="Target user ID (directors only)"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Get current user's leave balance."""
-    if current_user.role == UserRole.INTERN:
+    """Get leave balance. Without user_id returns current user's; with user_id only directors can query another user."""
+    target_user_id = current_user.id
+    target_user = current_user
+    if user_id is not None:
+        if current_user.role != UserRole.SENIOR:
+            raise HTTPException(status_code=403, detail="Only directors can view another user's balance")
+        target_user = await db.get(User, user_id)
+        if not target_user:
+            raise HTTPException(status_code=404, detail="User not found")
+        target_user_id = user_id
+
+    if target_user.role == UserRole.INTERN:
+        current_year = date.today().year
+        adjustments = await _get_adjustments_for_user_year(db, target_user_id, current_year)
         return {
             "earned_leave_accrued": 0,
             "earned_leave_used": 0,
@@ -133,20 +203,98 @@ async def get_leave_balance(
             "can_use_earned_leave": False,
             "joining_date": None,
             "is_intern": True,
-            "message": "Interns are eligible for unpaid leave only."
+            "message": "Interns are eligible for unpaid leave only.",
+            "adjustments": [
+                {"leave_type": a.leave_type, "custom_policy_id": a.custom_policy_id, "adjustment_days": a.adjustment_days, "reason": a.reason}
+                for a in adjustments
+            ]
         }
 
     current_year = date.today().year
     result = await db.execute(
         select(LeaveRequest).filter(
-            LeaveRequest.user_id == current_user.id,
+            LeaveRequest.user_id == target_user_id,
             LeaveRequest.status == LeaveStatus.APPROVED
         )
     )
     approved_leaves = result.scalars().all()
 
-    balance = compute_leave_balance(current_user, approved_leaves, current_year)
+    balance = compute_leave_balance(target_user, approved_leaves, current_year)
+
+    # Apply adjustments for standard leave types
+    adjustments = await _get_adjustments_for_user_year(db, target_user_id, current_year)
+    el_adj = sum(a.adjustment_days for a in adjustments if a.leave_type == "earned_leave")
+    csl_adj = sum(a.adjustment_days for a in adjustments if a.leave_type == "casual_sick_leave")
+    balance["earned_leave_balance"] = max(0, balance["earned_leave_balance"] + el_adj)
+    balance["casual_sick_leave_balance"] = max(0, balance["casual_sick_leave_balance"] + csl_adj)
+    balance["adjustments"] = [
+        {"leave_type": a.leave_type, "custom_policy_id": a.custom_policy_id, "adjustment_days": a.adjustment_days, "reason": a.reason}
+        for a in adjustments
+    ]
     return balance
+
+
+@router.get("/adjustments", response_model=List[LeaveAdjustmentResponse])
+async def list_leave_adjustments(
+    user_id: int = Query(..., description="User whose adjustments to list"),
+    year: int = Query(..., description="Year (e.g. 2025)"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """List leave balance adjustments for a user in a year. Directors can pass any user_id; others only their own."""
+    if current_user.role != UserRole.SENIOR and user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only view your own adjustments")
+    adjustments = await _get_adjustments_for_user_year(db, user_id, year)
+    return [
+        LeaveAdjustmentResponse(
+            id=a.id, user_id=a.user_id, year=a.year, leave_type=a.leave_type,
+            custom_policy_id=a.custom_policy_id, adjustment_days=a.adjustment_days,
+            reason=a.reason, created_by_id=a.created_by_id, created_at=a.created_at
+        )
+        for a in adjustments
+    ]
+
+
+@router.post("/adjustments", response_model=LeaveAdjustmentResponse)
+async def create_leave_adjustment(
+    body: LeaveAdjustmentCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Create a leave balance adjustment. Directors only. Exactly one of leave_type or custom_policy_id must be set."""
+    if current_user.role != UserRole.SENIOR:
+        raise HTTPException(status_code=403, detail="Only directors can adjust leave balances")
+    if (body.leave_type is None) == (body.custom_policy_id is None):
+        raise HTTPException(
+            status_code=400,
+            detail="Exactly one of leave_type (earned_leave or casual_sick_leave) or custom_policy_id must be set"
+        )
+    if body.leave_type is not None and body.leave_type not in ("earned_leave", "casual_sick_leave"):
+        raise HTTPException(status_code=400, detail="leave_type must be earned_leave or casual_sick_leave")
+    target = await db.get(User, body.user_id)
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    if body.custom_policy_id is not None:
+        policy = await db.get(CustomLeavePolicy, body.custom_policy_id)
+        if not policy:
+            raise HTTPException(status_code=404, detail="Custom leave policy not found")
+    adj = LeaveBalanceAdjustment(
+        user_id=body.user_id,
+        year=body.year,
+        leave_type=body.leave_type,
+        custom_policy_id=body.custom_policy_id,
+        adjustment_days=body.adjustment_days,
+        reason=(body.reason or "").strip() or "Adjusted by director",
+        created_by_id=current_user.id,
+    )
+    db.add(adj)
+    await db.commit()
+    await db.refresh(adj)
+    return LeaveAdjustmentResponse(
+        id=adj.id, user_id=adj.user_id, year=adj.year, leave_type=adj.leave_type,
+        custom_policy_id=adj.custom_policy_id, adjustment_days=adj.adjustment_days,
+        reason=adj.reason, created_by_id=adj.created_by_id, created_at=adj.created_at
+    )
 
 
 @router.post("/apply")
@@ -227,9 +375,31 @@ async def _apply_leave_impl(req: LeaveApplyRequest, db: AsyncSession, current_us
                 status_code=400,
                 detail=f"This leave requires applying at least {policy.prior_days} calendar days in advance"
             )
-        # Enforce max days per month if set
         _office = str(getattr(current_user, "office", None) or "").strip().lower()
         office_for_policy = "eigen" if _office == "igen" else ("panscience" if _office == "panscience" else "eigen")
+
+        # Wallet check: when policy has monthly_allowance, user can only apply up to wallet (accrued - used + adjustments)
+        if getattr(policy, "monthly_allowance", None) is not None and float(policy.monthly_allowance) > 0:
+            requested_days = count_working_days(req.start_date, req.end_date, office_for_policy)
+            if requested_days > 0:
+                policy_ids_for_wallet = [policy.id]
+                if getattr(policy, "policy_group_key", None):
+                    group_result = await db.execute(
+                        select(CustomLeavePolicy.id).filter(
+                            CustomLeavePolicy.policy_group_key == policy.policy_group_key
+                        )
+                    )
+                    policy_ids_for_wallet = [row[0] for row in group_result.all()]
+                wallet = await _compute_wallet_for_policy(
+                    db, current_user.id, policy, req.start_date.year, office_for_policy, policy_ids_for_wallet
+                )
+                if wallet is not None and requested_days > wallet:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Leave wallet balance is {wallet} days. You cannot apply for more than your available balance (unused days carry over each month)."
+                    )
+
+        # Enforce max days per month if set
         if getattr(policy, "max_days_per_month", None) is not None:
             month_start = req.start_date
             while month_start <= req.end_date:
@@ -409,6 +579,7 @@ def _policy_to_response(p: CustomLeavePolicy, created_by_name: str = None) -> di
         "title": p.title,
         "prior_days": p.prior_days,
         "max_days_per_month": getattr(p, "max_days_per_month", None),
+        "monthly_allowance": getattr(p, "monthly_allowance", None),
         "policy_group_key": getattr(p, "policy_group_key", None),
         "sub_type_name": getattr(p, "sub_type_name", None),
         "shared_annual_limit": getattr(p, "shared_annual_limit", None),
@@ -482,8 +653,11 @@ async def create_custom_leave_policy(
     if not roles:
         raise HTTPException(status_code=400, detail="At least one allowed role (employee, intern, manager) is required")
     max_per_month = body.max_days_per_month
-    if max_per_month is not None and max_per_month < 1:
-        raise HTTPException(status_code=400, detail="Max days per month must be at least 1 if set")
+    if max_per_month is not None and float(max_per_month) <= 0:
+        raise HTTPException(status_code=400, detail="Max days per month must be greater than 0 if set")
+    monthly_allowance = getattr(body, "monthly_allowance", None)
+    if monthly_allowance is not None and float(monthly_allowance) <= 0:
+        raise HTTPException(status_code=400, detail="Monthly allowance must be greater than 0 if set")
     allowed_roles_str = ",".join(roles)
     title = body.title.strip()
     prior_days = max(0, body.prior_days)
@@ -494,6 +668,7 @@ async def create_custom_leave_policy(
             title=title,
             prior_days=prior_days,
             max_days_per_month=max_per_month,
+            monthly_allowance=monthly_allowance,
             allowed_roles=allowed_roles_str,
             allowed_on_probation=bool(getattr(body, "allowed_on_probation", True)),
             created_by_id=current_user.id,
@@ -518,8 +693,8 @@ async def create_custom_leave_policy(
         raise HTTPException(status_code=400, detail="Provide at least 2 distinct sub leave categories")
 
     shared_annual_limit = getattr(body, "shared_annual_limit", None)
-    if shared_annual_limit is None or shared_annual_limit < 1:
-        raise HTTPException(status_code=400, detail="Shared annual limit is required and must be at least 1 for sub leave categories")
+    if shared_annual_limit is None or float(shared_annual_limit) <= 0:
+        raise HTTPException(status_code=400, detail="Shared annual limit is required and must be greater than 0 for sub leave categories")
 
     from datetime import datetime as _dt
     group_key = f"{current_user.id}:{int(_dt.utcnow().timestamp())}:{title.lower().replace(' ', '-')[:50]}"
@@ -554,6 +729,65 @@ async def create_custom_leave_policy(
         "policy_group_key": group_key,
         "shared_annual_limit": shared_annual_limit,
         "created": [_policy_to_response(p, current_user.full_name) for p in created],
+    }
+
+
+@router.put("/custom-policies/{policy_id}", response_model=dict)
+async def update_custom_leave_policy(
+    policy_id: int,
+    body: CustomLeavePolicyUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Update a custom leave policy. Only directors can update; only policies they created."""
+    if current_user.role != UserRole.SENIOR:
+        raise HTTPException(status_code=403, detail="Only directors can edit custom leave policies")
+    result = await db.execute(select(CustomLeavePolicy).filter(CustomLeavePolicy.id == policy_id))
+    policy = result.scalars().first()
+    if not policy:
+        raise HTTPException(status_code=404, detail="Policy not found")
+    if policy.created_by_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only edit policies you created")
+
+    if body.title is not None:
+        if not str(body.title).strip():
+            raise HTTPException(status_code=400, detail="Title cannot be empty")
+        policy.title = body.title.strip()
+    if body.prior_days is not None:
+        policy.prior_days = max(0, body.prior_days)
+    if body.max_days_per_month is not None:
+        policy.max_days_per_month = body.max_days_per_month if float(body.max_days_per_month) > 0 else None
+    if body.monthly_allowance is not None:
+        policy.monthly_allowance = body.monthly_allowance if float(body.monthly_allowance) > 0 else None
+    if body.allowed_roles is not None:
+        valid_roles = {"employee", "intern", "manager"}
+        roles = [r.strip().lower() for r in body.allowed_roles if r and str(r).strip().lower() in valid_roles]
+        if not roles:
+            raise HTTPException(status_code=400, detail="At least one allowed role is required")
+        policy.allowed_roles = ",".join(roles)
+    if body.allowed_on_probation is not None:
+        policy.allowed_on_probation = body.allowed_on_probation
+
+    if body.shared_annual_limit is not None:
+        val = body.shared_annual_limit if float(body.shared_annual_limit) > 0 else None
+        if policy.policy_group_key:
+            result_group = await db.execute(
+                select(CustomLeavePolicy).filter(CustomLeavePolicy.policy_group_key == policy.policy_group_key)
+            )
+            for p in result_group.scalars().all():
+                p.shared_annual_limit = val
+        else:
+            policy.shared_annual_limit = val
+
+    await db.commit()
+    await db.refresh(policy)
+    creator_name = current_user.full_name
+    if policy.created_by_id != current_user.id:
+        creator = await db.get(User, policy.created_by_id)
+        creator_name = creator.full_name if creator else None
+    return {
+        "message": "Policy updated",
+        "updated": _policy_to_response(policy, creator_name),
     }
 
 
@@ -596,6 +830,12 @@ def _leave_overlaps_month(leave: LeaveRequest, year: int, month: int) -> bool:
     return leave.start_date <= last and leave.end_date >= first
 
 
+def _leave_overlaps_year(leave: LeaveRequest, year: int) -> bool:
+    first = date(year, 1, 1)
+    last = date(year, 12, 31)
+    return leave.start_date <= last and leave.end_date >= first
+
+
 async def _is_leave_under_director_policy(l: LeaveRequest, db: AsyncSession) -> bool:
     """True only for custom leaves created under a director-created policy."""
     if l.leave_type != LeaveType.CUSTOM:
@@ -616,7 +856,7 @@ async def get_my_leaves(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Get current user's leave requests. Optionally filter by month (1-12) and year."""
+    """Get current user's leave requests. Optionally filter by month (1-12) and year, or by year only."""
     result = await db.execute(
         select(LeaveRequest).filter(
             LeaveRequest.user_id == current_user.id
@@ -625,6 +865,8 @@ async def get_my_leaves(
     leaves = result.scalars().all()
     if month is not None and year is not None and 1 <= month <= 12:
         leaves = [l for l in leaves if _leave_overlaps_month(l, year, month)]
+    elif year is not None and month is None:
+        leaves = [l for l in leaves if _leave_overlaps_year(l, year)]
     # Only show leaves under director-created policies (standard types always; custom only if policy creator is SENIOR)
     filtered = []
     for l in leaves:
@@ -647,6 +889,7 @@ async def get_my_leaves(
         response.append({
             "id": l.id,
             "leave_type": l.leave_type.value,
+            "custom_policy_id": l.custom_policy_id,
             "custom_policy_title": custom_policy_title,
             "start_date": l.start_date.isoformat(),
             "end_date": l.end_date.isoformat(),
@@ -698,6 +941,7 @@ async def get_all_leaves(
             "user_name": user.full_name if user else "Unknown",
             "user_role": user.role.value if user else None,
             "leave_type": l.leave_type.value,
+            "custom_policy_id": l.custom_policy_id,
             "custom_policy_title": custom_policy_title,
             "start_date": l.start_date.isoformat(),
             "end_date": l.end_date.isoformat(),
@@ -717,7 +961,7 @@ async def get_pending_leaves(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Get all pending leave requests. Only directors (seniors) can approve. Optionally filter by month (1-12) and year."""
+    """Get all pending leave requests. Only directors (seniors) can approve. Optionally filter by month (1-12) and year, or by year only."""
     if current_user.role != UserRole.SENIOR:
         raise HTTPException(status_code=403, detail="Only directors can view pending leave requests")
 
@@ -729,6 +973,8 @@ async def get_pending_leaves(
     leaves = result.scalars().all()
     if month is not None and year is not None and 1 <= month <= 12:
         leaves = [l for l in leaves if _leave_overlaps_month(l, year, month)]
+    elif year is not None and month is None:
+        leaves = [l for l in leaves if _leave_overlaps_year(l, year)]
     # Only show leaves under director-created policies (standard types always; custom only if policy creator is SENIOR)
     filtered = []
     for l in leaves:
@@ -750,6 +996,7 @@ async def get_pending_leaves(
             "user_name": user.full_name if user else "Unknown",
             "user_role": user.role.value if user else None,
             "leave_type": l.leave_type.value,
+            "custom_policy_id": l.custom_policy_id,
             "custom_policy_title": custom_policy_title,
             "start_date": l.start_date.isoformat(),
             "end_date": l.end_date.isoformat(),

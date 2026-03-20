@@ -277,6 +277,8 @@ function renderTasks(tasks) {
                     Comment
                     ${hasUnseen ? '<span class="inline-block w-2 h-2 rounded-full bg-red-500" aria-label="Unseen comments"></span>' : ''}
                 </button>
+                ${(task.created_by_id === currentUser?.id || (task.created_by && task.created_by.id === currentUser?.id)) ?
+                `<button type="button" onclick="deleteTask(${task.id})" class="text-red-600 hover:text-red-700 font-medium" title="Delete task">Delete</button>` : ''}
             </td>
         </tr>
     `}).join('');
@@ -358,6 +360,18 @@ async function acknowledgeTask(taskId) {
         await loadTasks();
     } catch (e) {
         showToast(e.message || 'Failed to acknowledge task', 'error');
+    }
+}
+
+async function deleteTask(taskId) {
+    if (!confirm('Delete this task? This cannot be undone.')) return;
+    try {
+        await Api.delete(`/tasks/${taskId}`);
+        showToast('Task deleted', 'success');
+        await loadTasks();
+        updateDashboardStats();
+    } catch (e) {
+        showToast(e.message || 'Failed to delete task', 'error');
     }
 }
 
@@ -856,6 +870,70 @@ function handleLogout() {
 }
 
 // ============================================
+// ASSIGN TASK (employees can assign to employees & interns)
+// ============================================
+
+async function openEmployeeAssignTaskModal() {
+    const assigneeSelect = document.getElementById('employee-task-assignee');
+    if (!assigneeSelect) return;
+    assigneeSelect.innerHTML = '<option value="">Loading...</option>';
+    document.getElementById('employee-assign-task-modal').classList.remove('hidden');
+    try {
+        const users = await Api.get('/auth/all-users');
+        const allowed = (users || []).filter(u => u && (u.role === 'employee' || u.role === 'intern') && u.id !== currentUser?.id);
+        allowed.sort((a, b) => (a.full_name || '').localeCompare(b.full_name || '', undefined, { sensitivity: 'base' }));
+        assigneeSelect.innerHTML = '<option value="">Select person...</option>' +
+            allowed.map(u => `<option value="${u.id}">${(u.full_name || u.email || 'User')} (${u.role})</option>`).join('');
+    } catch (e) {
+        console.error(e);
+        assigneeSelect.innerHTML = '<option value="">Failed to load list</option>';
+        showToast('Could not load team list', 'error');
+    }
+    document.getElementById('employee-task-title').value = '';
+    document.getElementById('employee-task-description').value = '';
+    document.getElementById('employee-task-priority').value = 'medium';
+    document.getElementById('employee-task-deadline').value = '';
+}
+
+async function employeeAssignTask() {
+    const title = (document.getElementById('employee-task-title').value || '').trim();
+    const description = (document.getElementById('employee-task-description').value || '').trim();
+    const assignedToId = document.getElementById('employee-task-assignee').value;
+    const priority = document.getElementById('employee-task-priority').value || 'medium';
+    const deadline = document.getElementById('employee-task-deadline').value;
+    const btn = document.getElementById('employee-assign-task-confirm');
+    if (!title) {
+        showToast('Please enter a task title', 'error');
+        return;
+    }
+    if (!assignedToId) {
+        showToast('Please select someone to assign the task to', 'error');
+        return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Assigning...';
+    try {
+        await Api.post('/tasks/', {
+            title,
+            description: description || null,
+            assigned_to_id: parseInt(assignedToId, 10),
+            priority,
+            deadline: deadline ? new Date(deadline).toISOString() : null
+        });
+        showToast('Task assigned successfully', 'success');
+        document.getElementById('employee-assign-task-modal').classList.add('hidden');
+        await loadTasks();
+        updateDashboardStats();
+    } catch (e) {
+        console.error(e);
+        showToast(e.message || 'Failed to assign task', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Assign Task';
+    }
+}
+
+// ============================================
 // INITIALIZATION
 // ============================================
 
@@ -912,6 +990,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     document.getElementById('acknowledge-policy-btn').addEventListener('click', acknowledgePolicy);
+
+    document.getElementById('btn-employee-assign-task')?.addEventListener('click', openEmployeeAssignTaskModal);
+    document.getElementById('employee-assign-task-cancel')?.addEventListener('click', () => {
+        document.getElementById('employee-assign-task-modal').classList.add('hidden');
+    });
+    document.getElementById('employee-assign-task-backdrop')?.addEventListener('click', () => {
+        document.getElementById('employee-assign-task-modal').classList.add('hidden');
+    });
+    document.getElementById('employee-assign-task-confirm')?.addEventListener('click', employeeAssignTask);
 
     document.getElementById('logoutBtn').addEventListener('click', handleLogout);
 

@@ -43,3 +43,23 @@ class LeaveRequest(Base):
     user = relationship("User", foreign_keys=[user_id])
     approved_by = relationship("User", foreign_keys=[approved_by_id])
     custom_policy = relationship("CustomLeavePolicy", foreign_keys=[custom_policy_id])
+
+
+class LeaveBalanceAdjustment(Base):
+    """Director-applied adjustment to a user's leave balance (add or deduct days)."""
+    __tablename__ = "leave_balance_adjustments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    year = Column(Integer, nullable=False)
+    # Exactly one of leave_type (standard) or custom_policy_id (custom policy) should be set.
+    leave_type = Column(String(32), nullable=True)  # "earned_leave" or "casual_sick_leave"
+    custom_policy_id = Column(Integer, ForeignKey("custom_leave_policies.id"), nullable=True)
+    adjustment_days = Column(Float, nullable=False)  # positive = add days, negative = deduct
+    reason = Column(String(500), nullable=False)
+    created_by_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", foreign_keys=[user_id])
+    created_by = relationship("User", foreign_keys=[created_by_id])
+    custom_policy = relationship("CustomLeavePolicy", foreign_keys=[custom_policy_id])

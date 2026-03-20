@@ -399,80 +399,52 @@ async def delete_user(user_id: int, db: AsyncSession = Depends(get_db), current_
     if user.id == current_user.id:
         raise HTTPException(status_code=400, detail="Cannot delete yourself")
     
-    # Handle related records before deleting user
-    # This works for all users regardless of authentication method (Microsoft, Google, or regular)
-    
-    # Delete task comments by this user
-    from app.models.task import TaskComment
-    await db.execute(delete(TaskComment).where(TaskComment.user_id == user_id))
-    
-    # Set task foreign keys to NULL (tasks assigned to or created by this user)
-    from app.models.task import Task
-    await db.execute(
-        update(Task)
-        .where(Task.assigned_to_id == user_id)
-        .values(assigned_to_id=None)
-    )
-    await db.execute(
-        update(Task)
-        .where(Task.created_by_id == user_id)
-        .values(created_by_id=None)
-    )
-    
-    # Delete notification acknowledgments by this user
-    from app.models.notification import notification_acknowledgments, notification_recipients
-    await db.execute(
-        delete(notification_acknowledgments)
-        .where(notification_acknowledgments.c.user_id == user_id)
-    )
-    
-    # Delete notification recipients (targeted notifications)
-    await db.execute(
-        delete(notification_recipients)
-        .where(notification_recipients.c.user_id == user_id)
-    )
-    
-    # Set notification created_by to NULL if this user created it
-    from app.models.notification import Notification
-    await db.execute(
-        update(Notification)
-        .where(Notification.created_by_id == user_id)
-        .values(created_by_id=None)
-    )
-    
-    # Delete policy acknowledgments by this user
-    from app.models.policy import policy_acknowledgments
-    await db.execute(
-        delete(policy_acknowledgments)
-        .where(policy_acknowledgments.c.user_id == user_id)
-    )
-    
-    # Delete concern acknowledgments and set foreign keys to NULL
-    from app.models.concern import Concern, concern_acknowledgments, concern_notified_users
-    await db.execute(
-        delete(concern_acknowledgments)
-        .where(concern_acknowledgments.c.user_id == user_id)
-    )
-    
-    # Delete concern notified users
-    await db.execute(
-        delete(concern_notified_users)
-        .where(concern_notified_users.c.user_id == user_id)
-    )
-    
-    await db.execute(
-        update(Concern)
-        .where(Concern.raised_by_id == user_id)
-        .values(raised_by_id=None)
-    )
-    await db.execute(
-        update(Concern)
-        .where(Concern.resolved_by_id == user_id)
-        .values(resolved_by_id=None)
-    )
-    
-    # Delete the user (works for Microsoft, Google, and regular signup users)
-    await db.delete(user)
-    await db.commit()
+    try:
+        # Handle related records before deleting user
+        from app.models.task import TaskComment, Task
+        await db.execute(delete(TaskComment).where(TaskComment.user_id == user_id))
+        await db.execute(update(Task).where(Task.assigned_to_id == user_id).values(assigned_to_id=None))
+        await db.execute(update(Task).where(Task.created_by_id == user_id).values(created_by_id=None))
+        
+        from app.models.notification import notification_acknowledgments, notification_recipients, Notification
+        await db.execute(delete(notification_acknowledgments).where(notification_acknowledgments.c.user_id == user_id))
+        await db.execute(delete(notification_recipients).where(notification_recipients.c.user_id == user_id))
+        await db.execute(update(Notification).where(Notification.created_by_id == user_id).values(created_by_id=None))
+        
+        from app.models.policy import policy_acknowledgments
+        await db.execute(delete(policy_acknowledgments).where(policy_acknowledgments.c.user_id == user_id))
+        
+        from app.models.concern import Concern, concern_acknowledgments, concern_notified_users
+        await db.execute(delete(concern_acknowledgments).where(concern_acknowledgments.c.user_id == user_id))
+        await db.execute(delete(concern_notified_users).where(concern_notified_users.c.user_id == user_id))
+        await db.execute(update(Concern).where(Concern.raised_by_id == user_id).values(raised_by_id=None))
+        await db.execute(update(Concern).where(Concern.resolved_by_id == user_id).values(resolved_by_id=None))
+        
+        from app.models.attendance import Attendance, AttendanceUpdateRequest
+        await db.execute(delete(Attendance).where(Attendance.user_id == user_id))
+        await db.execute(delete(AttendanceUpdateRequest).where(AttendanceUpdateRequest.user_id == user_id))
+        await db.execute(delete(AttendanceUpdateRequest).where(AttendanceUpdateRequest.manager_id == user_id))
+        
+        from app.models.leave import LeaveRequest
+        await db.execute(update(LeaveRequest).where(LeaveRequest.approved_by_id == user_id).values(approved_by_id=None))
+        await db.execute(delete(LeaveRequest).where(LeaveRequest.user_id == user_id))
+        
+        from app.models.custom_leave_policy import CustomLeavePolicy
+        from app.models.holiday import Holiday
+        from app.models.policy import Policy
+        from app.models.venture import Venture
+        await db.execute(update(CustomLeavePolicy).where(CustomLeavePolicy.created_by_id == user_id).values(created_by_id=current_user.id))
+        await db.execute(update(Holiday).where(Holiday.created_by_id == user_id).values(created_by_id=current_user.id))
+        await db.execute(update(Policy).where(Policy.created_by_id == user_id).values(created_by_id=None))
+        await db.execute(update(Venture).where(Venture.created_by == user_id).values(created_by=current_user.id))
+        
+        await db.delete(user)
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Could not delete user credentials: {str(e)}"
+        )
     return {"message": "User credentials deleted successfully"}
 

@@ -6,6 +6,17 @@ from datetime import date, datetime
 ALLOWED_LEAVE_TYPES = {"casual_sick_leave", "earned_leave", "unpaid_leave", "custom"}
 
 
+def _optional_policy_decimal(v):
+    """Parse optional numeric policy fields (max/mo, wallet/mo, shared annual); round to 2 decimals."""
+    if v is None or v == "":
+        return None
+    try:
+        x = float(v)
+    except (TypeError, ValueError):
+        raise ValueError("Must be a valid number")
+    return round(x, 2)
+
+
 def _parse_date(v: Union[str, date]) -> date:
     """Accept date or ISO string (YYYY-MM-DD) or DD/MM/YYYY string."""
     if isinstance(v, date):
@@ -62,6 +73,7 @@ class LeaveResponse(BaseModel):
     id: int
     user_id: int
     leave_type: str
+    custom_policy_id: Optional[int] = None
     start_date: date
     end_date: date
     num_days: float
@@ -99,28 +111,76 @@ class LeaveBalanceResponse(BaseModel):
 class CustomLeavePolicyCreate(BaseModel):
     title: str
     prior_days: int = 0  # days in advance required (0 = anytime)
-    max_days_per_month: Optional[int] = None  # optional cap per month (None = no limit)
+    max_days_per_month: Optional[float] = None  # optional cap per month (None = no limit)
+    monthly_allowance: Optional[float] = None  # days per month that accrue to wallet; unused carries over
     allowed_roles: List[str]  # e.g. ["employee", "intern", "manager"]
     allowed_on_probation: bool = True  # whether people on probation can use this leave
     enable_sub_types: bool = False
     sub_types: Optional[List[str]] = None  # e.g. ["Medical", "Earned"]
-    shared_annual_limit: Optional[int] = None  # shared pool across sub_types, per year
+    shared_annual_limit: Optional[float] = None  # shared pool across sub_types, per year
     sub_type_prior_days: Optional[Dict[str, int]] = None  # e.g. {"Medical": 0, "Earned": 7}
+
+    @field_validator("max_days_per_month", "monthly_allowance", "shared_annual_limit", mode="before")
+    @classmethod
+    def _round_policy_decimals_create(cls, v):
+        return _optional_policy_decimal(v)
+
+
+class CustomLeavePolicyUpdate(BaseModel):
+    """Update custom leave policy. All fields optional."""
+    title: Optional[str] = None
+    prior_days: Optional[int] = None
+    max_days_per_month: Optional[float] = None
+    monthly_allowance: Optional[float] = None
+    shared_annual_limit: Optional[float] = None
+    allowed_roles: Optional[List[str]] = None
+    allowed_on_probation: Optional[bool] = None
+
+    @field_validator("max_days_per_month", "monthly_allowance", "shared_annual_limit", mode="before")
+    @classmethod
+    def _round_policy_decimals_update(cls, v):
+        return _optional_policy_decimal(v)
 
 
 class CustomLeavePolicyResponse(BaseModel):
     id: int
     title: str
     prior_days: int
-    max_days_per_month: Optional[int] = None
+    max_days_per_month: Optional[float] = None
+    monthly_allowance: Optional[float] = None
     policy_group_key: Optional[str] = None
     sub_type_name: Optional[str] = None
-    shared_annual_limit: Optional[int] = None
+    shared_annual_limit: Optional[float] = None
     allowed_roles: List[str]
     allowed_on_probation: Optional[bool] = True
     created_by_id: int
     created_at: datetime
     created_by_name: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+# --- Leave balance adjustments (director only) ---
+class LeaveAdjustmentCreate(BaseModel):
+    user_id: int
+    year: int
+    adjustment_days: float  # positive = add, negative = deduct
+    reason: str
+    leave_type: Optional[str] = None   # "earned_leave" or "casual_sick_leave" for standard
+    custom_policy_id: Optional[int] = None  # for custom policy adjustment
+
+
+class LeaveAdjustmentResponse(BaseModel):
+    id: int
+    user_id: int
+    year: int
+    leave_type: Optional[str] = None
+    custom_policy_id: Optional[int] = None
+    adjustment_days: float
+    reason: str
+    created_by_id: int
+    created_at: datetime
 
     class Config:
         from_attributes = True

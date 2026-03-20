@@ -62,6 +62,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.querySelector('button[onclick="switchTab(\'compliance\')"]').addEventListener('click', () => switchTab('compliance'));
     document.querySelector('button[onclick="switchTab(\'workforce\')"]').addEventListener('click', () => switchTab('workforce'));
 
+    document.getElementById('btn-export-directory')?.addEventListener('click', exportWorkforceDirectory);
+
     // This button might be in the header or specific tab
     const downloadBtn = document.querySelector('button[class*="Download Report"]');
     // Wait, I updated HTML but download button didn't have ID. Let's find it by text content or add ID. 
@@ -207,8 +209,11 @@ function switchTab(tabId) {
         if (typeof loadProjects === 'function') loadProjects();
     }
     if (tabId === 'leaves') {
-        if (typeof loadPendingLeaves === 'function') loadPendingLeaves();
-        if (typeof loadCustomPolicies === 'function') loadCustomPolicies();
+        if (typeof loadLeavesTab === 'function') loadLeavesTab();
+        else {
+            if (typeof loadPendingLeaves === 'function') loadPendingLeaves();
+            if (typeof loadCustomPolicies === 'function') loadCustomPolicies();
+        }
     }
 }
 
@@ -224,6 +229,7 @@ async function refreshDashboard() {
         ]);
         if (currentTab === 'workforce') await loadWorkforce();
         if (currentTab === 'projects' && typeof loadProjects === 'function') await loadProjects();
+        if (typeof loadSentNotifications === 'function') await loadSentNotifications();
     } catch (error) {
         console.error("Dashboard refresh failed", error);
     } finally {
@@ -911,6 +917,9 @@ async function loadWorkforce() {
                 return matchesRole && matchesSearch;
             });
 
+            // Sort directory by full name (alphabetical, case-insensitive)
+            filteredUsers.sort((a, b) => (a.full_name || '').localeCompare(b.full_name || '', undefined, { sensitivity: 'base' }));
+
             if (filteredUsers.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-gray-500">No matching personnel found</td></tr>';
                 return;
@@ -986,6 +995,55 @@ async function loadWorkforce() {
 
     } catch (e) {
         console.error("Failed to load workforce live data", e);
+    }
+}
+
+/**
+ * Export the complete organization directory to a CSV file (opens in Excel).
+ * Fetches all users, sorts alphabetically by name, and downloads as .csv.
+ */
+async function exportWorkforceDirectory() {
+    const btn = document.getElementById('btn-export-directory');
+    if (btn) {
+        btn.disabled = true;
+        btn.classList.add('opacity-70');
+    }
+    try {
+        const users = await Api.get('/auth/all-users');
+        const sorted = [...(users || [])].sort((a, b) =>
+            (a.full_name || '').localeCompare(b.full_name || '', undefined, { sensitivity: 'base' })
+        );
+        const headers = ['Name', 'Role', 'Email', 'Joined', 'On Probation'];
+        const escapeCsv = (v) => {
+            const s = String(v == null ? '' : v);
+            if (/[,"\r\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+            return s;
+        };
+        const rows = [headers.join(',')];
+        sorted.forEach(u => {
+            const joined = u.created_at ? new Date(u.created_at).toLocaleDateString() : '';
+            const probation = (u.is_on_probation ? 'Yes' : 'No');
+            rows.push([u.full_name || '', u.role || '', u.email || '', joined, probation].map(escapeCsv).join(','));
+        });
+        const csv = rows.join('\r\n');
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Organization_Directory_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        if (typeof showToast === 'function') showToast('Directory exported. Open in Excel.', 'success');
+        else alert('Directory exported. Open the file in Excel.');
+    } catch (e) {
+        console.error('Export directory failed', e);
+        if (typeof showToast === 'function') showToast(e.message || 'Export failed', 'error');
+        else alert(e.message || 'Export failed');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.classList.remove('opacity-70');
+        }
     }
 }
 
@@ -1068,15 +1126,18 @@ async function deleteUser(id, name) {
     if (!confirm(`CRITICAL: Are you sure you want to PERMANENTLY delete the credentials for "${name}"?\nThis action cannot be undone.`)) {
         return;
     }
-
+    document.querySelectorAll('[id^="action-menu-"]').forEach(m => m.classList.add('hidden'));
     try {
         const res = await Api.delete(`/auth/users/${id}`);
-        alert(res.message);
+        if (typeof showToast === 'function') showToast(res.message || 'Credentials deleted.', 'success');
+        else alert(res.message || 'Credentials deleted.');
         await loadWorkforce();
         await refreshDashboard();
     } catch (e) {
         console.error(e);
-        alert(e.message || "Failed to delete user credentials");
+        const msg = (e && e.message) ? String(e.message) : 'Failed to delete user credentials';
+        if (typeof showToast === 'function') showToast(msg, 'error');
+        else alert(msg);
     }
 }
 

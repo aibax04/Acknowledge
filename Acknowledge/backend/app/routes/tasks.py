@@ -14,8 +14,16 @@ router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 @router.post("/", response_model=TaskResponse)
 async def create_task(task: TaskCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    # Employees may assign tasks only to employees and interns
     if current_user.role == UserRole.EMPLOYEE:
-         raise HTTPException(status_code=403, detail="Employees cannot assign tasks")
+        if not task.assigned_to_id:
+            raise HTTPException(status_code=403, detail="Please select someone to assign the task to")
+        result = await db.execute(select(User).filter(User.id == task.assigned_to_id))
+        assignee = result.scalars().first()
+        if not assignee:
+            raise HTTPException(status_code=404, detail="Assignee not found")
+        if assignee.role not in (UserRole.EMPLOYEE, UserRole.INTERN):
+            raise HTTPException(status_code=403, detail="Employees can only assign tasks to other employees or interns")
     
     new_task = Task(
         title=task.title,
@@ -39,13 +47,20 @@ async def create_task(task: TaskCreate, db: AsyncSession = Depends(get_db), curr
 
 @router.get("/", response_model=List[TaskResponse])
 async def get_tasks(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from sqlalchemy import or_
     query = select(Task).options(selectinload(Task.assigned_to), selectinload(Task.created_by))
     
-    if current_user.role in [UserRole.EMPLOYEE, UserRole.INTERN]:
+    if current_user.role == UserRole.EMPLOYEE:
+        # Employees see tasks assigned to them OR tasks they created (assigned to others)
+        query = query.filter(
+            or_(
+                Task.assigned_to_id == current_user.id,
+                Task.created_by_id == current_user.id
+            )
+        )
+    elif current_user.role == UserRole.INTERN:
         query = query.filter(Task.assigned_to_id == current_user.id)
     elif current_user.role == UserRole.MANAGER:
-        # Managers see tasks they created OR tasks assigned to them
-        from sqlalchemy import or_
         query = query.filter(
             or_(
                 Task.created_by_id == current_user.id,

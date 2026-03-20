@@ -63,7 +63,7 @@
         class="w-64 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col justify-between h-screen fixed inset-y-0 left-0 z-40 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out">
         <div>
             <!-- Logo -->
-            <div class="h-16 flex items-center gap-3 px-8 border-b border-primary/80 bg-primary">
+            <div class="h-16 flex items-center gap-3 px-8 border-b border-emerald-700/30 bg-emerald-600">
                 <div class="w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center flex-shrink-0">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
@@ -321,6 +321,16 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- My Sent Notifications -->
+                <div class="mt-8 bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm">
+                    <div class="px-6 py-4 border-b border-gray-50 flex justify-between items-center">
+                        <h3 class="text-lg font-medium text-gray-900">My Sent Notifications</h3>
+                    </div>
+                    <div id="sent-notifications-list" class="divide-y divide-gray-50">
+                        <div class="p-6 text-center text-gray-500 text-sm">Loading…</div>
+                    </div>
+                </div>
             </div>
 
             <!-- TAB 2: COMPLIANCE & POLICIES -->
@@ -427,6 +437,13 @@
                                 <option value="employee">Employees</option>
                                 <option value="intern">Interns</option>
                             </select>
+                            <button type="button" id="btn-export-directory" title="Export full directory to Excel"
+                                class="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-700 font-medium inline-flex items-center gap-1.5 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                Export to Excel
+                            </button>
                         </div>
                     </div>
                     <div class="overflow-x-auto w-full">
@@ -566,6 +583,36 @@
                         </div>
                     </div>
                 </div>
+                <!-- Team Leave Tracker -->
+                <div class="mt-8 bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden"
+                    id="team-leave-tracker-section">
+                    <div
+                        class="px-6 py-4 border-b border-gray-100 bg-gray-50/30 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                        <div>
+                            <h3 class="text-base font-semibold text-gray-900">Team Leave Tracker</h3>
+                            <p class="text-xs text-gray-500 mt-0.5">View and search through everyone's recorded leaves.
+                            </p>
+                        </div>
+                        <div class="w-full sm:w-64">
+                            <input type="text" id="team-leave-search" placeholder="Search by name..."
+                                class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                        </div>
+                    </div>
+                    <div
+                        class="px-6 py-4 border-b border-gray-100 bg-white flex flex-col sm:flex-row items-baseline gap-4">
+                        <label class="block text-xs font-semibold text-gray-600 sm:w-auto">Track Employee
+                            Balance:</label>
+                        <input type="text" id="team-leave-balance-search" placeholder="Search user..."
+                            class="w-full sm:w-48 text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                        <select id="team-leave-balance-user" onchange="loadEmployeeLeaveBalance()"
+                            class="w-full sm:flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                            <option value="">Select employee...</option>
+                        </select>
+                    </div>
+                    <div id="team-leave-balance-container" class="hidden p-6 bg-gray-50 border-b border-gray-100"></div>
+                    <div id="team-leaves-list" class="max-h-[500px] overflow-y-auto divide-y divide-gray-100"></div>
+                </div>
+
                 <!-- Custom Leave Policies -->
                 <div id="custom-leave-policies-section"
                     class="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
@@ -575,15 +622,24 @@
                             <p class="text-xs text-gray-400 mt-0.5">Create leave types with prior notice and audience
                                 rules. You approve all applications.</p>
                         </div>
-                        <button type="button" onclick="openCreateCustomPolicyModal()"
-                            class="bg-primary text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-primary-hover transition-colors shadow-sm flex items-center gap-1.5">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 4v16m8-8H4" />
-                            </svg>
-                            New Policy</button>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="openAdjustLeaveModal()"
+                                class="bg-amber-500 text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-amber-600 transition-colors shadow-sm flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                </svg>
+                                Adjust Leave</button>
+                            <button type="button" onclick="openCreateCustomPolicyModal()"
+                                class="bg-primary text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-primary-hover transition-colors shadow-sm flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 4v16m8-8H4" />
+                                </svg>
+                                New Policy</button>
+                        </div>
                     </div>
-                    <div id="custom-leave-policies-list">
+                    <div id="custom-leave-policies-list" class="p-5">
                         <p class="text-gray-300 text-sm text-center py-8">Loading…</p>
                     </div>
                 </div>
@@ -753,14 +809,6 @@
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-            <div class="mt-8 bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm">
-                <div class="px-6 py-4 border-b border-gray-50 flex justify-between items-center">
-                    <h3 class="text-lg font-medium text-gray-900">My Sent Notifications</h3>
-                </div>
-                <div id="sent-notifications-list" class="divide-y divide-gray-50">
-                    <div class="p-6 text-center text-gray-500 text-sm">No notifications sent yet</div>
                 </div>
             </div>
 
@@ -1230,7 +1278,8 @@ Explain the compliance requirements and consequences."
         </div>
     </div>
 
-    <!-- Create Custom Leave Policy Modal (directors only) -->
+    <!-- Create / Edit Custom Leave Policy Modal (directors only) -->
+    <input type="hidden" id="custom-policy-edit-id" value="">
     <div id="create-custom-policy-modal" class="hidden fixed inset-0 z-[100] overflow-y-auto" aria-modal="true">
         <div class="flex min-h-full items-center justify-center p-4">
             <div class="fixed inset-0 bg-black/50 backdrop-blur-sm"
@@ -1240,7 +1289,7 @@ Explain the compliance requirements and consequences."
                 <!-- Header -->
                 <div class="bg-gradient-to-r from-primary to-primary-hover px-6 py-4 flex items-center justify-between">
                     <div>
-                        <h3 class="text-base font-bold text-white">Create Custom Leave Policy</h3>
+                        <h3 class="text-base font-bold text-white" id="create-custom-policy-modal-title">Create Custom Leave Policy</h3>
                         <p class="text-xs text-white/70 mt-0.5">Applications under this policy will be approved by you
                         </p>
                     </div>
@@ -1297,10 +1346,19 @@ Explain the compliance requirements and consequences."
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Max Days per Month</label>
                             <div class="flex items-center gap-2">
-                                <input type="number" id="custom-policy-max-days-per-month" min="1"
+                                <input type="number" id="custom-policy-max-days-per-month" min="0.01" step="0.01"
                                     class="w-28 border border-gray-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
-                                    placeholder="∞">
-                                <span class="text-xs text-gray-500">leave empty for no limit</span>
+                                    placeholder="Optional">
+                                <span class="text-xs text-gray-500">optional; empty = no monthly cap · up to 2 decimals</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Monthly allowance (wallet)</label>
+                            <div class="flex items-center gap-2">
+                                <input type="number" id="custom-policy-monthly-allowance" min="0.01" step="0.01"
+                                    class="w-28 border border-gray-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
+                                    placeholder="e.g. 1 or 1.5">
+                                <span class="text-xs text-gray-500">days per month; unused carries over · up to 2 decimals</span>
                             </div>
                         </div>
 
@@ -1390,10 +1448,10 @@ Explain the compliance requirements and consequences."
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Shared annual total
                                     days</label>
                                 <div class="flex items-center gap-2">
-                                    <input type="number" id="custom-policy-shared-annual-limit" min="1"
+                                    <input type="number" id="custom-policy-shared-annual-limit" min="0.01" step="0.01"
                                         class="w-28 border border-gray-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
-                                        placeholder="e.g. 12">
-                                    <span class="text-xs text-gray-500">days / year (shared across all sub-types)</span>
+                                        placeholder="e.g. 12 or 12.5">
+                                    <span class="text-xs text-gray-500">days / year (shared) · up to 2 decimals</span>
                                 </div>
                             </div>
                         </div>
@@ -1407,7 +1465,7 @@ Explain the compliance requirements and consequences."
                         class="px-5 py-2 text-sm font-medium text-gray-600 hover:bg-gray-200 rounded-lg transition-colors">
                         Cancel
                     </button>
-                    <button type="button" onclick="submitCreateCustomPolicy()"
+                    <button type="button" id="create-custom-policy-submit-btn" onclick="submitCreateOrUpdateCustomPolicy()"
                         class="px-5 py-2 text-sm font-semibold bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors shadow-sm">
                         Create Policy
                     </button>
@@ -1417,6 +1475,73 @@ Explain the compliance requirements and consequences."
         </div>
     </div>
 
+    <!-- Adjust Leave Modal (directors only) -->
+    <div id="adjust-leave-modal" class="hidden fixed inset-0 z-[100] overflow-y-auto" aria-modal="true">
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div class="fixed inset-0 bg-black/50 backdrop-blur-sm"
+                onclick="document.getElementById('adjust-leave-modal').classList.add('hidden')"></div>
+            <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+                <h3 class="text-lg font-bold text-gray-900 mb-1">Adjust Leave Balance</h3>
+                <p class="text-xs text-gray-500 mb-4">Add or deduct days for a team member.</p>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Team member <span class="text-red-500">*</span></label>
+                        <input type="text" id="adjust-leave-user-search" placeholder="Search team member..."
+                            class="w-full mb-2 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary">
+                        <select id="adjust-leave-user" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary">
+                            <option value="">Select...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                        <input type="number" id="adjust-leave-year" min="2020" max="2030" value="" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" placeholder="e.g. 2025">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Leave type <span class="text-red-500">*</span></label>
+                        <select id="adjust-leave-type" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary">
+                            <option value="">Select...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Adjustment (days) <span class="text-red-500">*</span></label>
+                        <input type="number" id="adjust-leave-days" step="0.01" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" placeholder="e.g. 2 or -1 or 1.25">
+                        <p class="text-xs text-gray-500 mt-0.5">Positive = add days, negative = deduct. Supports up to 2 decimal places.</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Reason</label>
+                        <input type="text" id="adjust-leave-reason" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" placeholder="e.g. One-time grant">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
+                    <button type="button" onclick="document.getElementById('adjust-leave-modal').classList.add('hidden')"
+                        class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
+                    <button type="button" onclick="submitLeaveAdjustment()"
+                        class="px-4 py-2 text-sm font-semibold bg-amber-500 text-white rounded-lg hover:bg-amber-600 shadow-sm">Apply adjustment</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leave Reason Modal (click-to-view full reason) -->
+    <div id="leave-reason-modal" class="hidden fixed inset-0 z-[200] overflow-y-auto" aria-modal="true">
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div class="fixed inset-0 bg-black/50 backdrop-blur-sm"
+                onclick="document.getElementById('leave-reason-modal').classList.add('hidden')"></div>
+            <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl p-6 border border-gray-100">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-gray-900">Leave Reason</h3>
+                    <button type="button"
+                        onclick="document.getElementById('leave-reason-modal').classList.add('hidden')"
+                        class="px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-lg">
+                        Close
+                    </button>
+                </div>
+                <div id="leave-reason-modal-text" class="text-sm text-gray-700 whitespace-pre-wrap">
+                    —
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="../static/js/api.js"></script>
 

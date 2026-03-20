@@ -142,7 +142,7 @@
         class="w-64 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col justify-between h-screen fixed inset-y-0 left-0 z-40 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out">
         <div>
             <!-- Logo -->
-            <div class="h-16 flex items-center gap-3 px-8 border-b border-primary/80 bg-primary">
+            <div class="h-16 flex items-center gap-3 px-8 border-b border-emerald-700/30 bg-emerald-600">
                 <div class="w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center flex-shrink-0">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
@@ -523,9 +523,10 @@
                 <div class="flex items-center justify-between mb-6">
                     <h2 class="text-lg font-medium text-gray-900">Leave Management</h2>
                     <button onclick="openApplyLeaveModal()"
-                        class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors shadow-sm">Apply
-                        for Unpaid Leave</button>
+                        class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors shadow-sm">Request
+                        Unpaid Leave</button>
                 </div>
+                <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Available balance</h3>
                 <div id="leave-balance-container" class="mb-6"></div>
                 <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
                     <div class="px-6 py-4 border-b border-gray-200">
@@ -583,10 +584,10 @@
                 <div class="space-y-4">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div><label class="block text-sm font-medium text-gray-700 mb-1">Clock In</label><input
-                                type="time" id="update-att-clock-in" value="09:00"
+                                type="time" id="update-att-clock-in" value="09:00" min="09:00" max="23:00"
                                 class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
                         <div><label class="block text-sm font-medium text-gray-700 mb-1">Clock Out</label><input
-                                type="time" id="update-att-clock-out" value="18:00"
+                                type="time" id="update-att-clock-out" value="18:00" min="09:00" max="23:00"
                                 class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
                     </div>
                     <div><label class="block text-sm font-medium text-gray-700 mb-1">Send to Manager</label><select
@@ -614,7 +615,7 @@
             <div class="fixed inset-0 bg-black/40"
                 onclick="document.getElementById('apply-leave-modal').classList.add('hidden')"></div>
             <div class="relative bg-white rounded-xl shadow-lg max-w-md w-full p-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">Apply for Leave</h3>
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Request Leave</h3>
                 <div class="space-y-4">
                     <div><label class="block text-sm font-medium text-gray-700 mb-1">Leave Type</label><select
                             id="leave-type-select" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
@@ -637,7 +638,7 @@
                     <button onclick="document.getElementById('apply-leave-modal').classList.add('hidden')"
                         class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
                     <button onclick="submitLeaveApplication()"
-                        class="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary-hover">Apply</button>
+                        class="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary-hover">Submit Request</button>
                 </div>
             </div>
         </div>

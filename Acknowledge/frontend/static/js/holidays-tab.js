@@ -35,12 +35,18 @@ function renderHolidaysList() {
     h += '<th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Added By</th>';
     if (canDelete) h += '<th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Action</th>';
     h += '</tr></thead><tbody class="divide-y divide-gray-100">';
+    function formatDateDdMmYyyy(isoDate) {
+        if (!isoDate || isoDate.length < 10) return isoDate || '';
+        var parts = isoDate.substring(0, 10).split('-');
+        return (parts[2] || '') + '/' + (parts[1] || '') + '/' + (parts[0] || '');
+    }
     allHolidays.forEach(function (hol) {
         var col = oc[hol.office] || 'bg-gray-100 text-gray-600';
         var dd = new Date(hol.date + 'T00:00:00');
         var dayName = dd.toLocaleDateString('en-US', { weekday: 'short' });
+        var dateDisplay = formatDateDdMmYyyy(hol.date);
         h += '<tr>';
-        h += '<td class="px-4 py-2 whitespace-nowrap">' + hol.date + ' <span class="text-xs text-gray-400">(' + dayName + ')</span></td>';
+        h += '<td class="px-4 py-2 whitespace-nowrap">' + dateDisplay + ' <span class="text-xs text-gray-400">(' + dayName + ')</span></td>';
         h += '<td class="px-4 py-2 font-medium">' + hol.title + '</td>';
         h += '<td class="px-4 py-2"><span class="px-2 py-0.5 rounded-full text-xs font-medium ' + col + '">' + (officeLabel[hol.office] || hol.office) + '</span></td>';
         h += '<td class="px-4 py-2 text-gray-500">' + (hol.created_by_name || '-') + '</td>';
