@@ -1,6 +1,14 @@
-# Deploy Backend (fix Custom Leave Policies error)
+# Deploy Backend (fix production / Custom Leave Policies)
 
-If you see **"Custom policies need the latest backend"**, the server that handles your app (e.g. **acknowledge.panscience.ai**) is still running an **old** backend. Deploy the backend from this repo as below.
+If the app **works on localhost but not in production**, the production server is running old code. Deploy on the production host.
+
+**On the production server** (SSH in, then):
+```bash
+cd /path/to/Acknowledge
+git pull
+chmod +x deploy-production.sh && ./deploy-production.sh
+```
+Then check: `curl -s https://acknowledge.panscience.ai/api/health` (expect `custom_policies_list: true`). Hard-refresh the app and click Retry.
 
 ---
 

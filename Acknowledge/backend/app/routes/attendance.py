@@ -1,4 +1,7 @@
+import io
+import logging
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import and_
@@ -10,7 +13,8 @@ from app.models.leave import LeaveRequest, LeaveStatus
 from app.routes.auth import get_current_user
 from app.schemas.attendance_schema import (
     ClockInRequest, ClockOutRequest, AttendanceResponse,
-    AttendanceUpdateRequestCreate, AttendanceUpdateRequestResponse, AttendanceUpdateReview
+    AttendanceUpdateRequestCreate, AttendanceUpdateRequestResponse, AttendanceUpdateReview,
+    MarkAbsentRequest,
 )
 from datetime import datetime, date, time, timezone, timedelta
 from typing import List, Optional
@@ -262,7 +266,8 @@ async def get_monthly_attendance(
             leave_dates.add(d)
             d += timedelta(days=1)
 
-    # Build attendance for each day
+    # Build attendance for each day. Order matters: holiday is checked before absent
+    # so that no day that is a holiday for this office is ever marked absent.
     today = date.today()
     attendance_list = []
     d = first_day
@@ -323,6 +328,259 @@ async def get_monthly_attendance(
         "month": month,
         "attendance": attendance_list
     }
+
+
+@router.post("/mark-absent")
+async def mark_absent(
+    body: MarkAbsentRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Mark an employee as absent on a particular date. Manager/Senior only."""
+    if current_user.role not in (UserRole.MANAGER, UserRole.SENIOR):
+        raise HTTPException(status_code=403, detail="Only managers and directors can mark absent")
+
+    user_id = body.user_id
+    absent_date = body.absent_date
+    today = date.today()
+    if absent_date > today:
+        raise HTTPException(status_code=400, detail="Cannot mark absent for a future date")
+
+    result = await db.execute(select(User).filter(User.id == user_id))
+    target_user = result.scalars().first()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    office = _normalize_office(target_user.office) or "eigen"
+    if is_weekly_off(absent_date, office):
+        raise HTTPException(status_code=400, detail="That date is a weekly off for this employee's office")
+    holiday = await get_holidays_for_date(db, absent_date, office)
+    if holiday:
+        raise HTTPException(status_code=400, detail=f"That date is a holiday: {holiday.title}")
+
+    result = await db.execute(
+        select(Attendance).filter(
+            Attendance.user_id == user_id,
+            Attendance.date == absent_date,
+        )
+    )
+    existing = result.scalars().first()
+    if existing:
+        existing.clock_in = None
+        existing.clock_out = None
+        existing.status = AttendanceStatus.ABSENT
+        existing.clock_in_address = None
+        existing.clock_out_address = None
+    else:
+        att = Attendance(
+            user_id=user_id,
+            date=absent_date,
+            clock_in=None,
+            clock_out=None,
+            status=AttendanceStatus.ABSENT,
+        )
+        db.add(att)
+    await db.commit()
+    return {"message": f"Marked {target_user.full_name} as absent on {absent_date.isoformat()}"}
+
+
+@router.get("/export")
+async def export_attendance_excel(
+    year: int,
+    month: int,
+    user_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Export a user's monthly attendance as an Excel (.xlsx) file. Only managers/seniors."""
+    if current_user.role not in (UserRole.MANAGER, UserRole.SENIOR):
+        raise HTTPException(status_code=403, detail="Only managers and directors can export attendance")
+
+    result = await db.execute(select(User).filter(User.id == user_id))
+    target_user = result.scalars().first()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    office = _normalize_office(target_user.office) or "eigen"
+    first_day = date(year, month, 1)
+    last_day = date(year, month + 1, 1) - timedelta(days=1) if month < 12 else date(year, 12, 31)
+
+    att_result = await db.execute(
+        select(Attendance).filter(
+            Attendance.user_id == user_id,
+            Attendance.date >= first_day,
+            Attendance.date <= last_day
+        )
+    )
+    records = {r.date: r for r in att_result.scalars().all()}
+
+    hol_result = await db.execute(
+        select(Holiday).filter(
+            Holiday.date >= first_day,
+            Holiday.date <= last_day,
+            (Holiday.office == office) | (Holiday.office == "both")
+        )
+    )
+    holidays = {h.date: h for h in hol_result.scalars().all()}
+
+    leave_result = await db.execute(
+        select(LeaveRequest).filter(
+            LeaveRequest.user_id == user_id,
+            LeaveRequest.status == LeaveStatus.APPROVED,
+            LeaveRequest.start_date <= last_day,
+            LeaveRequest.end_date >= first_day
+        )
+    )
+    leaves = leave_result.scalars().all()
+    leave_dates = set()
+    for lv in leaves:
+        d = max(lv.start_date, first_day)
+        while d <= min(lv.end_date, last_day):
+            leave_dates.add(d)
+            d += timedelta(days=1)
+
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    except ImportError:
+        logging.error("openpyxl not installed – falling back to CSV")
+        raise HTTPException(status_code=500, detail="Excel library not available on server. Please ask admin to install openpyxl.")
+
+    wb = Workbook()
+    ws = wb.active
+    month_name = date(year, month, 1).strftime("%B %Y")
+    ws.title = month_name[:31]
+
+    header_font = Font(bold=True, color="FFFFFF", size=11)
+    header_fill = PatternFill(start_color="10B981", end_color="10B981", fill_type="solid")
+    thin_border = Border(
+        left=Side(style="thin", color="D1D5DB"),
+        right=Side(style="thin", color="D1D5DB"),
+        top=Side(style="thin", color="D1D5DB"),
+        bottom=Side(style="thin", color="D1D5DB"),
+    )
+
+    ws.merge_cells("A1:F1")
+    title_cell = ws["A1"]
+    title_cell.value = f"Attendance Report – {target_user.full_name} – {month_name}"
+    title_cell.font = Font(bold=True, size=14, color="111827")
+    title_cell.alignment = Alignment(horizontal="center")
+
+    ws.merge_cells("A2:F2")
+    meta_cell = ws["A2"]
+    meta_cell.value = f"Office: {office.capitalize()}  |  Exported by: {current_user.full_name}"
+    meta_cell.font = Font(size=10, color="6B7280")
+    meta_cell.alignment = Alignment(horizontal="center")
+
+    headers = ["Date", "Day", "Status", "Clock In (IST)", "Clock Out (IST)", "Hours"]
+    for col_idx, h in enumerate(headers, 1):
+        cell = ws.cell(row=4, column=col_idx, value=h)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal="center")
+        cell.border = thin_border
+
+    ist = timedelta(hours=5, minutes=30)
+    day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    status_fills = {
+        "present": PatternFill(start_color="D1FAE5", end_color="D1FAE5", fill_type="solid"),
+        "absent": PatternFill(start_color="FEE2E2", end_color="FEE2E2", fill_type="solid"),
+        "weekly_off": PatternFill(start_color="F3F4F6", end_color="F3F4F6", fill_type="solid"),
+        "holiday": PatternFill(start_color="EDE9FE", end_color="EDE9FE", fill_type="solid"),
+        "on_leave": PatternFill(start_color="FEF3C7", end_color="FEF3C7", fill_type="solid"),
+        "future": PatternFill(start_color="F9FAFB", end_color="F9FAFB", fill_type="solid"),
+    }
+    today = date.today()
+    row = 5
+    present_count = absent_count = leave_count = holiday_count = woff_count = 0
+    total_hours = 0.0
+
+    d = first_day
+    while d <= last_day:
+        day_name = day_names[d.weekday()]
+        if d > today:
+            status = "Future"
+            ci_str = co_str = hrs_str = ""
+        elif is_weekly_off(d, office):
+            status = "Weekly Off"
+            ci_str = co_str = hrs_str = ""
+            woff_count += 1
+        elif d in holidays:
+            status = f"Holiday – {holidays[d].title}"
+            ci_str = co_str = hrs_str = ""
+            holiday_count += 1
+        elif d in leave_dates:
+            status = "On Leave"
+            ci_str = co_str = hrs_str = ""
+            leave_count += 1
+        elif d in records:
+            rec = records[d]
+            if rec.status == AttendanceStatus.ABSENT:
+                status = "Absent"
+                ci_str = co_str = hrs_str = ""
+                absent_count += 1
+            else:
+                status = "Present"
+                ci_str = (rec.clock_in + ist).strftime("%I:%M %p") if rec.clock_in else "-"
+                co_str = (rec.clock_out + ist).strftime("%I:%M %p") if rec.clock_out else "-"
+                hrs = ""
+                if rec.clock_in and rec.clock_out:
+                    delta = (rec.clock_out - rec.clock_in).total_seconds() / 3600
+                    hrs = f"{delta:.1f}"
+                    total_hours += delta
+                hrs_str = hrs
+                present_count += 1
+        else:
+            status = "Absent"
+            ci_str = co_str = hrs_str = ""
+            absent_count += 1
+
+        ws.cell(row=row, column=1, value=d.strftime("%d %b %Y")).border = thin_border
+        ws.cell(row=row, column=2, value=day_name).border = thin_border
+        status_cell = ws.cell(row=row, column=3, value=status)
+        status_cell.border = thin_border
+        ws.cell(row=row, column=4, value=ci_str).border = thin_border
+        ws.cell(row=row, column=4).alignment = Alignment(horizontal="center")
+        ws.cell(row=row, column=5, value=co_str).border = thin_border
+        ws.cell(row=row, column=5).alignment = Alignment(horizontal="center")
+        ws.cell(row=row, column=6, value=hrs_str).border = thin_border
+        ws.cell(row=row, column=6).alignment = Alignment(horizontal="center")
+
+        status_key = status.lower().split(" –")[0].replace(" ", "_")
+        fill = status_fills.get(status_key)
+        if fill:
+            for c in range(1, 7):
+                ws.cell(row=row, column=c).fill = fill
+
+        d += timedelta(days=1)
+        row += 1
+
+    row += 1
+    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=6)
+    summary_cell = ws.cell(row=row, column=1)
+    summary_cell.value = f"Summary: Present {present_count} | Absent {absent_count} | Leave {leave_count} | Holiday {holiday_count} | Weekly Off {woff_count} | Total Hours {total_hours:.1f}"
+    summary_cell.font = Font(bold=True, size=10, color="374151")
+    summary_cell.alignment = Alignment(horizontal="center")
+
+    ws.column_dimensions["A"].width = 14
+    ws.column_dimensions["B"].width = 12
+    ws.column_dimensions["C"].width = 22
+    ws.column_dimensions["D"].width = 16
+    ws.column_dimensions["E"].width = 16
+    ws.column_dimensions["F"].width = 10
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+
+    safe_name = target_user.full_name.replace(" ", "_")
+    filename = f"Attendance_{safe_name}_{month_name.replace(' ', '_')}.xlsx"
+
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
 
 
 # ============================================

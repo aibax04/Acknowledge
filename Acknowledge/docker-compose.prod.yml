@@ -17,6 +17,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    env_file:
+      - ./backend/.env
     environment:
       - DATABASE_URL=postgresql+asyncpg://${DB_USER:-postgres}:${DB_PASSWORD:-postflow}@db:5432/${DB_NAME:-Acknowledge_db}
       - SECRET_KEY=${SECRET_KEY}

@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     ALLOWED_ORIGINS: str = os.getenv(
         "ALLOWED_ORIGINS",
-        "https://postflow.panscience.ai,http://postflow.panscience.ai,http://localhost:5500,http://127.0.0.1:5500,*"
+        "https://acknowledge.panscience.ai,http://acknowledge.panscience.ai,https://postflow.panscience.ai,http://postflow.panscience.ai,http://localhost:8080,http://localhost:5500,http://127.0.0.1:8080,http://127.0.0.1:5500,*"
     )
     
     # Microsoft OAuth Settings

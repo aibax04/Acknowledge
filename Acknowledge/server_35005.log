@@ -1,0 +1,1845 @@
+[2026-01-30 13:27:27 +0000] [730039] [INFO] Starting gunicorn 21.2.0
+[2026-01-30 13:27:28 +0000] [730039] [INFO] Listening at: http://0.0.0.0:35005 (730039)
+[2026-01-30 13:27:28 +0000] [730039] [INFO] Using worker: uvicorn.workers.UvicornWorker
+[2026-01-30 13:27:28 +0000] [730072] [INFO] Booting worker with pid: 730072
+[2026-01-30 13:27:28 +0000] [730074] [INFO] Booting worker with pid: 730074
+[2026-01-30 13:27:28 +0000] [730077] [INFO] Booting worker with pid: 730077
+[2026-01-30 13:27:28 +0000] [730080] [INFO] Booting worker with pid: 730080
+[2026-01-30 13:27:55 +0000] [730077] [INFO] Started server process [730077]
+[2026-01-30 13:27:55 +0000] [730077] [INFO] Waiting for application startup.
+[2026-01-30 13:27:56 +0000] [730074] [INFO] Started server process [730074]
+[2026-01-30 13:27:56 +0000] [730074] [INFO] Waiting for application startup.
+[2026-01-30 13:27:57 +0000] [730077] [ERROR] Traceback (most recent call last):
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 738, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 610, in __aenter__
+    await self._router.startup()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in startup
+    await handler()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/app/main.py", line 41, in startup
+    async with engine.begin() as conn:
+  File "/usr/lib/python3.12/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 1066, in begin
+    async with conn:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/base.py", line 125, in __aenter__
+    return await self.start(is_ctxmanager=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 270, in start
+    await greenlet_spawn(self.sync_engine.connect)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 200, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3269, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 145, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3293, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 452, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1269, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 716, in checkout
+    rec = pool._do_get()
+          ^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 169, in _do_get
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 167, in _do_get
+    return self._create_connection()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 393, in _create_connection
+    return _ConnectionRecord(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 678, in __init__
+    self.__connect()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 902, in __connect
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 898, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 645, in connect
+    return dialect.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 616, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 941, in connect
+    await_only(creator_fn(*arg, **kw)),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 130, in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 195, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connection.py", line 2329, in connect
+    return await connect_utils._connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 1017, in _connect
+    raise last_error or exceptions.TargetServerAttributeNotMatched(
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 991, in _connect
+    conn = await _connect_addr(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 828, in _connect_addr
+    return await __connect_addr(params, True, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 873, in __connect_addr
+    tr, pr = await connector
+             ^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 744, in _create_ssl_connection
+    tr, pr = await loop.create_connection(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 2043, in create_connection
+  File "uvloop/loop.pyx", line 2020, in uvloop.loop.Loop.create_connection
+ConnectionRefusedError: [Errno 111] Connection refused
+
+[2026-01-30 13:27:57 +0000] [730077] [ERROR] Application startup failed. Exiting.
+[2026-01-30 13:27:57 +0000] [730080] [INFO] Started server process [730080]
+[2026-01-30 13:27:57 +0000] [730080] [INFO] Waiting for application startup.
+[2026-01-30 13:27:57 +0000] [730074] [ERROR] Traceback (most recent call last):
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 738, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 610, in __aenter__
+    await self._router.startup()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in startup
+    await handler()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/app/main.py", line 41, in startup
+    async with engine.begin() as conn:
+  File "/usr/lib/python3.12/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 1066, in begin
+    async with conn:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/base.py", line 125, in __aenter__
+    return await self.start(is_ctxmanager=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 270, in start
+    await greenlet_spawn(self.sync_engine.connect)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 200, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3269, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 145, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3293, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 452, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1269, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 716, in checkout
+    rec = pool._do_get()
+          ^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 169, in _do_get
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 167, in _do_get
+    return self._create_connection()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 393, in _create_connection
+    return _ConnectionRecord(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 678, in __init__
+    self.__connect()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 902, in __connect
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 898, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 645, in connect
+    return dialect.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 616, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 941, in connect
+    await_only(creator_fn(*arg, **kw)),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 130, in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 195, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connection.py", line 2329, in connect
+    return await connect_utils._connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 1017, in _connect
+    raise last_error or exceptions.TargetServerAttributeNotMatched(
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 991, in _connect
+    conn = await _connect_addr(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 828, in _connect_addr
+    return await __connect_addr(params, True, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 873, in __connect_addr
+    tr, pr = await connector
+             ^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 744, in _create_ssl_connection
+    tr, pr = await loop.create_connection(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 2043, in create_connection
+  File "uvloop/loop.pyx", line 2020, in uvloop.loop.Loop.create_connection
+ConnectionRefusedError: [Errno 111] Connection refused
+
+[2026-01-30 13:27:57 +0000] [730074] [ERROR] Application startup failed. Exiting.
+[2026-01-30 13:27:57 +0000] [730077] [INFO] Worker exiting (pid: 730077)
+[2026-01-30 13:27:57 +0000] [730074] [INFO] Worker exiting (pid: 730074)
+[2026-01-30 13:27:57 +0000] [730080] [ERROR] Traceback (most recent call last):
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 738, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 610, in __aenter__
+    await self._router.startup()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in startup
+    await handler()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/app/main.py", line 41, in startup
+    async with engine.begin() as conn:
+  File "/usr/lib/python3.12/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 1066, in begin
+    async with conn:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/base.py", line 125, in __aenter__
+    return await self.start(is_ctxmanager=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 270, in start
+    await greenlet_spawn(self.sync_engine.connect)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 200, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3269, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 145, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3293, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 452, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1269, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 716, in checkout
+    rec = pool._do_get()
+          ^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 169, in _do_get
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 167, in _do_get
+    return self._create_connection()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 393, in _create_connection
+    return _ConnectionRecord(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 678, in __init__
+    self.__connect()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 902, in __connect
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 898, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 645, in connect
+    return dialect.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 616, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 941, in connect
+    await_only(creator_fn(*arg, **kw)),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 130, in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 195, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connection.py", line 2329, in connect
+    return await connect_utils._connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 1017, in _connect
+    raise last_error or exceptions.TargetServerAttributeNotMatched(
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 991, in _connect
+    conn = await _connect_addr(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 828, in _connect_addr
+    return await __connect_addr(params, True, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 873, in __connect_addr
+    tr, pr = await connector
+             ^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 744, in _create_ssl_connection
+    tr, pr = await loop.create_connection(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 2043, in create_connection
+  File "uvloop/loop.pyx", line 2020, in uvloop.loop.Loop.create_connection
+ConnectionRefusedError: [Errno 111] Connection refused
+
+[2026-01-30 13:27:57 +0000] [730080] [ERROR] Application startup failed. Exiting.
+[2026-01-30 13:27:57 +0000] [730080] [INFO] Worker exiting (pid: 730080)
+[2026-01-30 13:27:58 +0000] [730072] [INFO] Started server process [730072]
+[2026-01-30 13:27:58 +0000] [730072] [INFO] Waiting for application startup.
+[2026-01-30 13:27:58 +0000] [730039] [CRITICAL] WORKER TIMEOUT (pid:730072)
+[2026-01-30 13:27:59 +0000] [730039] [CRITICAL] WORKER TIMEOUT (pid:730074)
+[2026-01-30 13:27:59 +0000] [730039] [CRITICAL] WORKER TIMEOUT (pid:730077)
+[2026-01-30 13:27:59 +0000] [730039] [CRITICAL] WORKER TIMEOUT (pid:730080)
+[2026-01-30 13:27:59 +0000] [730039] [ERROR] Worker (pid:730072) was sent SIGKILL! Perhaps out of memory?
+[2026-01-30 13:28:00 +0000] [730330] [INFO] Booting worker with pid: 730330
+[2026-01-30 13:28:00 +0000] [730039] [ERROR] Worker (pid:730080) was sent SIGKILL! Perhaps out of memory?
+[2026-01-30 13:28:00 +0000] [730332] [INFO] Booting worker with pid: 730332
+[2026-01-30 13:28:00 +0000] [730039] [ERROR] Worker (pid:730077) was sent SIGKILL! Perhaps out of memory?
+[2026-01-30 13:28:00 +0000] [730333] [INFO] Booting worker with pid: 730333
+[2026-01-30 13:28:00 +0000] [730039] [ERROR] Worker (pid:730074) was sent SIGKILL! Perhaps out of memory?
+[2026-01-30 13:28:01 +0000] [730337] [INFO] Booting worker with pid: 730337
+[2026-01-30 13:28:26 +0000] [730337] [INFO] Started server process [730337]
+[2026-01-30 13:28:26 +0000] [730337] [INFO] Waiting for application startup.
+[2026-01-30 13:28:26 +0000] [730330] [INFO] Started server process [730330]
+[2026-01-30 13:28:26 +0000] [730330] [INFO] Waiting for application startup.
+[2026-01-30 13:28:26 +0000] [730337] [ERROR] Traceback (most recent call last):
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 738, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 610, in __aenter__
+    await self._router.startup()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in startup
+    await handler()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/app/main.py", line 41, in startup
+    async with engine.begin() as conn:
+  File "/usr/lib/python3.12/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 1066, in begin
+    async with conn:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/base.py", line 125, in __aenter__
+    return await self.start(is_ctxmanager=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 270, in start
+    await greenlet_spawn(self.sync_engine.connect)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 200, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3269, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 145, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3293, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 452, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1269, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 716, in checkout
+    rec = pool._do_get()
+          ^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 169, in _do_get
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 167, in _do_get
+    return self._create_connection()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 393, in _create_connection
+    return _ConnectionRecord(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 678, in __init__
+    self.__connect()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 902, in __connect
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 898, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 645, in connect
+    return dialect.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 616, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 941, in connect
+    await_only(creator_fn(*arg, **kw)),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 130, in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 195, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connection.py", line 2329, in connect
+    return await connect_utils._connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 1017, in _connect
+    raise last_error or exceptions.TargetServerAttributeNotMatched(
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 991, in _connect
+    conn = await _connect_addr(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 828, in _connect_addr
+    return await __connect_addr(params, True, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 873, in __connect_addr
+    tr, pr = await connector
+             ^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 744, in _create_ssl_connection
+    tr, pr = await loop.create_connection(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 2043, in create_connection
+  File "uvloop/loop.pyx", line 2020, in uvloop.loop.Loop.create_connection
+ConnectionRefusedError: [Errno 111] Connection refused
+
+[2026-01-30 13:28:26 +0000] [730337] [ERROR] Application startup failed. Exiting.
+[2026-01-30 13:28:26 +0000] [730337] [INFO] Worker exiting (pid: 730337)
+[2026-01-30 13:28:26 +0000] [730333] [INFO] Started server process [730333]
+[2026-01-30 13:28:26 +0000] [730333] [INFO] Waiting for application startup.
+[2026-01-30 13:28:26 +0000] [730330] [ERROR] Traceback (most recent call last):
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 738, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 610, in __aenter__
+    await self._router.startup()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in startup
+    await handler()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/app/main.py", line 41, in startup
+    async with engine.begin() as conn:
+  File "/usr/lib/python3.12/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 1066, in begin
+    async with conn:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/base.py", line 125, in __aenter__
+    return await self.start(is_ctxmanager=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 270, in start
+    await greenlet_spawn(self.sync_engine.connect)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 200, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3269, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 145, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3293, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 452, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1269, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 716, in checkout
+    rec = pool._do_get()
+          ^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 169, in _do_get
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 167, in _do_get
+    return self._create_connection()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 393, in _create_connection
+    return _ConnectionRecord(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 678, in __init__
+    self.__connect()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 902, in __connect
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 898, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 645, in connect
+    return dialect.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 616, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 941, in connect
+    await_only(creator_fn(*arg, **kw)),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 130, in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 195, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connection.py", line 2329, in connect
+    return await connect_utils._connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 1017, in _connect
+    raise last_error or exceptions.TargetServerAttributeNotMatched(
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 991, in _connect
+    conn = await _connect_addr(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 828, in _connect_addr
+    return await __connect_addr(params, True, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 873, in __connect_addr
+    tr, pr = await connector
+             ^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 744, in _create_ssl_connection
+    tr, pr = await loop.create_connection(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 2043, in create_connection
+  File "uvloop/loop.pyx", line 2020, in uvloop.loop.Loop.create_connection
+ConnectionRefusedError: [Errno 111] Connection refused
+
+[2026-01-30 13:28:26 +0000] [730330] [ERROR] Application startup failed. Exiting.
+[2026-01-30 13:28:26 +0000] [730330] [INFO] Worker exiting (pid: 730330)
+[2026-01-30 13:28:27 +0000] [730333] [ERROR] Traceback (most recent call last):
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 738, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 610, in __aenter__
+    await self._router.startup()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in startup
+    await handler()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/app/main.py", line 41, in startup
+    async with engine.begin() as conn:
+  File "/usr/lib/python3.12/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 1066, in begin
+    async with conn:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/base.py", line 125, in __aenter__
+    return await self.start(is_ctxmanager=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 270, in start
+    await greenlet_spawn(self.sync_engine.connect)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 200, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3269, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 145, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3293, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 452, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1269, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 716, in checkout
+    rec = pool._do_get()
+          ^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 169, in _do_get
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 167, in _do_get
+    return self._create_connection()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 393, in _create_connection
+    return _ConnectionRecord(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 678, in __init__
+    self.__connect()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 902, in __connect
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 898, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 645, in connect
+    return dialect.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 616, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 941, in connect
+    await_only(creator_fn(*arg, **kw)),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 130, in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 195, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connection.py", line 2329, in connect
+    return await connect_utils._connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 1017, in _connect
+    raise last_error or exceptions.TargetServerAttributeNotMatched(
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 991, in _connect
+    conn = await _connect_addr(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 828, in _connect_addr
+    return await __connect_addr(params, True, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 873, in __connect_addr
+    tr, pr = await connector
+             ^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 744, in _create_ssl_connection
+    tr, pr = await loop.create_connection(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 2043, in create_connection
+  File "uvloop/loop.pyx", line 2020, in uvloop.loop.Loop.create_connection
+ConnectionRefusedError: [Errno 111] Connection refused
+
+[2026-01-30 13:28:27 +0000] [730333] [ERROR] Application startup failed. Exiting.
+[2026-01-30 13:28:27 +0000] [730333] [INFO] Worker exiting (pid: 730333)
+[2026-01-30 13:28:27 +0000] [730332] [INFO] Started server process [730332]
+[2026-01-30 13:28:27 +0000] [730332] [INFO] Waiting for application startup.
+[2026-01-30 13:28:27 +0000] [730332] [ERROR] Traceback (most recent call last):
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 738, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 610, in __aenter__
+    await self._router.startup()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in startup
+    await handler()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/app/main.py", line 41, in startup
+    async with engine.begin() as conn:
+  File "/usr/lib/python3.12/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 1066, in begin
+    async with conn:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/base.py", line 125, in __aenter__
+    return await self.start(is_ctxmanager=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 270, in start
+    await greenlet_spawn(self.sync_engine.connect)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 200, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3269, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 145, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3293, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 452, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1269, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 716, in checkout
+    rec = pool._do_get()
+          ^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 169, in _do_get
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 167, in _do_get
+    return self._create_connection()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 393, in _create_connection
+    return _ConnectionRecord(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 678, in __init__
+    self.__connect()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 902, in __connect
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 898, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 645, in connect
+    return dialect.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 616, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 941, in connect
+    await_only(creator_fn(*arg, **kw)),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 130, in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 195, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connection.py", line 2329, in connect
+    return await connect_utils._connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 1017, in _connect
+    raise last_error or exceptions.TargetServerAttributeNotMatched(
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 991, in _connect
+    conn = await _connect_addr(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 828, in _connect_addr
+    return await __connect_addr(params, True, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 873, in __connect_addr
+    tr, pr = await connector
+             ^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 744, in _create_ssl_connection
+    tr, pr = await loop.create_connection(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 2043, in create_connection
+  File "uvloop/loop.pyx", line 2020, in uvloop.loop.Loop.create_connection
+ConnectionRefusedError: [Errno 111] Connection refused
+
+[2026-01-30 13:28:27 +0000] [730332] [ERROR] Application startup failed. Exiting.
+[2026-01-30 13:28:27 +0000] [730332] [INFO] Worker exiting (pid: 730332)
+[2026-01-30 13:28:30 +0000] [730039] [CRITICAL] WORKER TIMEOUT (pid:730330)
+[2026-01-30 13:28:30 +0000] [730039] [CRITICAL] WORKER TIMEOUT (pid:730332)
+[2026-01-30 13:28:31 +0000] [730039] [CRITICAL] WORKER TIMEOUT (pid:730333)
+[2026-01-30 13:28:31 +0000] [730039] [CRITICAL] WORKER TIMEOUT (pid:730337)
+[2026-01-30 13:28:31 +0000] [730039] [ERROR] Worker (pid:730332) was sent SIGKILL! Perhaps out of memory?
+[2026-01-30 13:28:32 +0000] [730542] [INFO] Booting worker with pid: 730542
+[2026-01-30 13:28:32 +0000] [730039] [ERROR] Worker (pid:730330) was sent SIGKILL! Perhaps out of memory?
+[2026-01-30 13:28:32 +0000] [730039] [ERROR] Worker (pid:730333) was sent SIGKILL! Perhaps out of memory?
+[2026-01-30 13:28:32 +0000] [730551] [INFO] Booting worker with pid: 730551
+[2026-01-30 13:28:32 +0000] [730547] [INFO] Booting worker with pid: 730547
+[2026-01-30 13:28:33 +0000] [730039] [ERROR] Worker (pid:730337) was sent SIGKILL! Perhaps out of memory?
+[2026-01-30 13:28:33 +0000] [730560] [INFO] Booting worker with pid: 730560
+[2026-01-30 13:28:57 +0000] [730560] [INFO] Started server process [730560]
+[2026-01-30 13:28:57 +0000] [730560] [INFO] Waiting for application startup.
+[2026-01-30 13:28:57 +0000] [730542] [INFO] Started server process [730542]
+[2026-01-30 13:28:57 +0000] [730542] [INFO] Waiting for application startup.
+[2026-01-30 13:28:58 +0000] [730560] [ERROR] Traceback (most recent call last):
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 738, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 610, in __aenter__
+    await self._router.startup()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in startup
+    await handler()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/app/main.py", line 41, in startup
+    async with engine.begin() as conn:
+  File "/usr/lib/python3.12/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 1066, in begin
+    async with conn:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/base.py", line 125, in __aenter__
+    return await self.start(is_ctxmanager=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 270, in start
+    await greenlet_spawn(self.sync_engine.connect)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 200, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3269, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 145, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3293, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 452, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1269, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 716, in checkout
+    rec = pool._do_get()
+          ^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 169, in _do_get
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 167, in _do_get
+    return self._create_connection()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 393, in _create_connection
+    return _ConnectionRecord(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 678, in __init__
+    self.__connect()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 902, in __connect
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 898, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 645, in connect
+    return dialect.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 616, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 941, in connect
+    await_only(creator_fn(*arg, **kw)),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 130, in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 195, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connection.py", line 2329, in connect
+    return await connect_utils._connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 1017, in _connect
+    raise last_error or exceptions.TargetServerAttributeNotMatched(
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 991, in _connect
+    conn = await _connect_addr(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 828, in _connect_addr
+    return await __connect_addr(params, True, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 873, in __connect_addr
+    tr, pr = await connector
+             ^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 744, in _create_ssl_connection
+    tr, pr = await loop.create_connection(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 2043, in create_connection
+  File "uvloop/loop.pyx", line 2020, in uvloop.loop.Loop.create_connection
+ConnectionRefusedError: [Errno 111] Connection refused
+
+[2026-01-30 13:28:58 +0000] [730560] [ERROR] Application startup failed. Exiting.
+[2026-01-30 13:28:58 +0000] [730560] [INFO] Worker exiting (pid: 730560)
+[2026-01-30 13:28:58 +0000] [730547] [INFO] Started server process [730547]
+[2026-01-30 13:28:58 +0000] [730547] [INFO] Waiting for application startup.
+[2026-01-30 13:28:58 +0000] [730542] [ERROR] Traceback (most recent call last):
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 738, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 610, in __aenter__
+    await self._router.startup()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in startup
+    await handler()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/app/main.py", line 41, in startup
+    async with engine.begin() as conn:
+  File "/usr/lib/python3.12/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 1066, in begin
+    async with conn:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/base.py", line 125, in __aenter__
+    return await self.start(is_ctxmanager=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 270, in start
+    await greenlet_spawn(self.sync_engine.connect)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 200, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3269, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 145, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3293, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 452, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1269, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 716, in checkout
+    rec = pool._do_get()
+          ^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 169, in _do_get
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 167, in _do_get
+    return self._create_connection()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 393, in _create_connection
+    return _ConnectionRecord(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 678, in __init__
+    self.__connect()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 902, in __connect
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 898, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 645, in connect
+    return dialect.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 616, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 941, in connect
+    await_only(creator_fn(*arg, **kw)),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 130, in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 195, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connection.py", line 2329, in connect
+    return await connect_utils._connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 1017, in _connect
+    raise last_error or exceptions.TargetServerAttributeNotMatched(
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 991, in _connect
+    conn = await _connect_addr(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 828, in _connect_addr
+    return await __connect_addr(params, True, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 873, in __connect_addr
+    tr, pr = await connector
+             ^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 744, in _create_ssl_connection
+    tr, pr = await loop.create_connection(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 2043, in create_connection
+  File "uvloop/loop.pyx", line 2020, in uvloop.loop.Loop.create_connection
+ConnectionRefusedError: [Errno 111] Connection refused
+
+[2026-01-30 13:28:58 +0000] [730542] [ERROR] Application startup failed. Exiting.
+[2026-01-30 13:28:58 +0000] [730542] [INFO] Worker exiting (pid: 730542)
+[2026-01-30 13:28:58 +0000] [730547] [ERROR] Traceback (most recent call last):
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 738, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 610, in __aenter__
+    await self._router.startup()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in startup
+    await handler()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/app/main.py", line 41, in startup
+    async with engine.begin() as conn:
+  File "/usr/lib/python3.12/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 1066, in begin
+    async with conn:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/base.py", line 125, in __aenter__
+    return await self.start(is_ctxmanager=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 270, in start
+    await greenlet_spawn(self.sync_engine.connect)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 200, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3269, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 145, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3293, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 452, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1269, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 716, in checkout
+    rec = pool._do_get()
+          ^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 169, in _do_get
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 167, in _do_get
+    return self._create_connection()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 393, in _create_connection
+    return _ConnectionRecord(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 678, in __init__
+    self.__connect()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 902, in __connect
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 898, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 645, in connect
+    return dialect.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 616, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 941, in connect
+    await_only(creator_fn(*arg, **kw)),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 130, in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 195, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connection.py", line 2329, in connect
+    return await connect_utils._connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 1017, in _connect
+    raise last_error or exceptions.TargetServerAttributeNotMatched(
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 991, in _connect
+    conn = await _connect_addr(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 828, in _connect_addr
+    return await __connect_addr(params, True, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 873, in __connect_addr
+    tr, pr = await connector
+             ^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 744, in _create_ssl_connection
+    tr, pr = await loop.create_connection(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 2043, in create_connection
+  File "uvloop/loop.pyx", line 2020, in uvloop.loop.Loop.create_connection
+ConnectionRefusedError: [Errno 111] Connection refused
+
+[2026-01-30 13:28:58 +0000] [730547] [ERROR] Application startup failed. Exiting.
+[2026-01-30 13:28:58 +0000] [730547] [INFO] Worker exiting (pid: 730547)
+[2026-01-30 13:28:58 +0000] [730551] [INFO] Started server process [730551]
+[2026-01-30 13:28:58 +0000] [730551] [INFO] Waiting for application startup.
+[2026-01-30 13:28:59 +0000] [730551] [ERROR] Traceback (most recent call last):
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 738, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 610, in __aenter__
+    await self._router.startup()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in startup
+    await handler()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/app/main.py", line 41, in startup
+    async with engine.begin() as conn:
+  File "/usr/lib/python3.12/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 1066, in begin
+    async with conn:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/base.py", line 125, in __aenter__
+    return await self.start(is_ctxmanager=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 270, in start
+    await greenlet_spawn(self.sync_engine.connect)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 200, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3269, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 145, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3293, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 452, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1269, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 716, in checkout
+    rec = pool._do_get()
+          ^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 169, in _do_get
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 167, in _do_get
+    return self._create_connection()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 393, in _create_connection
+    return _ConnectionRecord(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 678, in __init__
+    self.__connect()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 902, in __connect
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 898, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 645, in connect
+    return dialect.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 616, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 941, in connect
+    await_only(creator_fn(*arg, **kw)),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 130, in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 195, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connection.py", line 2329, in connect
+    return await connect_utils._connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 1017, in _connect
+    raise last_error or exceptions.TargetServerAttributeNotMatched(
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 991, in _connect
+    conn = await _connect_addr(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 828, in _connect_addr
+    return await __connect_addr(params, True, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 873, in __connect_addr
+    tr, pr = await connector
+             ^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 744, in _create_ssl_connection
+    tr, pr = await loop.create_connection(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 2043, in create_connection
+  File "uvloop/loop.pyx", line 2020, in uvloop.loop.Loop.create_connection
+ConnectionRefusedError: [Errno 111] Connection refused
+
+[2026-01-30 13:28:59 +0000] [730551] [ERROR] Application startup failed. Exiting.
+[2026-01-30 13:28:59 +0000] [730551] [INFO] Worker exiting (pid: 730551)
+[2026-01-30 13:29:02 +0000] [730039] [CRITICAL] WORKER TIMEOUT (pid:730542)
+[2026-01-30 13:29:03 +0000] [730039] [CRITICAL] WORKER TIMEOUT (pid:730547)
+[2026-01-30 13:29:03 +0000] [730039] [CRITICAL] WORKER TIMEOUT (pid:730551)
+[2026-01-30 13:29:03 +0000] [730039] [CRITICAL] WORKER TIMEOUT (pid:730560)
+[2026-01-30 13:29:04 +0000] [730039] [ERROR] Worker (pid:730542) was sent SIGKILL! Perhaps out of memory?
+[2026-01-30 13:29:04 +0000] [730738] [INFO] Booting worker with pid: 730738
+[2026-01-30 13:29:04 +0000] [730039] [ERROR] Worker (pid:730560) was sent SIGKILL! Perhaps out of memory?
+[2026-01-30 13:29:05 +0000] [730743] [INFO] Booting worker with pid: 730743
+[2026-01-30 13:29:05 +0000] [730039] [ERROR] Worker (pid:730547) was sent SIGKILL! Perhaps out of memory?
+[2026-01-30 13:29:05 +0000] [730744] [INFO] Booting worker with pid: 730744
+[2026-01-30 13:29:05 +0000] [730039] [ERROR] Worker (pid:730551) was sent SIGKILL! Perhaps out of memory?
+[2026-01-30 13:29:05 +0000] [730745] [INFO] Booting worker with pid: 730745
+[2026-01-30 13:29:32 +0000] [730744] [INFO] Started server process [730744]
+[2026-01-30 13:29:32 +0000] [730744] [INFO] Waiting for application startup.
+[2026-01-30 13:29:33 +0000] [730744] [ERROR] Traceback (most recent call last):
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 738, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 610, in __aenter__
+    await self._router.startup()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in startup
+    await handler()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/app/main.py", line 41, in startup
+    async with engine.begin() as conn:
+  File "/usr/lib/python3.12/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 1066, in begin
+    async with conn:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/base.py", line 125, in __aenter__
+    return await self.start(is_ctxmanager=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 270, in start
+    await greenlet_spawn(self.sync_engine.connect)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 200, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3269, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 145, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3293, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 452, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1269, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 716, in checkout
+    rec = pool._do_get()
+          ^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 169, in _do_get
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 167, in _do_get
+    return self._create_connection()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 393, in _create_connection
+    return _ConnectionRecord(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 678, in __init__
+    self.__connect()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 902, in __connect
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 898, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 645, in connect
+    return dialect.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 616, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 941, in connect
+    await_only(creator_fn(*arg, **kw)),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 130, in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 195, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connection.py", line 2329, in connect
+    return await connect_utils._connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 1017, in _connect
+    raise last_error or exceptions.TargetServerAttributeNotMatched(
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 991, in _connect
+    conn = await _connect_addr(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 828, in _connect_addr
+    return await __connect_addr(params, True, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 873, in __connect_addr
+    tr, pr = await connector
+             ^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 744, in _create_ssl_connection
+    tr, pr = await loop.create_connection(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 2043, in create_connection
+  File "uvloop/loop.pyx", line 2020, in uvloop.loop.Loop.create_connection
+ConnectionRefusedError: [Errno 111] Connection refused
+
+[2026-01-30 13:29:33 +0000] [730744] [ERROR] Application startup failed. Exiting.
+[2026-01-30 13:29:33 +0000] [730744] [INFO] Worker exiting (pid: 730744)
+[2026-01-30 13:29:33 +0000] [730738] [INFO] Started server process [730738]
+[2026-01-30 13:29:33 +0000] [730738] [INFO] Waiting for application startup.
+[2026-01-30 13:29:33 +0000] [730745] [INFO] Started server process [730745]
+[2026-01-30 13:29:33 +0000] [730745] [INFO] Waiting for application startup.
+[2026-01-30 13:29:33 +0000] [730745] [ERROR] Traceback (most recent call last):
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 738, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 610, in __aenter__
+    await self._router.startup()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in startup
+    await handler()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/app/main.py", line 41, in startup
+    async with engine.begin() as conn:
+  File "/usr/lib/python3.12/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 1066, in begin
+    async with conn:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/base.py", line 125, in __aenter__
+    return await self.start(is_ctxmanager=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 270, in start
+    await greenlet_spawn(self.sync_engine.connect)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 200, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3269, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 145, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3293, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 452, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1269, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 716, in checkout
+    rec = pool._do_get()
+          ^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 169, in _do_get
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 167, in _do_get
+    return self._create_connection()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 393, in _create_connection
+    return _ConnectionRecord(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 678, in __init__
+    self.__connect()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 902, in __connect
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 898, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 645, in connect
+    return dialect.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 616, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 941, in connect
+    await_only(creator_fn(*arg, **kw)),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 130, in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 195, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connection.py", line 2329, in connect
+    return await connect_utils._connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 1017, in _connect
+    raise last_error or exceptions.TargetServerAttributeNotMatched(
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 991, in _connect
+    conn = await _connect_addr(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 828, in _connect_addr
+    return await __connect_addr(params, True, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 873, in __connect_addr
+    tr, pr = await connector
+             ^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 744, in _create_ssl_connection
+    tr, pr = await loop.create_connection(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 2043, in create_connection
+  File "uvloop/loop.pyx", line 2020, in uvloop.loop.Loop.create_connection
+ConnectionRefusedError: [Errno 111] Connection refused
+
+[2026-01-30 13:29:33 +0000] [730745] [ERROR] Application startup failed. Exiting.
+[2026-01-30 13:29:33 +0000] [730745] [INFO] Worker exiting (pid: 730745)
+[2026-01-30 13:29:33 +0000] [730738] [ERROR] Traceback (most recent call last):
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 738, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 610, in __aenter__
+    await self._router.startup()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in startup
+    await handler()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/app/main.py", line 41, in startup
+    async with engine.begin() as conn:
+  File "/usr/lib/python3.12/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 1066, in begin
+    async with conn:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/base.py", line 125, in __aenter__
+    return await self.start(is_ctxmanager=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 270, in start
+    await greenlet_spawn(self.sync_engine.connect)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 200, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3269, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 145, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3293, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 452, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1269, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 716, in checkout
+    rec = pool._do_get()
+          ^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 169, in _do_get
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 167, in _do_get
+    return self._create_connection()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 393, in _create_connection
+    return _ConnectionRecord(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 678, in __init__
+    self.__connect()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 902, in __connect
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 898, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 645, in connect
+    return dialect.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 616, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 941, in connect
+    await_only(creator_fn(*arg, **kw)),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 130, in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 195, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connection.py", line 2329, in connect
+    return await connect_utils._connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 1017, in _connect
+    raise last_error or exceptions.TargetServerAttributeNotMatched(
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 991, in _connect
+    conn = await _connect_addr(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 828, in _connect_addr
+    return await __connect_addr(params, True, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 873, in __connect_addr
+    tr, pr = await connector
+             ^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 744, in _create_ssl_connection
+    tr, pr = await loop.create_connection(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 2043, in create_connection
+  File "uvloop/loop.pyx", line 2020, in uvloop.loop.Loop.create_connection
+ConnectionRefusedError: [Errno 111] Connection refused
+
+[2026-01-30 13:29:33 +0000] [730738] [ERROR] Application startup failed. Exiting.
+[2026-01-30 13:29:33 +0000] [730738] [INFO] Worker exiting (pid: 730738)
+[2026-01-30 13:29:34 +0000] [730743] [INFO] Started server process [730743]
+[2026-01-30 13:29:34 +0000] [730743] [INFO] Waiting for application startup.
+[2026-01-30 13:29:34 +0000] [730743] [ERROR] Traceback (most recent call last):
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 738, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 610, in __aenter__
+    await self._router.startup()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in startup
+    await handler()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/app/main.py", line 41, in startup
+    async with engine.begin() as conn:
+  File "/usr/lib/python3.12/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 1066, in begin
+    async with conn:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/base.py", line 125, in __aenter__
+    return await self.start(is_ctxmanager=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 270, in start
+    await greenlet_spawn(self.sync_engine.connect)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 200, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3269, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 145, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3293, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 452, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1269, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 716, in checkout
+    rec = pool._do_get()
+          ^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 169, in _do_get
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 167, in _do_get
+    return self._create_connection()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 393, in _create_connection
+    return _ConnectionRecord(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 678, in __init__
+    self.__connect()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 902, in __connect
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 898, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 645, in connect
+    return dialect.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 616, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 941, in connect
+    await_only(creator_fn(*arg, **kw)),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 130, in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 195, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connection.py", line 2329, in connect
+    return await connect_utils._connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 1017, in _connect
+    raise last_error or exceptions.TargetServerAttributeNotMatched(
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 991, in _connect
+    conn = await _connect_addr(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 828, in _connect_addr
+    return await __connect_addr(params, True, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 873, in __connect_addr
+    tr, pr = await connector
+             ^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 744, in _create_ssl_connection
+    tr, pr = await loop.create_connection(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 2043, in create_connection
+  File "uvloop/loop.pyx", line 2020, in uvloop.loop.Loop.create_connection
+ConnectionRefusedError: [Errno 111] Connection refused
+
+[2026-01-30 13:29:34 +0000] [730743] [ERROR] Application startup failed. Exiting.
+[2026-01-30 13:29:34 +0000] [730743] [INFO] Worker exiting (pid: 730743)
+[2026-01-30 13:29:35 +0000] [730039] [CRITICAL] WORKER TIMEOUT (pid:730738)
+[2026-01-30 13:29:35 +0000] [730039] [CRITICAL] WORKER TIMEOUT (pid:730743)
+[2026-01-30 13:29:35 +0000] [730039] [CRITICAL] WORKER TIMEOUT (pid:730744)
+[2026-01-30 13:29:36 +0000] [730039] [CRITICAL] WORKER TIMEOUT (pid:730745)
+[2026-01-30 13:29:36 +0000] [730039] [ERROR] Worker (pid:730743) was sent SIGKILL! Perhaps out of memory?
+[2026-01-30 13:29:36 +0000] [730039] [ERROR] Worker (pid:730744) was sent SIGKILL! Perhaps out of memory?
+[2026-01-30 13:29:36 +0000] [730955] [INFO] Booting worker with pid: 730955
+[2026-01-30 13:29:36 +0000] [730039] [ERROR] Worker (pid:730738) was sent SIGKILL! Perhaps out of memory?
+[2026-01-30 13:29:37 +0000] [730957] [INFO] Booting worker with pid: 730957
+[2026-01-30 13:29:37 +0000] [730039] [ERROR] Worker (pid:730745) was sent SIGKILL! Perhaps out of memory?
+[2026-01-30 13:29:37 +0000] [730958] [INFO] Booting worker with pid: 730958
+[2026-01-30 13:29:37 +0000] [730961] [INFO] Booting worker with pid: 730961
+[2026-01-30 13:29:58 +0000] [730955] [INFO] Started server process [730955]
+[2026-01-30 13:29:58 +0000] [730955] [INFO] Waiting for application startup.
+[2026-01-30 13:29:59 +0000] [730955] [ERROR] Traceback (most recent call last):
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 738, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 610, in __aenter__
+    await self._router.startup()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in startup
+    await handler()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/app/main.py", line 41, in startup
+    async with engine.begin() as conn:
+  File "/usr/lib/python3.12/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 1066, in begin
+    async with conn:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/base.py", line 125, in __aenter__
+    return await self.start(is_ctxmanager=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 270, in start
+    await greenlet_spawn(self.sync_engine.connect)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 200, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3269, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 145, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3293, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 452, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1269, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 716, in checkout
+    rec = pool._do_get()
+          ^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 169, in _do_get
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 167, in _do_get
+    return self._create_connection()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 393, in _create_connection
+    return _ConnectionRecord(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 678, in __init__
+    self.__connect()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 902, in __connect
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 898, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 645, in connect
+    return dialect.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 616, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 941, in connect
+    await_only(creator_fn(*arg, **kw)),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 130, in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 195, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connection.py", line 2329, in connect
+    return await connect_utils._connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 1017, in _connect
+    raise last_error or exceptions.TargetServerAttributeNotMatched(
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 991, in _connect
+    conn = await _connect_addr(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 828, in _connect_addr
+    return await __connect_addr(params, True, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 873, in __connect_addr
+    tr, pr = await connector
+             ^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 744, in _create_ssl_connection
+    tr, pr = await loop.create_connection(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 2043, in create_connection
+  File "uvloop/loop.pyx", line 2020, in uvloop.loop.Loop.create_connection
+ConnectionRefusedError: [Errno 111] Connection refused
+
+[2026-01-30 13:29:59 +0000] [730955] [ERROR] Application startup failed. Exiting.
+[2026-01-30 13:29:59 +0000] [730955] [INFO] Worker exiting (pid: 730955)
+[2026-01-30 13:30:03 +0000] [730957] [INFO] Started server process [730957]
+[2026-01-30 13:30:03 +0000] [730957] [INFO] Waiting for application startup.
+[2026-01-30 13:30:03 +0000] [730957] [ERROR] Traceback (most recent call last):
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 738, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 610, in __aenter__
+    await self._router.startup()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in startup
+    await handler()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/app/main.py", line 41, in startup
+    async with engine.begin() as conn:
+  File "/usr/lib/python3.12/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 1066, in begin
+    async with conn:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/base.py", line 125, in __aenter__
+    return await self.start(is_ctxmanager=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 270, in start
+    await greenlet_spawn(self.sync_engine.connect)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 200, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3269, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 145, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3293, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 452, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1269, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 716, in checkout
+    rec = pool._do_get()
+          ^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 169, in _do_get
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 167, in _do_get
+    return self._create_connection()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 393, in _create_connection
+    return _ConnectionRecord(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 678, in __init__
+    self.__connect()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 902, in __connect
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 898, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 645, in connect
+    return dialect.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 616, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 941, in connect
+    await_only(creator_fn(*arg, **kw)),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 130, in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 195, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connection.py", line 2329, in connect
+    return await connect_utils._connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 1017, in _connect
+    raise last_error or exceptions.TargetServerAttributeNotMatched(
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 991, in _connect
+    conn = await _connect_addr(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 828, in _connect_addr
+    return await __connect_addr(params, True, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 873, in __connect_addr
+    tr, pr = await connector
+             ^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 744, in _create_ssl_connection
+    tr, pr = await loop.create_connection(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 2043, in create_connection
+  File "uvloop/loop.pyx", line 2020, in uvloop.loop.Loop.create_connection
+ConnectionRefusedError: [Errno 111] Connection refused
+
+[2026-01-30 13:30:03 +0000] [730957] [ERROR] Application startup failed. Exiting.
+[2026-01-30 13:30:03 +0000] [730957] [INFO] Worker exiting (pid: 730957)
+[2026-01-30 13:30:03 +0000] [730961] [INFO] Started server process [730961]
+[2026-01-30 13:30:03 +0000] [730961] [INFO] Waiting for application startup.
+[2026-01-30 13:30:04 +0000] [730961] [ERROR] Traceback (most recent call last):
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 738, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 610, in __aenter__
+    await self._router.startup()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in startup
+    await handler()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/app/main.py", line 41, in startup
+    async with engine.begin() as conn:
+  File "/usr/lib/python3.12/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 1066, in begin
+    async with conn:
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/base.py", line 125, in __aenter__
+    return await self.start(is_ctxmanager=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 270, in start
+    await greenlet_spawn(self.sync_engine.connect)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 200, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3269, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 145, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 3293, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 452, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 1269, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 716, in checkout
+    rec = pool._do_get()
+          ^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 169, in _do_get
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/impl.py", line 167, in _do_get
+    return self._create_connection()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 393, in _create_connection
+    return _ConnectionRecord(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 678, in __init__
+    self.__connect()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 902, in __connect
+    with util.safe_reraise():
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 898, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/create.py", line 645, in connect
+    return dialect.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 616, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 941, in connect
+    await_only(creator_fn(*arg, **kw)),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 130, in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 195, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connection.py", line 2329, in connect
+    return await connect_utils._connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 1017, in _connect
+    raise last_error or exceptions.TargetServerAttributeNotMatched(
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 991, in _connect
+    conn = await _connect_addr(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 828, in _connect_addr
+    return await __connect_addr(params, True, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 873, in __connect_addr
+    tr, pr = await connector
+             ^^^^^^^^^^^^^^^
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/asyncpg/connect_utils.py", line 744, in _create_ssl_connection
+    tr, pr = await loop.create_connection(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 2043, in create_connection
+  File "uvloop/loop.pyx", line 2020, in uvloop.loop.Loop.create_connection
+ConnectionRefusedError: [Errno 111] Connection refused
+
+[2026-01-30 13:30:04 +0000] [730961] [ERROR] Application startup failed. Exiting.
+[2026-01-30 13:30:04 +0000] [730961] [INFO] Worker exiting (pid: 730961)
+[2026-01-30 13:30:05 +0000] [730039] [ERROR] Worker (pid:730955) exited with code 3
+[2026-01-30 13:30:05 +0000] [730039] [ERROR] Worker (pid:730958) was sent SIGTERM!
+[2026-01-30 13:30:05 +0000] [730039] [ERROR] Worker (pid:730961) was sent SIGTERM!
+[2026-01-30 13:30:06 +0000] [730039] [ERROR] Worker (pid:730957) was sent SIGTERM!
+[2026-01-30 13:30:06 +0000] [730039] [ERROR] Shutting down: Master
+[2026-01-30 13:30:06 +0000] [730039] [ERROR] Reason: Worker failed to boot.

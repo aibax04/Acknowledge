@@ -473,3 +473,28 @@ async def promote_user(
     await db.refresh(user)
     
     return user
+
+
+@router.put("/users/{user_id}/probation")
+async def toggle_user_probation(
+    user_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_senior)
+):
+    """Toggle probation status of any user. Only directors (seniors) can do this."""
+    result = await db.execute(select(User).filter(User.id == user_id))
+    user = result.scalars().first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot change your own probation status")
+
+    user.is_on_probation = not (user.is_on_probation or False)
+    await db.commit()
+    await db.refresh(user)
+
+    status_text = "on probation" if user.is_on_probation else "removed from probation"
+    return {"message": f"{user.full_name} is now {status_text}", "is_on_probation": user.is_on_probation}
+

@@ -1,0 +1,13 @@
+nohup: ignoring input
+[2026-01-30 12:53:22 +0000] [721868] [INFO] Starting gunicorn 23.0.0
+[2026-01-30 12:53:22 +0000] [721868] [ERROR] Connection in use: ('0.0.0.0', 35000)
+[2026-01-30 12:53:22 +0000] [721868] [ERROR] connection to ('0.0.0.0', 35000) failed: [Errno 98] Address already in use
+[2026-01-30 12:53:24 +0000] [721868] [ERROR] Connection in use: ('0.0.0.0', 35000)
+[2026-01-30 12:53:24 +0000] [721868] [ERROR] connection to ('0.0.0.0', 35000) failed: [Errno 98] Address already in use
+[2026-01-30 12:53:25 +0000] [721868] [ERROR] Connection in use: ('0.0.0.0', 35000)
+[2026-01-30 12:53:25 +0000] [721868] [ERROR] connection to ('0.0.0.0', 35000) failed: [Errno 98] Address already in use
+[2026-01-30 12:53:26 +0000] [721868] [ERROR] Connection in use: ('0.0.0.0', 35000)
+[2026-01-30 12:53:26 +0000] [721868] [ERROR] connection to ('0.0.0.0', 35000) failed: [Errno 98] Address already in use
+[2026-01-30 12:53:27 +0000] [721868] [ERROR] Connection in use: ('0.0.0.0', 35000)
+[2026-01-30 12:53:27 +0000] [721868] [ERROR] connection to ('0.0.0.0', 35000) failed: [Errno 98] Address already in use
+[2026-01-30 12:53:28 +0000] [721868] [ERROR] Can't connect to ('0.0.0.0', 35000)

@@ -58,8 +58,8 @@
             }
             return '<div class="px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-0 flex items-center justify-between gap-3">' +
                 '<div class="min-w-0 flex-1">' +
-                '<p class="text-sm font-medium text-gray-900">' + name + '</p>' +
-                '<p class="text-xs text-gray-500">' + role + ' · ' + email + '</p>' +
+                '<p class="text-sm font-medium text-gray-900 truncate">' + name + '</p>' +
+                '<p class="text-xs text-gray-500 truncate">' + role + ' · ' + email + '</p>' +
                 '</div>' +
                 (actionBtn ? '<div class="flex-shrink-0">' + actionBtn + '</div>' : '') +
                 '</div>';

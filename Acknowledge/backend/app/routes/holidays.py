@@ -49,6 +49,15 @@ async def create_holiday(
     return {"message": "Holiday created successfully", "id": holiday.id}
 
 
+def _normalize_office(office: Optional[str]) -> Optional[str]:
+    if not office:
+        return office
+    o = office.strip().lower()
+    if o == "igen":
+        return "eigen"
+    return o
+
+
 @router.get("/")
 async def get_holidays(
     year: Optional[int] = None,
@@ -56,16 +65,24 @@ async def get_holidays(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Get all holidays. Optional filters for year and office."""
+    """Get holidays filtered by office. Employees/interns always see only their office's holidays."""
+    from sqlalchemy import extract
+
+    resolved_office = _normalize_office(office) if office else None
+
+    if current_user.role in (UserRole.EMPLOYEE, UserRole.INTERN):
+        resolved_office = _normalize_office(current_user.office) or resolved_office
+    elif not resolved_office or resolved_office == "all":
+        resolved_office = None
+
     query = select(Holiday)
 
     if year:
-        from sqlalchemy import extract
         query = query.filter(extract('year', Holiday.date) == year)
 
-    if office and office != "all":
+    if resolved_office and resolved_office != "all":
         query = query.filter(
-            (Holiday.office == office) | (Holiday.office == "both")
+            (Holiday.office == resolved_office) | (Holiday.office == "both")
         )
 
     query = query.order_by(Holiday.date.asc())

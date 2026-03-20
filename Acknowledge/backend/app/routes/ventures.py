@@ -2,12 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
+from sqlalchemy import or_
 from typing import List
 from app.database import get_db
 from app.models.venture import Venture, venture_members
 from app.models.user import User, UserRole
+from app.models.task import Task
 from app.schemas.venture_schema import (
-    VentureCreate, VentureUpdate, VentureResponse, 
+    VentureCreate, VentureUpdate, VentureResponse,
     VentureDetailResponse, VentureMemberAdd, VentureMemberRemove
 )
 from app.routes.auth import get_current_user
@@ -83,6 +85,68 @@ async def get_my_ventures(
     )
     ventures = result.scalars().all()
     return ventures
+
+
+@router.get("/kanban")
+async def get_kanban(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get ventures (teams) the user belongs to with tasks for Kanban. Each venture includes members and creator; tasks include assignee and created_by (who assigned)."""
+    # Same visibility as list: employee/intern = member only; manager = created or member; senior = all
+    query = select(Venture).options(
+        selectinload(Venture.members),
+        selectinload(Venture.creator)
+    ).order_by(Venture.created_at.desc())
+    if current_user.role in [UserRole.EMPLOYEE, UserRole.INTERN]:
+        query = query.join(venture_members).filter(venture_members.c.user_id == current_user.id)
+    elif current_user.role == UserRole.MANAGER:
+        query = query.outerjoin(venture_members).filter(
+            or_(
+                Venture.created_by == current_user.id,
+                venture_members.c.user_id == current_user.id
+            )
+        ).distinct()
+    # SENIOR: no filter, see all ventures
+    result = await db.execute(query)
+    ventures = result.unique().scalars().all()
+    out = []
+    for v in ventures:
+        tasks_result = await db.execute(
+            select(Task)
+            .options(
+                selectinload(Task.assigned_to),
+                selectinload(Task.created_by)
+            )
+            .filter(Task.venture_id == v.id)
+            .order_by(Task.created_at.desc())
+        )
+        tasks = tasks_result.scalars().all()
+        creator = v.creator
+        members = v.members or []
+        out.append({
+            "venture": {
+                "id": v.id,
+                "name": v.name,
+                "description": v.description or "",
+                "creator": {"id": creator.id, "full_name": creator.full_name or creator.email or "Unknown"} if creator else None,
+                "members": [{"id": m.id, "full_name": m.full_name or m.email or "Unknown", "role": m.role.value} for m in members],
+            },
+            "tasks": [
+                {
+                    "id": t.id,
+                    "title": t.title,
+                    "description": t.description or "",
+                    "status": t.status.value,
+                    "priority": t.priority.value if t.priority else "medium",
+                    "deadline": t.deadline.isoformat() if t.deadline else None,
+                    "assigned_to": {"id": t.assigned_to.id, "full_name": t.assigned_to.full_name or t.assigned_to.email or "Unknown"} if t.assigned_to else None,
+                    "created_by": {"id": t.created_by.id, "full_name": t.created_by.full_name or t.created_by.email or "Unknown"} if t.created_by else None,
+                }
+                for t in tasks
+            ],
+        })
+    return out
 
 @router.get("/{venture_id}", response_model=VentureDetailResponse)
 async def get_venture(

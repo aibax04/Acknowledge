@@ -60,3 +60,8 @@ class AttendanceUpdateRequestResponse(BaseModel):
 class AttendanceUpdateReview(BaseModel):
     status: str  # "approved" or "rejected"
     reviewer_notes: Optional[str] = None
+
+
+class MarkAbsentRequest(BaseModel):
+    user_id: int
+    absent_date: date

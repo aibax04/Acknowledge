@@ -1,5 +1,5 @@
 /**
- * Personal todo list with date and priority - connected to calendar.
+ * Personal To-Do list with date and priority - connected to calendar.
  * Data stored in localStorage per data-storage-key on the container.
  */
 (function () {
@@ -31,7 +31,7 @@
     function saveTodos(todos) {
         try {
             localStorage.setItem(storageKey, JSON.stringify(todos));
-        } catch (e) {}
+        } catch (e) { }
     }
 
     function priorityBadgeClass(p) {

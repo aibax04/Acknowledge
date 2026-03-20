@@ -255,10 +255,10 @@ function renderTasks(tasks) {
                 </span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm space-x-2">
-                ${!task.acknowledged_at ? 
-                    `<button type="button" onclick="acknowledgeTask(${task.id})" class="text-primary hover:text-primary-hover font-medium">Acknowledge</button>` :
-                    `<span class="text-xs text-green-600 font-medium">✓ Acknowledged</span>`
-                }
+                ${!task.acknowledged_at ?
+                `<button type="button" onclick="acknowledgeTask(${task.id})" class="text-primary hover:text-primary-hover font-medium">Acknowledge</button>` :
+                `<span class="text-xs text-green-600 font-medium">✓ Acknowledged</span>`
+            }
                 <button onclick="openUpdateTaskModal(${task.id}, '${task.status}')" 
                     class="text-primary hover:text-primary-hover font-medium"
                     ${task.status === 'completed' ? 'disabled' : ''}>
@@ -742,7 +742,8 @@ function switchTab(tabName) {
     } else if (tabName === 'schedule') {
         renderCalendar();
     } else if (tabName === 'projects') {
-        loadMyProjects();
+        if (typeof loadKanbanDashboard === 'function') loadKanbanDashboard('projects-kanban-container');
+        else loadMyProjects();
     } else if (tabName === 'attendance') {
         loadAttendanceTab();
     } else if (tabName === 'leaves') {
@@ -1002,8 +1003,20 @@ async function acknowledgeNotification(id) {
 // ============================================
 
 let currentCalendarDate = new Date();
+let _calendarHolidays = {};
 
-function renderCalendar() {
+async function _fetchCalendarHolidays(year) {
+    const office = (currentUser && currentUser.office) ? currentUser.office : null;
+    let url = '/holidays/?year=' + year;
+    if (office) url += '&office=' + office;
+    try {
+        const list = await Api.get(url);
+        _calendarHolidays = {};
+        (list || []).forEach(h => { _calendarHolidays[h.date] = h.title; });
+    } catch (e) { console.warn('Failed to load holidays for calendar', e); }
+}
+
+async function renderCalendar() {
     const grid = document.getElementById('calendar-grid');
     const monthYearLabel = document.getElementById('calendar-month-year');
     if (!grid || !monthYearLabel) return;
@@ -1013,47 +1026,129 @@ function renderCalendar() {
     const year = currentCalendarDate.getFullYear();
     const month = currentCalendarDate.getMonth();
 
+    await _fetchCalendarHolidays(year);
+
     monthYearLabel.innerText = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(currentCalendarDate);
 
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-    // Previous month placeholders
     for (let i = 0; i < firstDay; i++) {
         const placeholder = document.createElement('div');
         placeholder.className = 'min-h-[100px] bg-gray-50/50 border-b border-r border-gray-100';
         grid.appendChild(placeholder);
     }
 
-    // Current month days
+    const priorityColors = {
+        'high': 'bg-red-50 text-red-700 border-red-100',
+        'medium': 'bg-yellow-50 text-yellow-700 border-yellow-100',
+        'low': 'bg-blue-50 text-blue-700 border-blue-100'
+    };
+
+    window._calendarDayData = window._calendarDayData || {};
+
     for (let day = 1; day <= daysInMonth; day++) {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const dayTasks = allTasks.filter(t => {
-            if (!t.deadline) return false;
-            return t.deadline.startsWith(dateStr);
-        });
+        const holidayName = _calendarHolidays[dateStr] || null;
+        const dayTasks = allTasks.filter(t => t.deadline && t.deadline.startsWith(dateStr));
 
-        const dayDiv = document.createElement('div');
-        dayDiv.className = 'min-h-[100px] bg-white border-b border-r border-gray-100 p-2 hover:bg-gray-50 transition-colors';
-
-        const priorityColors = {
-            'high': 'bg-red-50 text-red-700 border-red-100',
-            'medium': 'bg-yellow-50 text-yellow-700 border-yellow-100',
-            'low': 'bg-blue-50 text-blue-700 border-blue-100'
+        window._calendarDayData[dateStr] = {
+            holiday: holidayName,
+            leaves: [],
+            tasks: dayTasks.map(t => ({ title: t.title, priority: t.priority || 'medium' }))
         };
 
+        const dayDiv = document.createElement('div');
+        dayDiv.className = 'min-h-[100px] border-b border-r border-gray-100 p-2 transition-colors cursor-pointer '
+            + (holidayName ? 'bg-purple-50 hover:bg-purple-100' : 'bg-white hover:bg-gray-50');
+        dayDiv.onclick = () => openCalendarDayModal(dateStr);
+
+        let holidayHtml = holidayName
+            ? `<div class="mb-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-100 text-purple-700 border border-purple-200 truncate" title="${escapeHtmlAttr(holidayName)}">${escapeHtmlAttr(holidayName)}</div>`
+            : '';
+
         let tasksHtml = dayTasks.map(t => `
-            <div class="mb-1 px-1.5 py-0.5 rounded text-[10px] font-medium border truncate ${priorityColors[t.priority] || 'bg-gray-100'}" title="${t.title}">
-                ${t.title}
+            <div class="mb-1 px-1.5 py-0.5 rounded text-[10px] font-medium border truncate ${priorityColors[t.priority] || 'bg-gray-100'}" title="${escapeHtmlAttr(t.title)}">
+                ${escapeHtmlAttr(t.title)}
             </div>
         `).join('');
 
         dayDiv.innerHTML = `
             <div class="text-right text-gray-400 text-xs mb-1">${day}</div>
-            <div class="space-y-1">${tasksHtml}</div>
+            <div class="space-y-1">${holidayHtml}${tasksHtml}</div>
         `;
         grid.appendChild(dayDiv);
     }
+}
+
+if (typeof window.openCalendarDayModal !== 'function') {
+    window.openCalendarDayModal = function (dateString) {
+        let m = document.getElementById('calendar-day-modal');
+        if (!m) {
+            m = document.createElement('div');
+            m.id = 'calendar-day-modal';
+            m.className = 'fixed inset-0 z-[110] overflow-y-auto hidden';
+            m.innerHTML = `
+                <div class="flex min-h-full items-center justify-center p-4">
+                    <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" onclick="document.getElementById('calendar-day-modal').classList.add('hidden')"></div>
+                    <div class="relative bg-white rounded-[2rem] shadow-2xl max-w-md w-full p-8 animate-fade-in border border-gray-100/50">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-xl font-bold text-gray-900 tracking-tight" id="cdm-title"></h3>
+                            <button onclick="document.getElementById('calendar-day-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-full p-2 transition-colors">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+                        <div id="cdm-content" class="space-y-3 max-h-[60vh] overflow-y-auto pr-2"></div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(m);
+        }
+        const data = window._calendarDayData[dateString] || {};
+
+        // Parse date safely
+        const [y, mStr, dStr] = dateString.split('-');
+        const dateObj = new Date(parseInt(y), parseInt(mStr) - 1, parseInt(dStr));
+        document.getElementById('cdm-title').innerText = dateObj.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+        let html = '';
+
+        if (data.holiday) {
+            html += `<div class="p-3 bg-purple-50 border border-purple-100 rounded-xl"><span class="text-xs font-semibold text-purple-600 uppercase tracking-widest block mb-1">Holiday</span><p class="text-sm font-medium text-purple-900">${(data.holiday || '').replace(/</g, '&lt;')}</p></div>`;
+        }
+
+        if (data.leaves && data.leaves.length) {
+            data.leaves.forEach(l => {
+                const label = l.user_name ? `${l.user_name} - ${l.custom_policy_title || l.leave_type}` : `Leave: ${l.custom_policy_title || l.leave_type}`;
+                html += `<div class="p-3 bg-teal-50 border border-teal-100 rounded-xl"><span class="text-xs font-semibold text-teal-600 uppercase tracking-widest block mb-1">Leave</span><p class="text-sm font-medium text-teal-900">${(label || '').replace(/</g, '&lt;')}</p></div>`;
+            });
+        }
+
+        if (data.tasks && data.tasks.length) {
+            const priorityColors = {
+                'high': 'bg-red-50 border-red-100 text-red-900',
+                'medium': 'bg-yellow-50 border-yellow-100 text-yellow-900',
+                'low': 'bg-blue-50 border-blue-100 text-blue-900'
+            };
+            const labelColors = {
+                'high': 'text-red-600',
+                'medium': 'text-yellow-600',
+                'low': 'text-blue-600'
+            };
+            data.tasks.forEach(t => {
+                const bg = priorityColors[t.priority] || 'bg-gray-50 border-gray-100 text-gray-900';
+                const lc = labelColors[t.priority] || 'text-gray-600';
+                html += `<div class="p-3 border rounded-xl ${bg}"><span class="text-xs font-semibold ${lc} uppercase tracking-widest block mb-1">Task (${t.priority})</span><p class="text-sm font-medium">${(t.title || '').replace(/</g, '&lt;')}</p></div>`;
+            });
+        }
+
+        if (!html) {
+            html = `<p class="text-sm text-gray-500 text-center py-6 bg-gray-50 rounded-xl border border-gray-100 border-dashed">No events scheduled for this day.</p>`;
+        }
+
+        document.getElementById('cdm-content').innerHTML = html;
+        m.classList.remove('hidden');
+    };
 }
 
 function escapeHtml(s) {

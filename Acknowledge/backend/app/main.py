@@ -114,6 +114,31 @@ async def startup():
             await conn.execute(text("ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS custom_policy_id INTEGER REFERENCES custom_leave_policies(id)"))
         except Exception:
             pass
+        try:
+            await conn.execute(text("ALTER TABLE custom_leave_policies ADD COLUMN IF NOT EXISTS max_days_per_month INTEGER"))
+        except Exception:
+            pass
+        try:
+            await conn.execute(text("ALTER TABLE custom_leave_policies ADD COLUMN IF NOT EXISTS policy_group_key VARCHAR(120)"))
+        except Exception:
+            pass
+        try:
+            await conn.execute(text("ALTER TABLE custom_leave_policies ADD COLUMN IF NOT EXISTS sub_type_name VARCHAR(120)"))
+        except Exception:
+            pass
+        try:
+            await conn.execute(text("ALTER TABLE custom_leave_policies ADD COLUMN IF NOT EXISTS shared_annual_limit INTEGER"))
+        except Exception:
+            pass
+        # Add 'custom'/'CUSTOM' to leavetype enum if missing (required for custom leave policies)
+        for _val in ("custom", "CUSTOM"):
+            try:
+                await conn.execute(text(f"ALTER TYPE leavetype ADD VALUE IF NOT EXISTS '{_val}'"))
+            except Exception:
+                try:
+                    await conn.execute(text(f"ALTER TYPE leavetype ADD VALUE '{_val}'"))
+                except Exception:
+                    pass
 
 @app.get("/")
 async def root():

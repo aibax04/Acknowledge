@@ -54,8 +54,13 @@
 
 <body class="bg-gray-50 text-gray-900 flex h-screen overflow-hidden">
 
+    <!-- Mobile Overlay -->
+    <div id="mobile-overlay"
+        class="fixed inset-0 bg-slate-900/50 z-30 hidden md:hidden opacity-0 transition-opacity duration-300"></div>
+
     <!-- Sidebar -->
-    <aside class="w-64 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col justify-between">
+    <aside id="sidebar"
+        class="w-64 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col justify-between h-screen fixed inset-y-0 left-0 z-40 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out">
         <div>
             <!-- Logo -->
             <div class="h-16 flex items-center gap-3 px-8 border-b border-primary/80 bg-primary">
@@ -155,8 +160,14 @@
                 <div class="ml-3 flex-1 min-w-0">
                     <div class="flex items-center gap-1">
                         <p id="user-name" class="text-sm font-medium text-gray-900 truncate">Loading...</p>
-                        <button type="button" id="edit-name-btn" class="p-0.5 text-gray-400 hover:text-primary rounded focus:outline-none focus:ring-1 focus:ring-primary flex-shrink-0" title="Edit name" aria-label="Edit name">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                        <button type="button" id="edit-name-btn"
+                            class="p-0.5 text-gray-400 hover:text-primary rounded focus:outline-none focus:ring-1 focus:ring-primary flex-shrink-0"
+                            title="Edit name" aria-label="Edit name">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
                         </button>
                     </div>
                     <p id="user-role" class="text-xs text-gray-500">Director</p>
@@ -171,10 +182,14 @@
             <div class="fixed inset-0 bg-black/40" aria-hidden="true" id="edit-name-backdrop"></div>
             <div class="relative bg-white rounded-xl shadow-lg max-w-sm w-full p-6">
                 <h3 class="text-lg font-semibold text-gray-900 mb-3">Edit display name</h3>
-                <input type="text" id="edit-name-input" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary" placeholder="Your name" maxlength="200">
+                <input type="text" id="edit-name-input"
+                    class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    placeholder="Your name" maxlength="200">
                 <div class="flex justify-end gap-2 mt-4">
-                    <button type="button" id="edit-name-cancel" class="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
-                    <button type="button" id="edit-name-save" class="px-3 py-1.5 text-sm bg-primary text-white rounded-lg hover:bg-primary-hover">Save</button>
+                    <button type="button" id="edit-name-cancel"
+                        class="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
+                    <button type="button" id="edit-name-save"
+                        class="px-3 py-1.5 text-sm bg-primary text-white rounded-lg hover:bg-primary-hover">Save</button>
                 </div>
             </div>
         </div>
@@ -183,27 +198,44 @@
     <!-- Main Content -->
     <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-gray-50">
         <!-- Header -->
-        <header class="flex items-center justify-between gap-4 px-8 py-6 border-b border-gray-200 bg-white min-h-[72px]">
-            <h1 class="text-2xl font-semibold text-gray-900 flex-shrink-0">Executive Overview</h1>
-            <div class="relative flex-1 max-w-md min-w-0 mx-4">
+        <header
+            class="flex items-center justify-between flex-wrap md:flex-nowrap gap-2 md:gap-4 px-4 md:px-8 py-3 md:py-6 border-b border-gray-200 bg-white min-h-[64px] md:min-h-[72px]">
+            <div class="flex items-center gap-2 flex-shrink-0 order-1">
+                <button id="mobile-menu-btn"
+                    class="md:hidden p-2 -ml-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg focus:outline-none transition-colors duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+                <h1 class="hidden sm:block text-xl md:text-2xl font-semibold text-gray-900 flex-shrink-0">Executive
+                    Overview</h1>
+            </div>
+
+            <div class="relative w-full md:flex-1 md:max-w-md min-w-0 mx-0 md:mx-4 order-3 md:order-2 mt-2 md:mt-0">
                 <input type="text" id="org-directory-search" placeholder="Search organization directory..."
                     class="w-full text-sm border border-gray-200 rounded-lg pl-9 pr-3 py-2 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-gray-50 placeholder-gray-500">
-                <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
-                <div id="org-directory-dropdown" class="hidden absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto"></div>
+                <div id="org-directory-dropdown"
+                    class="hidden absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-2xl z-[60] max-h-[50vh] sm:max-h-80 overflow-y-auto">
+                </div>
             </div>
-            <div class="flex items-center gap-4 flex-shrink-0">
+            <div class="flex items-center gap-2 md:gap-4 flex-shrink-0 order-2 md:order-3">
                 <button id="logoutBtn" onclick="Api.logout()"
-                    class="text-sm font-medium text-gray-500 hover:text-red-600 transition-colors py-2 px-0">
+                    class="text-xs sm:text-sm font-medium text-gray-500 hover:text-red-600 transition-colors py-1 sm:py-2 px-1 sm:px-0">
                     Logout
                 </button>
                 <button id="notifyBtn" onclick="openNotifyModal()"
-                    class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors shadow-sm whitespace-nowrap">
+                    class="bg-primary text-white px-2 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium hover:bg-primary-hover transition-colors shadow-sm whitespace-nowrap">
                     Notify Everyone
                 </button>
                 <button
-                    class="bg-white border border-gray-200 text-gray-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors whitespace-nowrap">
+                    class="hidden md:block bg-white border border-gray-200 text-gray-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors whitespace-nowrap">
                     Download Report
                 </button>
             </div>
@@ -223,7 +255,8 @@
                 <!-- High Level Metrics -->
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-stretch">
                     <!-- Efficiency -->
-                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden flex flex-col justify-between">
+                    <div
+                        class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden flex flex-col justify-between">
                         <div class="absolute right-0 top-0 h-full w-2 bg-primary"></div>
                         <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Operational Efficiency</p>
                         <div class="mt-4">
@@ -233,7 +266,8 @@
                     </div>
 
                     <!-- Compliance -->
-                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden flex flex-col justify-between">
+                    <div
+                        class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden flex flex-col justify-between">
                         <div class="absolute right-0 top-0 h-full w-2 bg-blue-500"></div>
                         <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Compliance Rate</p>
                         <div class="mt-4">
@@ -253,7 +287,8 @@
                     </div>
 
                     <!-- Total Employees -->
-                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden flex flex-col justify-between">
+                    <div
+                        class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden flex flex-col justify-between">
                         <div class="absolute right-0 top-0 h-full w-2 bg-purple-500"></div>
                         <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Total Workforce</p>
                         <div class="mt-4">
@@ -305,30 +340,32 @@
                 </div>
 
                 <div class="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm">
-                    <table class="min-w-full divide-y divide-gray-50">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th
-                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Policy Name</th>
-                                <th
-                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Status</th>
-                                <th
-                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Completion</th>
-                                <th
-                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Date Issued</th>
-                                <th
-                                    class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-50" id="audit-log-body">
-                            <!-- Populated by JS -->
-                        </tbody>
-                    </table>
+                    <div class="overflow-x-auto w-full">
+                        <table class="min-w-full divide-y divide-gray-50">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Policy Name</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Status</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Completion</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Date Issued</th>
+                                    <th
+                                        class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-50" id="audit-log-body">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -392,30 +429,32 @@
                             </select>
                         </div>
                     </div>
-                    <table class="min-w-full divide-y divide-gray-50">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th
-                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Name</th>
-                                <th
-                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Role</th>
-                                <th
-                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Email</th>
-                                <th
-                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Joined</th>
-                                <th
-                                    class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-50" id="workforce-list-body">
-                            <!-- Populated by JS -->
-                        </tbody>
-                    </table>
+                    <div class="overflow-x-auto w-full">
+                        <table class="min-w-full divide-y divide-gray-50">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Name</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Role</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Email</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Joined</th>
+                                    <th
+                                        class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-50" id="workforce-list-body">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -428,9 +467,16 @@
                         + Create Project
                     </button>
                 </div>
-
-                <div id="projects-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <!-- Projects will be loaded here -->
+                <div class="mb-8">
+                    <h3 class="text-base font-bold text-gray-800 mb-1">Kanban Board</h3>
+                    <p class="text-xs text-gray-500 mb-3">Your teams, members, and task progress at a glance</p>
+                    <div id="projects-kanban-container"></div>
+                </div>
+                <div class="border-t border-gray-200 pt-6">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">All projects</h3>
+                    <div id="projects-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Projects will be loaded here -->
+                    </div>
                 </div>
             </div>
 
@@ -439,7 +485,7 @@
             <div id="view-track" class="hidden space-y-8 animate-fade-in">
                 <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
                     <h2 class="text-xl font-bold text-gray-900 mb-6">Activity Tracking & Analytics</h2>
-                    
+
                     <!-- Task Assignments Section -->
                     <div class="mb-8">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">Task Assignments</h3>
@@ -499,29 +545,46 @@
             </div>
 
             <!-- TAB: LEAVE APPROVALS + CUSTOM POLICIES (Director only) -->
-            <div id="view-leaves" class="hidden space-y-8 animate-fade-in">
-                <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-                    <div class="px-6 py-4 border-b border-gray-200">
-                        <h2 class="text-lg font-semibold text-gray-900">Leave Approvals</h2>
-                        <p class="text-sm text-gray-500 mt-1">Review and approve or deny pending leave requests.</p>
+            <div id="view-leaves" class="hidden space-y-6 animate-fade-in">
+                <!-- Track my leaves (director's own pending & taken) -->
+                <div class="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
+                    <div class="px-5 py-4 border-b border-gray-100">
+                        <h2 class="text-base font-semibold text-gray-900">Track my leaves</h2>
+                        <p class="text-xs text-gray-400 mt-0.5">Your pending and taken leave at a glance.</p>
                     </div>
-                    <div class="p-6">
+                    <div id="my-leaves-list"></div>
+                </div>
+                <!-- Leave approvals -->
+                <div class="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
+                    <div class="px-5 py-4 border-b border-gray-100">
+                        <h2 class="text-base font-semibold text-gray-900">Leave Approvals</h2>
+                        <p class="text-xs text-gray-400 mt-0.5">Review and approve or deny pending leave requests.</p>
+                    </div>
+                    <div class="p-5">
                         <div id="pending-leaves-list">
-                            <p class="text-center text-gray-500 py-8">Loading...</p>
+                            <p class="text-center text-gray-300 py-8 text-sm">Loading…</p>
                         </div>
                     </div>
                 </div>
-                <!-- Custom Leave Policies (directors create; employees/interns/managers apply; director approves) -->
-                <div id="custom-leave-policies-section" class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-                    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <!-- Custom Leave Policies -->
+                <div id="custom-leave-policies-section"
+                    class="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
+                    <div class="px-5 py-4 border-b border-gray-100 flex justify-between items-center">
                         <div>
-                            <h3 class="text-sm font-semibold text-gray-700">Custom Leave Policies</h3>
-                            <p class="text-xs text-gray-500 mt-0.5">Create leave types with prior days and who can use them. Applications are approved by you.</p>
+                            <h3 class="text-base font-semibold text-gray-900">Custom Leave Policies</h3>
+                            <p class="text-xs text-gray-400 mt-0.5">Create leave types with prior notice and audience
+                                rules. You approve all applications.</p>
                         </div>
-                        <button type="button" onclick="openCreateCustomPolicyModal()" class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors shadow-sm">+ Create Policy</button>
+                        <button type="button" onclick="openCreateCustomPolicyModal()"
+                            class="bg-primary text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-primary-hover transition-colors shadow-sm flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 4v16m8-8H4" />
+                            </svg>
+                            New Policy</button>
                     </div>
-                    <div id="custom-leave-policies-list" class="p-6">
-                        <p class="text-gray-500 text-sm text-center py-4">Loading...</p>
+                    <div id="custom-leave-policies-list">
+                        <p class="text-gray-300 text-sm text-center py-8">Loading…</p>
                     </div>
                 </div>
             </div>
@@ -653,19 +716,24 @@
                         </div>
                     </div>
 
-                    <!-- My Todo List & Assigned Tasks (1/3 width) -->
+                    <!-- My To-Do list & Assigned Tasks (1/3 width) -->
                     <div class="space-y-6">
-                        <!-- My Todo List (create your own) -->
-                        <div id="personal-todo-list-container" class="bg-white border border-gray-200 rounded-xl shadow-sm p-6" data-storage-key="personal_todo_senior">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">My Todo List</h3>
-                            <div class="flex gap-2 mb-2">
+                        <!-- My To-Do list (create your own) -->
+                        <div id="personal-todo-list-container"
+                            class="bg-white border border-gray-200 rounded-xl shadow-sm p-6"
+                            data-storage-key="personal_todo_senior">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">My To-Do list</h3>
+                            <div class="flex flex-col sm:flex-row gap-2 mb-2">
                                 <input type="text" id="personal-todo-input" placeholder="Add a task..."
                                     class="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
-                                <button type="button" id="personal-todo-add" class="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-hover transition-colors">Add</button>
+                                <button type="button" id="personal-todo-add"
+                                    class="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-hover transition-colors">Add</button>
                             </div>
-                            <div class="flex gap-2 mb-4">
-                                <input type="date" id="personal-todo-date" class="text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary flex-1">
-                                <select id="personal-todo-priority" class="text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary w-28">
+                            <div class="flex flex-col sm:flex-row gap-2 mb-4">
+                                <input type="date" id="personal-todo-date"
+                                    class="text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary flex-1">
+                                <select id="personal-todo-priority"
+                                    class="text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary w-28">
                                     <option value="low">Low</option>
                                     <option value="medium" selected>Medium</option>
                                     <option value="high">High</option>
@@ -734,7 +802,7 @@
             class="bg-white rounded-xl p-8 max-w-2xl w-full mx-4 shadow-2xl max-h-[80vh] overflow-hidden flex flex-col">
             <h2 class="text-xl font-bold mb-4" id="status-modal-title">Notification Status</h2>
             <div class="flex-1 overflow-y-auto mb-6">
-                <div class="grid grid-cols-2 gap-8">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
                     <div>
                         <h3 class="text-sm font-bold text-green-600 uppercase tracking-wider mb-3">Acknowledged</h3>
                         <ul id="ack-list" class="space-y-2 text-sm text-gray-600"></ul>
@@ -945,7 +1013,7 @@ Explain the compliance requirements and consequences."
             </div>
 
             <div class="flex-1 overflow-y-auto">
-                <div class="grid grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <!-- Acknowledged Users -->
                     <div>
                         <h3 class="text-sm font-bold text-green-600 uppercase tracking-wider mb-3 flex items-center">
@@ -1015,7 +1083,7 @@ Explain the compliance requirements and consequences."
                         <option value="">Select project (Optional)</option>
                     </select>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
                         <select id="task-priority" class="w-full border border-gray-300 rounded-lg px-3 py-2">
@@ -1165,41 +1233,198 @@ Explain the compliance requirements and consequences."
     <!-- Create Custom Leave Policy Modal (directors only) -->
     <div id="create-custom-policy-modal" class="hidden fixed inset-0 z-[100] overflow-y-auto" aria-modal="true">
         <div class="flex min-h-full items-center justify-center p-4">
-            <div class="fixed inset-0 bg-black/40" onclick="document.getElementById('create-custom-policy-modal').classList.add('hidden')"></div>
-            <div class="relative bg-white rounded-xl shadow-lg max-w-md w-full p-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">Create Custom Leave Policy</h3>
-                <p class="text-xs text-gray-500 mb-4">Leave applications under this policy will be approved by you.</p>
-                <div class="space-y-4">
+            <div class="fixed inset-0 bg-black/50 backdrop-blur-sm"
+                onclick="document.getElementById('create-custom-policy-modal').classList.add('hidden')"></div>
+            <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden">
+
+                <!-- Header -->
+                <div class="bg-gradient-to-r from-primary to-primary-hover px-6 py-4 flex items-center justify-between">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Heading / Title</label>
-                        <input type="text" id="custom-policy-title" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="e.g. Bereavement Leave">
+                        <h3 class="text-base font-bold text-white">Create Custom Leave Policy</h3>
+                        <p class="text-xs text-white/70 mt-0.5">Applications under this policy will be approved by you
+                        </p>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Prior days (advance notice required)</label>
-                        <input type="number" id="custom-policy-prior-days" min="0" value="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="0 = anytime">
-                        <p class="text-xs text-gray-500 mt-1">Number of calendar days in advance the employee must apply (0 = can apply anytime).</p>
+                    <button type="button"
+                        onclick="document.getElementById('create-custom-policy-modal').classList.add('hidden')"
+                        class="text-white/70 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Body: Two columns -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-0 divide-y md:divide-y-0 md:divide-x divide-gray-100">
+
+                    <!-- LEFT COLUMN: Basic settings -->
+                    <div class="p-5 space-y-4">
+                        <p class="text-[11px] font-semibold uppercase tracking-widest text-gray-400">Basic Configuration
+                        </p>
+
+                        <!-- Title -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Heading / Title <span class="text-red-400">*</span>
+                            </label>
+                            <input type="text" id="custom-policy-title"
+                                class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
+                                placeholder="e.g. Bereavement Leave">
+                        </div>
+
+                        <!-- Prior days -->
+                        <div id="prior-days-wrapper" class="transition-all duration-200">
+                            <label class="block text-sm font-medium text-gray-700 mb-1" id="prior-days-label">Prior
+                                Notice Days</label>
+                            <div class="flex items-center gap-2">
+                                <input type="number" id="custom-policy-prior-days" min="0" value="0"
+                                    class="w-28 border border-gray-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
+                                    placeholder="0">
+                                <span class="text-xs text-gray-500">calendar days in advance <span
+                                        class="text-gray-400">(0 = anytime)</span></span>
+                            </div>
+                            <p id="prior-days-override-note"
+                                class="hidden mt-1 text-xs text-amber-600 font-medium flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Overridden by per-sub-category prior days
+                            </p>
+                        </div>
+
+                        <!-- Max days per month -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Max Days per Month</label>
+                            <div class="flex items-center gap-2">
+                                <input type="number" id="custom-policy-max-days-per-month" min="1"
+                                    class="w-28 border border-gray-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
+                                    placeholder="∞">
+                                <span class="text-xs text-gray-500">leave empty for no limit</span>
+                            </div>
+                        </div>
+
+                        <!-- Available for -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Available for <span
+                                    class="text-red-400">*</span></label>
+                            <div class="flex flex-wrap gap-3">
+                                <label class="flex items-center gap-1.5 cursor-pointer">
+                                    <input type="checkbox" id="custom-policy-role-employee"
+                                        class="rounded border-gray-300 text-primary focus:ring-primary w-4 h-4">
+                                    <span class="text-sm text-gray-700">Employees</span>
+                                </label>
+                                <label class="flex items-center gap-1.5 cursor-pointer">
+                                    <input type="checkbox" id="custom-policy-role-intern"
+                                        class="rounded border-gray-300 text-primary focus:ring-primary w-4 h-4">
+                                    <span class="text-sm text-gray-700">Interns</span>
+                                </label>
+                                <label class="flex items-center gap-1.5 cursor-pointer">
+                                    <input type="checkbox" id="custom-policy-role-manager" checked
+                                        class="rounded border-gray-300 text-primary focus:ring-primary w-4 h-4">
+                                    <span class="text-sm text-gray-700">Managers</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Probation -->
+                        <div class="rounded-lg border border-orange-200 bg-orange-50 px-4 py-3">
+                            <label class="flex items-start gap-2.5 cursor-pointer">
+                                <input type="checkbox" id="custom-policy-allowed-on-probation" checked
+                                    class="rounded border-gray-300 text-primary focus:ring-primary w-4 h-4 mt-0.5 shrink-0">
+                                <div>
+                                    <span class="text-sm font-medium text-gray-800">Allowed during probation
+                                        period</span>
+                                    <p class="text-xs text-gray-500 mt-0.5">Uncheck to block probationary employees from
+                                        applying for this leave type.</p>
+                                </div>
+                            </label>
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Available for</label>
-                        <div class="space-y-2">
-                            <label class="flex items-center gap-2"><input type="checkbox" id="custom-policy-role-employee" class="rounded border-gray-300 text-primary focus:ring-primary"> <span class="text-sm">Employees</span></label>
-                            <label class="flex items-center gap-2"><input type="checkbox" id="custom-policy-role-intern" class="rounded border-gray-300 text-primary focus:ring-primary"> <span class="text-sm">Interns</span></label>
-                            <label class="flex items-center gap-2"><input type="checkbox" id="custom-policy-role-manager" class="rounded border-gray-300 text-primary focus:ring-primary"> <span class="text-sm">Managers</span></label>
+
+                    <!-- RIGHT COLUMN: Sub-types -->
+                    <div class="p-5 space-y-4">
+                        <p class="text-[11px] font-semibold uppercase tracking-widest text-gray-400">Sub Categories
+                            (Optional)</p>
+
+                        <!-- Enable sub-types toggle -->
+                        <div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+                            <label class="flex items-start gap-2.5 cursor-pointer">
+                                <input type="checkbox" id="custom-policy-enable-sub-types"
+                                    class="rounded border-gray-300 text-primary focus:ring-primary w-4 h-4 mt-0.5 shrink-0"
+                                    onchange="updatePriorDaysState()">
+                                <div>
+                                    <span class="text-sm font-medium text-gray-800">Enable sub leave categories</span>
+                                    <p class="text-xs text-gray-500 mt-0.5">Group multiple sub-types under one shared
+                                        annual pool. E.g. Medical + Earned under one policy.</p>
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- Sub-type fields -->
+                        <div class="space-y-3 pl-0.5" id="sub-types-section" style="display: none;">
+                            <div>
+                                <div class="flex justify-between items-end mb-1">
+                                    <label class="block text-sm font-medium text-gray-700">
+                                        Sub categories
+                                    </label>
+                                    <button type="button" onclick="addSubCategoryRow()"
+                                        class="text-xs text-primary font-medium hover:underline">
+                                        + Add Row
+                                    </button>
+                                </div>
+                                <div class="flex items-center gap-2 mb-1 px-1">
+                                    <span class="text-xs font-medium text-gray-500 flex-1">Category Name</span>
+                                    <span class="text-xs font-medium text-gray-500 w-28 text-center"
+                                        title="Overrides global prior days if set">Prior Days*</span>
+                                    <span class="w-6"></span>
+                                </div>
+                                <div id="sub-categories-list" class="space-y-2">
+                                    <!-- Dynamic rows will be inserted here -->
+                                </div>
+                                <p class="text-[10px] text-gray-400 mt-1">*Leave Prior Days empty for 0 days (anytime).
+                                </p>
+                            </div>
+
+                            <div class="mt-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Shared annual total
+                                    days</label>
+                                <div class="flex items-center gap-2">
+                                    <input type="number" id="custom-policy-shared-annual-limit" min="1"
+                                        class="w-28 border border-gray-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
+                                        placeholder="e.g. 12">
+                                    <span class="text-xs text-gray-500">days / year (shared across all sub-types)</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="flex justify-end gap-2 mt-6">
-                    <button type="button" onclick="document.getElementById('create-custom-policy-modal').classList.add('hidden')" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
-                    <button type="button" onclick="submitCreateCustomPolicy()" class="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary-hover">Create Policy</button>
+
+                <!-- Footer actions -->
+                <div class="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+                    <button type="button"
+                        onclick="document.getElementById('create-custom-policy-modal').classList.add('hidden')"
+                        class="px-5 py-2 text-sm font-medium text-gray-600 hover:bg-gray-200 rounded-lg transition-colors">
+                        Cancel
+                    </button>
+                    <button type="button" onclick="submitCreateCustomPolicy()"
+                        class="px-5 py-2 text-sm font-semibold bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors shadow-sm">
+                        Create Policy
+                    </button>
                 </div>
+
             </div>
         </div>
     </div>
 
+
     <script src="../static/js/api.js"></script>
+
+    <script src="../static/js/kanban.js"></script>
     <script src="../static/js/notification-popup.js"></script>
     <!-- Promote User Modal -->
-    <div id="promote-user-modal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50" style="display: none;">
+    <div id="promote-user-modal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50"
+        style="display: none;">
         <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4 animate-fade-in shadow-2xl">
             <h3 class="text-lg font-bold mb-4 text-gray-900">Promote User</h3>
             <div class="space-y-4">
@@ -1219,28 +1444,36 @@ Explain the compliance requirements and consequences."
                         <option value="manager">Manager</option>
                         <option value="intern">Intern</option>
                     </select>
-                    <p class="text-xs text-gray-500 mt-2">Note: Cannot promote to Senior role. Cannot demote Senior users.</p>
+                    <p class="text-xs text-gray-500 mt-2">Note: Cannot promote to Senior role. Cannot demote Senior
+                        users.</p>
                 </div>
             </div>
             <input type="hidden" id="promote-user-id">
             <div class="flex justify-end space-x-3 mt-6">
                 <button id="cancel-promote-user" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
-                <button id="confirm-promote-user" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover">Promote</button>
+                <button id="confirm-promote-user"
+                    class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover">Promote</button>
             </div>
         </div>
     </div>
 
     <!-- Task Comments Modal -->
     <div id="task-comments-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50">
-        <div class="bg-white border border-gray-200 rounded-xl p-6 max-w-lg w-full mx-4 shadow-xl max-h-[85vh] flex flex-col">
+        <div
+            class="bg-white border border-gray-200 rounded-xl p-6 max-w-lg w-full mx-4 shadow-xl max-h-[85vh] flex flex-col">
             <h3 id="task-comments-title" class="text-lg font-semibold mb-3 text-gray-900">Comments</h3>
             <input type="hidden" id="task-comments-task-id">
-            <div id="task-comments-list" class="flex-1 overflow-y-auto space-y-3 mb-4 min-h-[120px] text-sm text-gray-600"></div>
+            <div id="task-comments-list"
+                class="flex-1 overflow-y-auto space-y-3 mb-4 min-h-[120px] text-sm text-gray-600"></div>
             <div class="border-t border-gray-200 pt-3">
-                <textarea id="task-comments-input" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none" rows="2" placeholder="Write a comment..."></textarea>
+                <textarea id="task-comments-input"
+                    class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none" rows="2"
+                    placeholder="Write a comment..."></textarea>
                 <div class="flex justify-end gap-2 mt-2">
-                    <button id="task-comments-close" class="px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded-lg text-sm">Close</button>
-                    <button id="task-comments-post" class="px-3 py-1.5 bg-primary text-white rounded-lg text-sm hover:bg-primary-hover">Post</button>
+                    <button id="task-comments-close"
+                        class="px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded-lg text-sm">Close</button>
+                    <button id="task-comments-post"
+                        class="px-3 py-1.5 bg-primary text-white rounded-lg text-sm hover:bg-primary-hover">Post</button>
                 </div>
             </div>
         </div>
@@ -1251,6 +1484,36 @@ Explain the compliance requirements and consequences."
     <script src="../static/js/projects.js"></script>
     <script src="../static/js/leaves-tab.js"></script>
     <script src="../static/js/senior.js?v=2"></script>
+
+    <!-- Mobile Sidebar Toggle Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+            const sidebar = document.getElementById('sidebar');
+            const mobileOverlay = document.getElementById('mobile-overlay');
+
+            function toggleSidebar() {
+                const isOpen = !sidebar.classList.contains('-translate-x-full');
+                if (isOpen) {
+                    sidebar.classList.add('-translate-x-full');
+                    mobileOverlay.classList.add('hidden');
+                    mobileOverlay.classList.remove('opacity-100');
+                    document.body.classList.remove('overflow-hidden');
+                } else {
+                    sidebar.classList.remove('-translate-x-full');
+                    mobileOverlay.classList.remove('hidden');
+                    // setTimeout to allow display:block to apply before opacity transition
+                    setTimeout(() => mobileOverlay.classList.add('opacity-100'), 10);
+                    document.body.classList.add('overflow-hidden');
+                }
+            }
+
+            if (mobileMenuBtn && sidebar && mobileOverlay) {
+                mobileMenuBtn.addEventListener('click', toggleSidebar);
+                mobileOverlay.addEventListener('click', toggleSidebar);
+            }
+        });
+    </script>
 </body>
 
 </html>

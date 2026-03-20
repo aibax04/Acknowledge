@@ -18,7 +18,7 @@ let lastCommentAtByTaskId = {};
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
-    toast.className = `toast ${type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'} text-white px-6 py-4 rounded-lg shadow-lg`;
+    toast.className = `toast ${type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'} text-white px-6 py-4 rounded-xl shadow-lg`;
     toast.innerHTML = `
         <div class="flex items-center">
             <span>${message}</span>
@@ -94,7 +94,7 @@ function showLoading(elementId) {
 
 function showEmptyState(elementId, message) {
     const element = document.getElementById(elementId);
-    element.innerHTML = `<div class="text-center py-12 text-gray-500">${message}</div>`;
+    element.innerHTML = `<div class="text-center py-12 text-slate-500">${message}</div>`;
 }
 
 // ============================================
@@ -217,7 +217,7 @@ function renderTasks(tasks) {
     const tbody = document.getElementById('tasks-tbody');
 
     if (tasks.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-gray-500">No tasks assigned</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-slate-500">No tasks assigned</td></tr>';
         return;
     }
 
@@ -242,38 +242,38 @@ function renderTasks(tasks) {
         const hasUnseen = !!(lastCommentAt && (!lastSeen || new Date(lastCommentAt).getTime() > new Date(lastSeen).getTime()));
 
         return `
-        <tr class="hover:bg-primary-light/30 transition-colors">
+        <tr class="hover:bg-slate-50/80 transition-colors">
             <td class="px-6 py-4">
-                <div class="text-sm font-medium text-gray-900">${task.title}</div>
-                <div class="text-xs text-gray-500">${task.description || ''}</div>
+                <div class="text-sm font-medium text-slate-900">${task.title}</div>
+                <div class="text-xs text-slate-500">${task.description || ''}</div>
                 <div class="text-xs text-primary mt-1">
                     <span class="font-medium">Assigned by:</span> ${managerName}
                 </div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
                 ${task.deadline ? new Date(task.deadline).toLocaleDateString() : '-'}
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
-                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[task.status] || 'bg-gray-100'} capitalize">
+                <span class="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-lg ${statusColors[task.status] || 'bg-gray-100'} capitalize">
                     ${task.status.replace('_', ' ')}
                 </span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
-                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${priorityColors[task.priority] || 'text-gray-500'} capitalize">
+                <span class="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-lg ${priorityColors[task.priority] || 'text-gray-500'} capitalize">
                     ${task.priority}
                 </span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm space-x-2">
-                ${!task.acknowledged_at ? 
-                    `<button type="button" onclick="acknowledgeTask(${task.id})" class="text-primary hover:text-primary-hover font-medium">Acknowledge</button>` :
-                    `<span class="text-xs text-green-600 font-medium">✓ Acknowledged</span>`
-                }
-                <button onclick="openUpdateTaskModal(${task.id}, '${task.status}')" 
+                ${!task.acknowledged_at ?
+                `<button type="button" onclick="acknowledgeTask(${task.id})" class="text-primary hover:text-primary-hover font-medium">Acknowledge</button>` :
+                `<span class="text-xs text-green-600 font-medium">✓ Acknowledged</span>`
+            }
+                <button onclick="openUpdateTaskModal(${task.id}, '${task.status}')"
                     class="text-primary hover:text-primary-hover font-medium"
                     ${task.status === 'completed' ? 'disabled' : ''}>
                     Update
                 </button>
-                <button type="button" class="task-comment-btn text-gray-600 hover:text-primary font-medium inline-flex items-center gap-1" data-task-id="${task.id}" data-task-title="${(task.title || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;')}">
+                <button type="button" class="task-comment-btn text-slate-600 hover:text-primary font-medium inline-flex items-center gap-1" data-task-id="${task.id}" data-task-title="${(task.title || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;')}">
                     Comment
                     ${hasUnseen ? '<span class="inline-block w-2 h-2 rounded-full bg-red-500" aria-label="Unseen comments"></span>' : ''}
                 </button>
@@ -314,7 +314,7 @@ async function loadTaskComments(taskId) {
                 if (t > maxTs) maxTs = t;
             }
             const body = (c.body || '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
-            return `<div class="border-l-2 border-primary/30 pl-3 py-1"><span class="font-medium text-gray-900">${name}</span> <span class="text-xs text-gray-400">${date}</span><p class="text-gray-700 mt-0.5">${body}</p></div>`;
+            return `<div class="border-l-2 border-primary/30 pl-3 py-1.5"><span class="font-medium text-slate-800">${name}</span> <span class="text-xs text-slate-400">${date}</span><p class="text-slate-700 mt-0.5">${body}</p></div>`;
         }).join('');
         // Mark seen up to latest comment timestamp
         const seenKey = currentUser && currentUser.id ? `task_comments_seen_${currentUser.id}_${taskId}` : `task_comments_seen_${taskId}`;
@@ -427,7 +427,7 @@ function renderConcerns(concerns) {
     });
 
     if (sortedConcerns.length === 0) {
-        container.innerHTML = '<div class="text-center py-12 text-gray-500">No nudges created yet</div>';
+        container.innerHTML = '<div class="text-center py-12 text-slate-500">No nudges created yet</div>';
         return;
     }
 
@@ -439,31 +439,31 @@ function renderConcerns(concerns) {
         const needsAck = notifiedUsers.some(u => u.id === currentUser.id) && !acknowledgedUsers.some(u => u.id === currentUser.id);
 
         return `
-        <div class="bg-white border ${concern.status === 'open' ? 'border-red-200 bg-red-50' : 'border-gray-200'} rounded-xl p-6">
+        <div class="bg-white border ${concern.status === 'open' ? 'border-red-200 bg-red-50/50' : 'border-slate-200'} rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
             <div class="flex justify-between items-start mb-3">
-                <h3 class="font-semibold text-gray-900">${concern.subject}</h3>
-                <span class="px-3 py-1 rounded-full text-xs font-medium ${concern.status === 'open' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}">
+                <h3 class="font-semibold text-slate-900">${concern.subject}</h3>
+                <span class="px-3 py-1 rounded-xl text-xs font-medium ${concern.status === 'open' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}">
                     ${concern.status === 'open' ? 'Open' : 'Resolved'}
                 </span>
             </div>
-            <p class="text-sm text-gray-600 mb-3">${concern.description}</p>
+            <p class="text-sm text-slate-600 mb-3">${concern.description}</p>
             ${notifiedCount > 0 ? `
-                <div class="mb-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                    <p class="text-xs font-medium text-blue-800 mb-2">Notified: ${notifiedCount} people</p>
+                <div class="mb-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <p class="text-xs font-medium text-slate-700 mb-2">Notified: ${notifiedCount} people</p>
                     <div class="flex flex-wrap gap-2">
                         ${notifiedUsers.map(user => {
             const isAck = acknowledgedUsers.some(u => u.id === user.id);
-            return `<span class="inline-flex items-center px-2 py-1 rounded text-xs ${isAck ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}">${user.full_name} ${isAck ? '✓' : ''}</span>`;
+            return `<span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs ${isAck ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-600'}">${user.full_name} ${isAck ? '✓' : ''}</span>`;
         }).join('')}
                     </div>
-                    <p class="text-xs text-gray-600 mt-2">${acknowledgedCount} of ${notifiedCount} acknowledged</p>
+                    <p class="text-xs text-slate-500 mt-2">${acknowledgedCount} of ${notifiedCount} acknowledged</p>
                 </div>
             ` : ''}
-            <div class="flex justify-between items-center text-xs text-gray-500">
+            <div class="flex justify-between items-center text-xs text-slate-500">
                 <span>Raised on ${new Date(concern.created_at).toLocaleDateString()}</span>
                 ${concern.resolved_at ? `<span class="text-green-600">Resolved on ${new Date(concern.resolved_at).toLocaleDateString()}</span>` : ''}
             </div>
-            ${needsAck ? `<div class="mt-3"><button onclick="acknowledgeConcern(${concern.id})" class="text-sm bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-hover">Acknowledge</button></div>` : ''}
+            ${needsAck ? `<div class="mt-3"><button onclick="acknowledgeConcern(${concern.id})" class="text-sm btn-primary text-white px-4 py-2 rounded-xl">Acknowledge</button></div>` : ''}
         </div>
     `}).join('');
 }
@@ -490,23 +490,23 @@ async function loadAllUsersForConcern() {
         const interns = users.filter(u => u.role === 'intern');
         let html = '';
         if (managers.length > 0) {
-            html += '<div class="mb-3"><p class="text-xs font-semibold text-gray-700 mb-2">Managers</p>';
-            managers.forEach(u => html += `<label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded"><input type="checkbox" class="notify-user-checkbox" value="${u.id}"><span class="text-sm">${u.full_name}</span></label>`);
+            html += '<div class="mb-3"><p class="text-xs font-semibold text-slate-700 mb-2">Managers</p>';
+            managers.forEach(u => html += `<label class="flex items-center space-x-2 cursor-pointer hover:bg-slate-50 p-2 rounded-xl"><input type="checkbox" class="notify-user-checkbox" value="${u.id}"><span class="text-sm text-slate-700">${u.full_name}</span></label>`);
             html += '</div>';
         }
         if (seniors.length > 0) {
-            html += '<div class="mb-3"><p class="text-xs font-semibold text-gray-700 mb-2">Senior Officers</p>';
-            seniors.forEach(u => html += `<label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded"><input type="checkbox" class="notify-user-checkbox" value="${u.id}"><span class="text-sm">${u.full_name}</span></label>`);
+            html += '<div class="mb-3"><p class="text-xs font-semibold text-slate-700 mb-2">Senior Officers</p>';
+            seniors.forEach(u => html += `<label class="flex items-center space-x-2 cursor-pointer hover:bg-slate-50 p-2 rounded-xl"><input type="checkbox" class="notify-user-checkbox" value="${u.id}"><span class="text-sm text-slate-700">${u.full_name}</span></label>`);
             html += '</div>';
         }
         if (employees.length > 0) {
-            html += '<div class="mb-3"><p class="text-xs font-semibold text-gray-700 mb-2">Employees</p>';
-            employees.forEach(u => html += `<label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded"><input type="checkbox" class="notify-user-checkbox" value="${u.id}"><span class="text-sm">${u.full_name}</span></label>`);
+            html += '<div class="mb-3"><p class="text-xs font-semibold text-slate-700 mb-2">Employees</p>';
+            employees.forEach(u => html += `<label class="flex items-center space-x-2 cursor-pointer hover:bg-slate-50 p-2 rounded-xl"><input type="checkbox" class="notify-user-checkbox" value="${u.id}"><span class="text-sm text-slate-700">${u.full_name}</span></label>`);
             html += '</div>';
         }
         if (interns.length > 0) {
-            html += '<div class="mb-3"><p class="text-xs font-semibold text-gray-700 mb-2">Interns</p>';
-            interns.forEach(u => html += `<label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded"><input type="checkbox" class="notify-user-checkbox" value="${u.id}"><span class="text-sm">${u.full_name}</span></label>`);
+            html += '<div class="mb-3"><p class="text-xs font-semibold text-slate-700 mb-2">Interns</p>';
+            interns.forEach(u => html += `<label class="flex items-center space-x-2 cursor-pointer hover:bg-slate-50 p-2 rounded-xl"><input type="checkbox" class="notify-user-checkbox" value="${u.id}"><span class="text-sm text-slate-700">${u.full_name}</span></label>`);
             html += '</div>';
         }
         container.innerHTML = html;
@@ -547,7 +547,7 @@ async function submitConcern() {
         showToast(`Failed to create nudge: ${errorMsg}`, 'error');
     } finally {
         btn.disabled = false;
-        btn.innerText = 'Submit';
+        btn.innerText = 'Create Nudge';
     }
 }
 
@@ -605,7 +605,7 @@ function renderPolicies(policies) {
     const container = document.getElementById('policies-list');
 
     if (policies.length === 0) {
-        container.innerHTML = '<div class="col-span-2 text-center py-12 text-gray-500">No policies available</div>';
+        container.innerHTML = '<div class="col-span-2 text-center py-12 text-slate-500">No policies available</div>';
         return;
     }
 
@@ -614,29 +614,29 @@ function renderPolicies(policies) {
         const imgSrc = hasImage ? (policy.image_url.startsWith('/') ? '/api' + policy.image_url : policy.image_url) : null;
 
         return `
-            <div class="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 group">
+            <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:border-slate-300/80 transition-all duration-300 group">
                 ${hasImage ? `
-                    <div class="h-40 w-full overflow-hidden border-b border-gray-100">
+                    <div class="h-40 w-full overflow-hidden border-b border-slate-100">
                         <img src="${imgSrc}" alt="${policy.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                     </div>
                 ` : `
-                    <div class="h-40 w-full bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center border-b border-gray-100">
-                        <svg class="w-12 h-12 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="h-40 w-full bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center border-b border-slate-100">
+                        <svg class="w-12 h-12 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                         </svg>
                     </div>
                 `}
                 <div class="p-6">
                     <div class="flex justify-between items-start mb-3">
-                        <h3 class="font-bold text-gray-900 group-hover:text-primary transition-colors">${policy.title}</h3>
+                        <h3 class="font-bold text-slate-900 group-hover:text-primary transition-colors">${policy.title}</h3>
                         ${policy.is_acknowledged_by_me ?
-                '<span class="bg-green-50 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-green-100 uppercase">Acknowledged</span>' :
-                '<span class="bg-amber-50 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-100 uppercase">Pending</span>'
+                '<span class="bg-green-50 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded-lg border border-green-100 uppercase">Acknowledged</span>' :
+                '<span class="bg-amber-50 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-lg border border-amber-100 uppercase">Pending</span>'
             }
                     </div>
-                    <p class="text-sm text-gray-600 mb-6 line-clamp-3 leading-relaxed">${policy.content.substring(0, 120)}...</p>
-                    <div class="flex justify-between items-center pt-4 border-t border-gray-50 mt-auto">
-                        <span class="text-[11px] font-medium text-gray-400 capitalize">
+                    <p class="text-sm text-slate-600 mb-6 line-clamp-3 leading-relaxed">${policy.content.substring(0, 120)}...</p>
+                    <div class="flex justify-between items-center pt-4 border-t border-slate-100 mt-auto">
+                        <span class="text-[11px] font-medium text-slate-400">
                              ${new Date(policy.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
                         <button onclick="openPolicyModal(${policy.id})" class="text-primary hover:text-primary-hover text-sm font-bold flex items-center transition-all group-hover:translate-x-1">
@@ -726,7 +726,9 @@ function updatePoliciesBadge() {
 // ============================================
 
 function switchTab(tabName) {
-    // Update nav links
+    const hrTabs = ['leaves', 'holidays', 'policies'];
+    const isHrTab = hrTabs.includes(tabName);
+
     document.querySelectorAll('.nav-link').forEach(link => {
         link.classList.remove('active', 'bg-primary-light', 'text-primary');
         link.classList.add('text-gray-600');
@@ -736,6 +738,20 @@ function switchTab(tabName) {
     if (activeLink) {
         activeLink.classList.add('active', 'bg-primary-light', 'text-primary');
         activeLink.classList.remove('text-gray-600');
+    }
+
+    const hrToggle = document.getElementById('hr-section-toggle');
+    const hrSubItems = document.getElementById('hr-sub-items');
+    if (hrToggle && hrSubItems) {
+        if (isHrTab) {
+            hrSubItems.classList.remove('hidden');
+            hrToggle.querySelector('.hr-chevron').classList.add('rotate-90');
+            hrToggle.classList.add('text-primary');
+            hrToggle.classList.remove('text-gray-500');
+        } else {
+            hrToggle.classList.remove('text-primary');
+            hrToggle.classList.add('text-gray-500');
+        }
     }
 
     // Update tab content
@@ -755,7 +771,8 @@ function switchTab(tabName) {
     } else if (tabName === 'schedule') {
         renderCalendar();
     } else if (tabName === 'projects') {
-        loadMyProjects();
+        if (typeof loadKanbanDashboard === 'function') loadKanbanDashboard('projects-kanban-container');
+        else loadMyProjects();
     } else if (tabName === 'attendance') {
         loadAttendanceTab();
     } else if (tabName === 'leaves') {
@@ -976,24 +993,24 @@ function renderNotifications(notifications) {
     }
 
     if (notifications.length === 0) {
-        container.innerHTML = '<div class="p-4 text-center text-gray-500 text-sm">No notifications</div>';
+        container.innerHTML = '<div class="p-4 text-center text-slate-500 text-sm">No notifications</div>';
         return;
     }
 
     container.innerHTML = notifications.map(notif => {
         const date = new Date(notif.created_at).toLocaleString();
         return `
-            <div class="p-4 ${notif.is_acknowledged ? 'bg-white opacity-70' : 'bg-blue-50'} hover:bg-gray-50 transition-colors">
+            <div class="p-4 ${notif.is_acknowledged ? 'bg-white opacity-80' : 'bg-primary/5'} hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0">
                 <div class="flex justify-between items-start mb-1">
-                    <h4 class="text-sm font-bold text-gray-900">${notif.title}</h4>
-                    <span class="text-[10px] text-gray-400 font-medium">${date}</span>
+                    <h4 class="text-sm font-semibold text-slate-900">${notif.title}</h4>
+                    <span class="text-[10px] text-slate-400 font-medium">${date}</span>
                 </div>
-                <p class="text-xs text-gray-600 mb-2">${notif.content}</p>
+                <p class="text-xs text-slate-600 mb-2">${notif.content}</p>
                 <div class="flex justify-between items-center text-[10px]">
-                    <span class="text-gray-400">By: ${notif.created_by ? notif.created_by.full_name : 'Admin'}</span>
+                    <span class="text-slate-400">By: ${notif.created_by ? notif.created_by.full_name : 'Admin'}</span>
                     ${notif.is_acknowledged ?
-                '<span class="text-green-600 font-bold flex items-center">✓ Acknowledged</span>' :
-                `<button onclick="acknowledgeNotification(${notif.id})" class="text-white bg-primary px-3 py-1 rounded font-bold hover:bg-primary-hover shadow-sm">Acknowledge</button>`
+                '<span class="text-green-600 font-semibold flex items-center">✓ Acknowledged</span>' :
+                `<button onclick="acknowledgeNotification(${notif.id})" class="btn-primary text-white px-3 py-1.5 rounded-lg text-xs font-medium">Acknowledge</button>`
             }
                 </div>
             </div>
@@ -1017,8 +1034,20 @@ async function acknowledgeNotification(id) {
 // ============================================
 
 let currentCalendarDate = new Date();
+let _calendarHolidays = {};
 
-function renderCalendar() {
+async function _fetchCalendarHolidays(year) {
+    const office = (currentUser && currentUser.office) ? currentUser.office : null;
+    let url = '/holidays/?year=' + year;
+    if (office) url += '&office=' + office;
+    try {
+        const list = await Api.get(url);
+        _calendarHolidays = {};
+        (list || []).forEach(h => { _calendarHolidays[h.date] = h.title; });
+    } catch (e) { console.warn('Failed to load holidays for calendar', e); }
+}
+
+async function renderCalendar() {
     const grid = document.getElementById('calendar-grid');
     const monthYearLabel = document.getElementById('calendar-month-year');
     if (!grid || !monthYearLabel) return;
@@ -1028,12 +1057,20 @@ function renderCalendar() {
     const year = currentCalendarDate.getFullYear();
     const month = currentCalendarDate.getMonth();
 
+    await _fetchCalendarHolidays(year);
+
     monthYearLabel.innerText = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(currentCalendarDate);
+
+    if (typeof window._calendarApprovedLeaves === 'undefined') {
+        try {
+            const leaves = await Api.get('/leaves/my-leaves');
+            window._calendarApprovedLeaves = (leaves || []).filter(l => l.status === 'approved');
+        } catch (e) { window._calendarApprovedLeaves = []; }
+    }
 
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-    // Previous month placeholders
     for (let i = 0; i < firstDay; i++) {
         const placeholder = document.createElement('div');
         placeholder.className = 'min-h-[100px] bg-gray-50/50 border-b border-r border-gray-100';
@@ -1047,19 +1084,32 @@ function renderCalendar() {
         'low': 'bg-blue-50 text-blue-700 border-blue-100'
     };
 
-    // Current month days
+    window._calendarDayData = window._calendarDayData || {};
+
     for (let day = 1; day <= daysInMonth; day++) {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const dayTasks = allTasks.filter(t => {
-            if (!t.deadline) return false;
-            return t.deadline.startsWith(dateStr);
-        });
+        const holidayName = _calendarHolidays[dateStr] || null;
+        const dayTasks = allTasks.filter(t => t.deadline && t.deadline.startsWith(dateStr));
         const dayPersonalTodos = personalTodos.filter(t => t.date === dateStr && !t.done);
         const dayItems = dayTasks.map(t => ({ title: t.title, priority: t.priority || 'medium' }))
             .concat(dayPersonalTodos.map(t => ({ title: t.text, priority: (t.priority || 'medium').toLowerCase() })));
 
+        const leafMatches = (window._calendarApprovedLeaves || []).filter(l => l.start_date <= dateStr && l.end_date >= dateStr);
+
+        window._calendarDayData[dateStr] = {
+            holiday: holidayName,
+            leaves: leafMatches,
+            tasks: dayItems
+        };
+
         const dayDiv = document.createElement('div');
-        dayDiv.className = 'min-h-[100px] bg-white border-b border-r border-gray-100 p-2 hover:bg-gray-50 transition-colors';
+        dayDiv.className = 'min-h-[100px] border-b border-r border-gray-100 p-2 transition-colors cursor-pointer '
+            + (holidayName ? 'bg-purple-50 hover:bg-purple-100' : 'bg-white hover:bg-gray-50');
+        dayDiv.onclick = () => openCalendarDayModal(dateStr);
+
+        let holidayHtml = holidayName
+            ? `<div class="mb-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-100 text-purple-700 border border-purple-200 truncate" title="${escapeHtmlAttr(holidayName)}">${escapeHtmlAttr(holidayName)}</div>`
+            : '';
 
         let tasksHtml = dayItems.map(t => `
             <div class="mb-1 px-1.5 py-0.5 rounded text-[10px] font-medium border truncate ${priorityColors[t.priority] || 'bg-gray-100'}" title="${escapeHtmlAttr(t.title)}">
@@ -1067,12 +1117,88 @@ function renderCalendar() {
             </div>
         `).join('');
 
+        let leavesHtml = leafMatches.map(l => `
+            <div class="mb-1 px-1.5 py-0.5 rounded text-[10px] font-medium border truncate bg-teal-50 text-teal-700 border-teal-100" title="Leave: ${escapeHtmlAttr(l.custom_policy_title || l.leave_type)}">
+                Leave: ${escapeHtmlAttr(l.custom_policy_title || l.leave_type)}
+            </div>
+        `).join('');
+
         dayDiv.innerHTML = `
             <div class="text-right text-gray-400 text-xs mb-1">${day}</div>
-            <div class="space-y-1">${tasksHtml}</div>
+            <div class="space-y-1">${holidayHtml}${leavesHtml}${tasksHtml}</div>
         `;
         grid.appendChild(dayDiv);
     }
+}
+
+if (typeof window.openCalendarDayModal !== 'function') {
+    window.openCalendarDayModal = function (dateString) {
+        let m = document.getElementById('calendar-day-modal');
+        if (!m) {
+            m = document.createElement('div');
+            m.id = 'calendar-day-modal';
+            m.className = 'fixed inset-0 z-[110] overflow-y-auto hidden';
+            m.innerHTML = `
+                <div class="flex min-h-full items-center justify-center p-4">
+                    <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" onclick="document.getElementById('calendar-day-modal').classList.add('hidden')"></div>
+                    <div class="relative bg-white rounded-[2rem] shadow-2xl max-w-md w-full p-8 animate-fade-in border border-gray-100/50">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-xl font-bold text-gray-900 tracking-tight" id="cdm-title"></h3>
+                            <button onclick="document.getElementById('calendar-day-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-full p-2 transition-colors">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+                        <div id="cdm-content" class="space-y-3 max-h-[60vh] overflow-y-auto pr-2"></div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(m);
+        }
+        const data = window._calendarDayData[dateString] || {};
+
+        // Parse date safely
+        const [y, mStr, dStr] = dateString.split('-');
+        const dateObj = new Date(parseInt(y), parseInt(mStr) - 1, parseInt(dStr));
+        document.getElementById('cdm-title').innerText = dateObj.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+        let html = '';
+
+        if (data.holiday) {
+            html += `<div class="p-3 bg-purple-50 border border-purple-100 rounded-xl"><span class="text-xs font-semibold text-purple-600 uppercase tracking-widest block mb-1">Holiday</span><p class="text-sm font-medium text-purple-900">${(data.holiday || '').replace(/</g, '&lt;')}</p></div>`;
+        }
+
+        if (data.leaves && data.leaves.length) {
+            data.leaves.forEach(l => {
+                const label = l.user_name ? `${l.user_name} - ${l.custom_policy_title || l.leave_type}` : `Leave: ${l.custom_policy_title || l.leave_type}`;
+                html += `<div class="p-3 bg-teal-50 border border-teal-100 rounded-xl"><span class="text-xs font-semibold text-teal-600 uppercase tracking-widest block mb-1">Leave</span><p class="text-sm font-medium text-teal-900">${(label || '').replace(/</g, '&lt;')}</p></div>`;
+            });
+        }
+
+        if (data.tasks && data.tasks.length) {
+            const priorityColors = {
+                'high': 'bg-red-50 border-red-100 text-red-900',
+                'medium': 'bg-yellow-50 border-yellow-100 text-yellow-900',
+                'low': 'bg-blue-50 border-blue-100 text-blue-900'
+            };
+            const labelColors = {
+                'high': 'text-red-600',
+                'medium': 'text-yellow-600',
+                'low': 'text-blue-600'
+            };
+            data.tasks.forEach(t => {
+                const bg = priorityColors[t.priority] || 'bg-gray-50 border-gray-100 text-gray-900';
+                const lc = labelColors[t.priority] || 'text-gray-600';
+                html += `<div class="p-3 border rounded-xl ${bg}"><span class="text-xs font-semibold ${lc} uppercase tracking-widest block mb-1">Task (${t.priority})</span><p class="text-sm font-medium">${(t.title || '').replace(/</g, '&lt;')}</p></div>`;
+            });
+        }
+
+        if (!html) {
+            html = `<p class="text-sm text-gray-500 text-center py-6 bg-gray-50 rounded-xl border border-gray-100 border-dashed">No events scheduled for this day.</p>`;
+        }
+
+        document.getElementById('cdm-content').innerHTML = html;
+        m.classList.remove('hidden');
+    };
 }
 
 function escapeHtml(s) {

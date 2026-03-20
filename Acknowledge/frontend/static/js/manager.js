@@ -691,23 +691,23 @@ function renderAllTasks(tasks) {
             <td class="px-6 py-4 whitespace-nowrap text-sm">
                 <div class="flex items-center gap-3">
                     <div class="flex items-center gap-2">
-                        ${((task.assigned_to_id === currentUser?.id) || (task.assigned_to && task.assigned_to.id === currentUser?.id)) && !task.acknowledged_at ? 
-                            `<button type="button" onclick="acknowledgeTask(${task.id})" class="px-2.5 py-1 rounded-md text-primary hover:bg-primary/10 font-medium transition-colors">Acknowledge</button>` :
-                            ((task.assigned_to_id === currentUser?.id) || (task.assigned_to && task.assigned_to.id === currentUser?.id)) && task.acknowledged_at && task.status !== 'completed' && task.status !== 'review' ?
-                            `<span class="text-xs text-green-600 font-medium px-2.5 py-1">✓ Acknowledged</span>` :
-                            ((task.created_by_id === currentUser?.id) || (task.created_by && task.created_by.id === currentUser?.id)) && task.acknowledged_at ?
-                            `<span class="text-xs text-green-600 font-medium px-2.5 py-1">✓ Acknowledged</span>` :
-                            ''
-                        }
+                        ${((task.assigned_to_id === currentUser?.id) || (task.assigned_to && task.assigned_to.id === currentUser?.id)) && !task.acknowledged_at ?
+                `<button type="button" onclick="acknowledgeTask(${task.id})" class="px-2.5 py-1 rounded-md text-primary hover:bg-primary/10 font-medium transition-colors">Acknowledge</button>` :
+                ((task.assigned_to_id === currentUser?.id) || (task.assigned_to && task.assigned_to.id === currentUser?.id)) && task.acknowledged_at && task.status !== 'completed' && task.status !== 'review' ?
+                    `<span class="text-xs text-green-600 font-medium px-2.5 py-1">✓ Acknowledged</span>` :
+                    ((task.created_by_id === currentUser?.id) || (task.created_by && task.created_by.id === currentUser?.id)) && task.acknowledged_at ?
+                        `<span class="text-xs text-green-600 font-medium px-2.5 py-1">✓ Acknowledged</span>` :
+                        ''
+            }
                         ${((task.assigned_to_id === currentUser?.id) || (task.assigned_to && task.assigned_to.id === currentUser?.id)) && task.status !== 'completed' && task.status !== 'review' ?
-                            `<button type="button" onclick="markTaskComplete(${task.id})" class="px-2.5 py-1 rounded-md text-green-600 hover:bg-green-50 font-medium transition-colors">Mark Complete</button>` :
-                            ''
-                        }
+                `<button type="button" onclick="markTaskComplete(${task.id})" class="px-2.5 py-1 rounded-md text-green-600 hover:bg-green-50 font-medium transition-colors">Mark Complete</button>` :
+                ''
+            }
                         <button type="button" class="task-comment-btn px-2.5 py-1 rounded-md text-gray-600 hover:text-primary hover:bg-primary/10 font-medium transition-colors inline-flex items-center gap-1" data-task-id="${task.id}" data-task-title="${(task.title || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;')}">Comment${hasUnseen ? '<span class="inline-block w-2 h-2 rounded-full bg-red-500" aria-label="Unseen comments"></span>' : ''}</button>
                         ${task.status === 'review' ?
-                            `<button type="button" onclick="approveTask(${task.id})" class="px-2.5 py-1 rounded-md text-primary hover:bg-primary/10 font-medium transition-colors">Approve</button>` :
-                            `<button type="button" onclick="viewTask(${task.id})" class="px-2.5 py-1 rounded-md text-gray-600 hover:text-gray-800 hover:bg-gray-100 font-medium transition-colors">View</button>`
-                        }
+                `<button type="button" onclick="approveTask(${task.id})" class="px-2.5 py-1 rounded-md text-primary hover:bg-primary/10 font-medium transition-colors">Approve</button>` :
+                `<button type="button" onclick="viewTask(${task.id})" class="px-2.5 py-1 rounded-md text-gray-600 hover:text-gray-800 hover:bg-gray-100 font-medium transition-colors">View</button>`
+            }
                     </div>
                     <span class="text-gray-200" aria-hidden="true">|</span>
                     <button type="button" onclick="deleteTask(${task.id})" class="p-1.5 rounded-md text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors" title="Delete task" aria-label="Delete task">
@@ -937,6 +937,7 @@ function switchTab(tabName) {
     } else if (tabName === 'nudges') {
         loadManageNudges();
     } else if (tabName === 'projects') {
+        if (typeof loadKanbanDashboard === 'function') loadKanbanDashboard('projects-kanban-container');
         if (typeof loadProjects === 'function') loadProjects();
     } else if (tabName === 'policies') {
         loadPolicies();
@@ -947,10 +948,11 @@ function switchTab(tabName) {
     } else if (tabName === 'attendance') {
         loadAttendanceTab();
         loadPendingAttendanceRequests();
+        initAttendanceExport();
     } else if (tabName === 'leaves') {
         loadLeavesTab();
     } else if (tabName === 'holidays') {
-        loadHolidays();
+        loadHolidays(currentUser ? currentUser.office : null);
     }
 }
 
@@ -1552,12 +1554,39 @@ function updatePoliciesBadge() {
 
 let currentCalendarDate = new Date();
 let personalTasks = [];
+let _calendarHolidays = {};
+
+async function _fetchCalendarHolidays(year) {
+    const office = (currentUser && currentUser.office) ? currentUser.office : null;
+    let url = '/holidays/?year=' + year;
+    if (office) url += '&office=' + office;
+    try {
+        const list = await Api.get(url);
+        _calendarHolidays = {};
+        (list || []).forEach(h => { _calendarHolidays[h.date] = h.title; });
+    } catch (e) { console.warn('Failed to load holidays for calendar', e); }
+}
 
 async function loadPersonalCalendar() {
     try {
         const tasks = await Api.get('/tasks/my-calendar');
         personalTasks = tasks;
-        renderCalendar();
+
+        // Fetch approved leaves here
+        try {
+            const [myLeaves, allLeaves] = await Promise.all([
+                Api.get('/leaves/my-leaves').catch(() => []),
+                Api.get('/leaves/all').catch(() => [])
+            ]);
+
+            const leavesMap = new Map();
+            myLeaves.forEach(l => { if (l.status === 'approved') leavesMap.set(l.id, { ...l, user_name: 'Me' }); });
+            allLeaves.forEach(l => { if (l.status === 'approved') leavesMap.set(l.id, l); });
+
+            window._calendarApprovedLeaves = Array.from(leavesMap.values());
+        } catch (e) { window._calendarApprovedLeaves = []; }
+
+        await renderCalendar();
         renderPersonalTodoList();
     } catch (error) {
         console.error('Failed to load personal calendar:', error);
@@ -1565,7 +1594,7 @@ async function loadPersonalCalendar() {
     }
 }
 
-function renderCalendar() {
+async function renderCalendar() {
     const grid = document.getElementById('calendar-grid');
     const monthYear = document.getElementById('calendar-month-year');
     if (!grid || !monthYear) return;
@@ -1573,45 +1602,56 @@ function renderCalendar() {
     const year = currentCalendarDate.getFullYear();
     const month = currentCalendarDate.getMonth();
 
-    // Set Header
+    await _fetchCalendarHolidays(year);
+
     monthYear.innerText = currentCalendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
-    // Date calculations
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
-    const startDayIndex = firstDay.getDay(); // 0 is Sunday
+    const startDayIndex = firstDay.getDay();
     const totalDays = lastDay.getDate();
 
     let html = '';
 
-    // Empty cells
     for (let i = 0; i < startDayIndex; i++) {
         html += `<div class="bg-white h-24 border-b border-r border-gray-100"></div>`;
     }
 
-    // Days
     const today = new Date();
     const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
-
     const personalTodos = typeof window.getPersonalTodosForCalendar === 'function' ? window.getPersonalTodosForCalendar() : [];
+
+    window._calendarDayData = window._calendarDayData || {};
 
     for (let day = 1; day <= totalDays; day++) {
         const isToday = isCurrentMonth && today.getDate() === day;
-
-        // Find tasks for this day (API + personal todos)
         const dayString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const dayTasks = personalTasks.filter(t => {
-            if (!t.deadline) return false;
-            return t.deadline.startsWith(dayString);
-        });
+        const holidayName = _calendarHolidays[dayString] || null;
+
+        const dayTasks = personalTasks.filter(t => t.deadline && t.deadline.startsWith(dayString));
         const dayPersonalTodos = personalTodos.filter(t => t.date === dayString && !t.done);
         const dayItems = dayTasks.map(t => ({ title: t.title, priority: t.priority || 'medium' }))
             .concat(dayPersonalTodos.map(t => ({ title: t.text, priority: (t.priority || 'medium').toLowerCase() })));
 
+        const bgClass = holidayName ? 'bg-purple-50 hover:bg-purple-100' : 'bg-white hover:bg-gray-50';
+        const holidayHtml = holidayName
+            ? `<div class="text-[10px] truncate px-1 rounded font-semibold bg-purple-100 text-purple-700 border border-purple-200" title="${(holidayName || '').replace(/"/g, '&quot;')}">${(holidayName || '').replace(/</g, '&lt;')}</div>`
+            : '';
+
+        const leafMatches = (window._calendarApprovedLeaves || []).filter(l => l.start_date <= dayString && l.end_date >= dayString);
+
+        window._calendarDayData[dayString] = {
+            holiday: holidayName,
+            leaves: leafMatches,
+            tasks: dayItems
+        };
+
         html += `
-            <div class="bg-white h-24 border-b border-r border-gray-100 p-2 hover:bg-gray-50 transition-colors relative group">
+            <div class="${bgClass} h-24 border-b border-r border-gray-100 p-2 transition-colors relative group cursor-pointer" onclick="openCalendarDayModal('${dayString}')">
                 <span class="text-sm font-medium ${isToday ? 'bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center' : 'text-gray-700'}">${day}</span>
-                <div class="mt-2 flex flex-col gap-1 overflow-hidden">
+                <div class="mt-2 flex flex-col gap-1 overflow-hidden pointer-events-none">
+                    ${holidayHtml}
+                    ${leafMatches.map(l => `<div class="text-[10px] truncate px-1 rounded bg-teal-100 text-teal-800" title="Leave: ${(l.custom_policy_title || l.leave_type || '').replace(/"/g, '&quot;')} - ${(l.user_name || '').replace(/"/g, '&quot;')}">Leave: ${(l.user_name || 'Unknown')} - ${(l.custom_policy_title || l.leave_type || '').replace(/</g, '&lt;')}</div>`).join('')}
                     ${dayItems.map(t => `<div class="text-[10px] truncate px-1 rounded ${t.priority === 'high' ? 'bg-red-100 text-red-800' : t.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-50 text-blue-800'}">${(t.title || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`).join('')}
                 </div>
             </div>
@@ -1620,6 +1660,76 @@ function renderCalendar() {
 
     grid.innerHTML = html;
 }
+
+window.openCalendarDayModal = function (dateString) {
+    let m = document.getElementById('calendar-day-modal');
+    if (!m) {
+        m = document.createElement('div');
+        m.id = 'calendar-day-modal';
+        m.className = 'fixed inset-0 z-[110] overflow-y-auto hidden';
+        m.innerHTML = `
+            <div class="flex min-h-full items-center justify-center p-4">
+                <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" onclick="document.getElementById('calendar-day-modal').classList.add('hidden')"></div>
+                <div class="relative bg-white rounded-[2rem] shadow-2xl max-w-md w-full p-8 animate-fade-in border border-gray-100/50">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold text-gray-900 tracking-tight" id="cdm-title"></h3>
+                        <button onclick="document.getElementById('calendar-day-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-full p-2 transition-colors">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+                    <div id="cdm-content" class="space-y-3 max-h-[60vh] overflow-y-auto pr-2"></div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(m);
+    }
+    const data = window._calendarDayData[dateString] || {};
+
+    // Parse date safely
+    const [y, mStr, dStr] = dateString.split('-');
+    const dateObj = new Date(parseInt(y), parseInt(mStr) - 1, parseInt(dStr));
+    document.getElementById('cdm-title').innerText = dateObj.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+    let html = '';
+
+    if (data.holiday) {
+        html += `<div class="p-3 bg-purple-50 border border-purple-100 rounded-xl"><span class="text-xs font-semibold text-purple-600 uppercase tracking-widest block mb-1">Holiday</span><p class="text-sm font-medium text-purple-900">${(data.holiday || '').replace(/</g, '&lt;')}</p></div>`;
+    }
+
+    if (data.leaves && data.leaves.length) {
+        data.leaves.forEach(l => {
+            const label = l.user_name ? `${l.user_name} - ${l.custom_policy_title || l.leave_type}` : `Leave: ${l.custom_policy_title || l.leave_type}`;
+            html += `<div class="p-3 bg-teal-50 border border-teal-100 rounded-xl"><span class="text-xs font-semibold text-teal-600 uppercase tracking-widest block mb-1">Leave</span><p class="text-sm font-medium text-teal-900">${(label || '').replace(/</g, '&lt;')}</p></div>`;
+        });
+    }
+
+    if (data.tasks && data.tasks.length) {
+        const priorityColors = {
+            'high': 'bg-red-50 border-red-100 text-red-900',
+            'medium': 'bg-yellow-50 border-yellow-100 text-yellow-900',
+            'low': 'bg-blue-50 border-blue-100 text-blue-900'
+        };
+        const labelColors = {
+            'high': 'text-red-600',
+            'medium': 'text-yellow-600',
+            'low': 'text-blue-600'
+        };
+        data.tasks.forEach(t => {
+            const bg = priorityColors[t.priority] || 'bg-gray-50 border-gray-100 text-gray-900';
+            const lc = labelColors[t.priority] || 'text-gray-600';
+            html += `<div class="p-3 border rounded-xl ${bg}"><span class="text-xs font-semibold ${lc} uppercase tracking-widest block mb-1">Task (${t.priority})</span><p class="text-sm font-medium">${(t.title || '').replace(/</g, '&lt;')}</p></div>`;
+        });
+    }
+
+    if (!html) {
+        html = `<p class="text-sm text-gray-500 text-center py-6 bg-gray-50 rounded-xl border border-gray-100 border-dashed">No events scheduled for this day.</p>`;
+    }
+
+    document.getElementById('cdm-content').innerHTML = html;
+    m.classList.remove('hidden');
+};
+
+
 
 function renderPersonalTodoList() {
     const list = document.getElementById('personal-todo-list');
@@ -1818,4 +1928,99 @@ function viewNudge(nudgeId) {
         resolvedWrap.classList.add('hidden');
     }
     modal.classList.add('active');
+}
+
+
+// ============================================
+// ATTENDANCE EXPORT (Excel)
+// ============================================
+
+let _exportUsersLoaded = false;
+
+async function initAttendanceExport() {
+    const userSel = document.getElementById('export-att-user');
+    const monthSel = document.getElementById('export-att-month');
+    const yearSel = document.getElementById('export-att-year');
+    const markAbsentUserSel = document.getElementById('mark-absent-user');
+    if (!userSel || !monthSel || !yearSel) return;
+
+    if (!_exportUsersLoaded) {
+        try {
+            const users = await Api.get('/auth/all-users');
+            const opts = (users || []).map(u => `<option value="${u.id}">${u.full_name} (${u.role})</option>`).join('');
+            userSel.innerHTML = '<option value="">Select employee...</option>' + opts;
+            if (markAbsentUserSel) {
+                markAbsentUserSel.innerHTML = '<option value="">Select employee...</option>' + opts;
+            }
+            _exportUsersLoaded = true;
+        } catch (e) {
+            console.error('Failed to load users for export', e);
+        }
+    }
+
+    if (!monthSel.options.length || monthSel.options.length < 2) {
+        const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const now = new Date();
+        monthSel.innerHTML = '';
+        months.forEach((m, i) => {
+            monthSel.innerHTML += `<option value="${i + 1}" ${i + 1 === now.getMonth() + 1 ? 'selected' : ''}>${m}</option>`;
+        });
+        yearSel.innerHTML = '';
+        const cy = now.getFullYear();
+        for (let y = cy - 2; y <= cy + 1; y++) {
+            yearSel.innerHTML += `<option value="${y}" ${y === cy ? 'selected' : ''}>${y}</option>`;
+        }
+    }
+    const dateInput = document.getElementById('mark-absent-date');
+    if (dateInput && !dateInput.value) {
+        const today = new Date();
+        dateInput.value = today.toISOString().slice(0, 10);
+    }
+}
+
+async function submitMarkAbsent() {
+    const userId = document.getElementById('mark-absent-user') && document.getElementById('mark-absent-user').value;
+    const dateEl = document.getElementById('mark-absent-date');
+    const absentDate = dateEl && dateEl.value ? dateEl.value.trim() : '';
+    if (!userId) { showToast('Please select an employee', 'error'); return; }
+    if (!absentDate) { showToast('Please select a date', 'error'); return; }
+    try {
+        await Api.post('/attendance/mark-absent', { user_id: parseInt(userId, 10), absent_date: absentDate });
+        showToast('Marked absent successfully', 'success');
+        if (dateEl) dateEl.value = '';
+        if (typeof loadAttendanceTab === 'function') loadAttendanceTab();
+    } catch (e) {
+        showToast(e.message || 'Failed to mark absent', 'error');
+    }
+}
+
+async function exportAttendanceExcel() {
+    const userId = document.getElementById('export-att-user').value;
+    const month = document.getElementById('export-att-month').value;
+    const year = document.getElementById('export-att-year').value;
+    if (!userId) { showToast('Please select an employee', 'error'); return; }
+
+    try {
+        const url = Api.getApiUrl() + `/attendance/export?year=${year}&month=${month}&user_id=${userId}`;
+        const resp = await fetch(url, { method: 'GET', headers: Api.getHeaders() });
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            throw new Error(err.detail || `Export failed (${resp.status})`);
+        }
+        const blob = await resp.blob();
+        const disposition = resp.headers.get('Content-Disposition') || '';
+        let filename = 'attendance.xlsx';
+        const match = disposition.match(/filename="?([^"]+)"?/);
+        if (match) filename = match[1];
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(a.href);
+        showToast('Attendance exported!', 'success');
+    } catch (e) {
+        showToast(e.message || 'Export failed', 'error');
+    }
 }
