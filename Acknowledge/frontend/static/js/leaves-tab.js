@@ -1440,37 +1440,94 @@ async function loadPendingLeaves() {
         var q = buildLeavesFilterQuery(f);
         var bust = (q ? '&' : '?') + '_=' + Date.now();
         var leaves = await Api.get('/leaves/pending' + q + bust);
+
+        // Update badge in section header
+        var badge = document.getElementById('pending-leaves-count-badge');
+        if (badge) {
+            if (leaves && leaves.length > 0) {
+                badge.textContent = leaves.length + ' pending';
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
         if (!leaves || leaves.length === 0) {
-            c.innerHTML = _emptyState('No pending requests');
+            c.innerHTML = '<div class="flex flex-col items-center justify-center py-14 px-6">' +
+                '<div class="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center mb-3">' +
+                '<svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg></div>' +
+                '<p class="text-sm font-semibold text-gray-600">All caught up!</p>' +
+                '<p class="text-xs text-gray-400 mt-0.5">No pending leave requests for this period.</p></div>';
             return;
         }
-        c.innerHTML = '<div class="space-y-3">' + leaves.map(function (l) {
+
+        c.innerHTML = '<div class="divide-y divide-gray-50">' + leaves.map(function (l) {
             var typeLabel = l.custom_policy_title || l.leave_type;
             var initials = (l.user_name || '?').split(' ').map(function (w) { return w[0]; }).join('').substring(0, 2).toUpperCase();
-            var balanceHtml = '';
+            var roleLabel = (l.user_role || 'employee').charAt(0).toUpperCase() + (l.user_role || 'employee').slice(1);
+
+            // Date + days display
+            var dateStr = l.is_half_day ? l.start_date : (l.start_date + ' \u2192 ' + l.end_date);
+            var daysNum = l.is_half_day ? 0.5 : (l.num_days || 1);
+            var daysLabel = daysNum + ' day' + (daysNum !== 1 ? 's' : '');
+
+            // Half-day badge
+            var halfBadge = l.is_half_day
+                ? ' <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-50 text-violet-600 border border-violet-100 ml-1">' + (l.half_day_period === 'first_half' ? '1st half' : '2nd half') + '</span>'
+                : '';
+
+            // Balance row
+            var balHtml = '';
             if (l.balance_available != null) {
                 var avail = l.balance_available % 1 === 0 ? l.balance_available : parseFloat(l.balance_available.toFixed(2));
                 var usedVal = l.balance_used != null ? (l.balance_used % 1 === 0 ? l.balance_used : parseFloat(l.balance_used.toFixed(2))) : '?';
                 var limitVal = l.balance_limit != null ? (l.balance_limit % 1 === 0 ? l.balance_limit : parseFloat(l.balance_limit.toFixed(2))) : '?';
                 var balColor = avail > 0 ? 'emerald' : 'red';
-                balanceHtml = '<div class="flex items-center gap-2 mt-2 flex-wrap">' +
+                balHtml = '<div class="flex items-center gap-2 mt-2 flex-wrap">' +
                     '<span class="inline-flex items-center gap-1 bg-' + balColor + '-50 text-' + balColor + '-700 px-2 py-0.5 rounded-md border border-' + balColor + '-100 text-[11px] font-semibold">' +
-                    '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>' +
+                    (avail > 0
+                        ? '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>'
+                        : '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>') +
                     avail + ' day' + (avail !== 1 ? 's' : '') + ' available</span>' +
-                    '<span class="text-[10px] text-gray-400">used ' + usedVal + ' of ' + limitVal + ' (incl. pending)</span>' +
+                    '<span class="text-[10px] text-gray-400">used ' + usedVal + ' of ' + limitVal + ' incl. pending</span>' +
                     '</div>';
             }
-            return '<div class="flex items-start gap-4 p-4 rounded-xl border border-gray-100 bg-white hover:border-gray-200 hover:shadow-sm transition-all">' +
-                '<div class="shrink-0 w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold">' + initials + '</div>' +
-                '<div class="flex-1 min-w-0">' +
-                '<div class="flex items-center justify-between gap-2 mb-1"><p class="text-sm font-semibold text-gray-900 truncate">' + l.user_name + '</p>' + _statusBadge('pending') + '</div>' +
-                '<p class="text-xs text-gray-500"><span class="font-medium text-gray-600">' + typeLabel + '</span> &middot; ' + (l.is_half_day ? l.start_date : l.start_date + ' → ' + l.end_date) + ' &middot; <span class="font-semibold text-gray-700">' + l.num_days + ' day' + (l.num_days !== 1 ? 's' : '') + '</span>' + (l.is_half_day ? ' ' + _halfDayLabel(l) : '') + '</p>' +
-                balanceHtml +
-                '<p class="text-sm text-gray-500 mt-1.5 line-clamp-2">' + (l.reason || '—') + '</p>' +
-                '<div class="flex gap-2 mt-3">' +
-                '<button onclick="reviewLeave(' + l.id + ',\'approved\')" class="text-xs font-semibold text-white bg-emerald-500 hover:bg-emerald-600 px-3.5 py-1.5 rounded-lg transition-colors shadow-sm">Approve</button>' +
-                '<button onclick="reviewLeave(' + l.id + ',\'rejected\')" class="text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 px-3.5 py-1.5 rounded-lg transition-colors">Deny</button>' +
-                '</div></div></div>';
+
+            // Reason
+            var reasonHtml = l.reason
+                ? '<p class="text-xs text-gray-500 mt-2 line-clamp-2 italic">\u201c' + (l.reason || '') + '\u201d</p>'
+                : '';
+
+            return '<div class="flex items-stretch gap-0 hover:bg-gray-50/50 transition-colors">' +
+                // Left accent
+                '<div class="w-0.5 bg-amber-400 shrink-0 my-4 ml-4 rounded-full"></div>' +
+                // Avatar
+                '<div class="flex items-start pt-5 px-3.5 shrink-0">' +
+                '<div class="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold shrink-0">' + initials + '</div>' +
+                '</div>' +
+                // Main content
+                '<div class="flex-1 min-w-0 py-4 pr-2">' +
+                '<div class="flex items-center gap-2 mb-1">' +
+                '<p class="text-sm font-semibold text-gray-900">' + (l.user_name || 'Unknown') + '</p>' +
+                '<span class="text-[10px] font-medium text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded capitalize">' + roleLabel + '</span>' +
+                '</div>' +
+                '<div class="flex items-center gap-1.5 flex-wrap">' +
+                '<span class="text-xs font-semibold text-gray-700">' + typeLabel + '</span>' +
+                '<span class="text-gray-300 text-sm">&middot;</span>' +
+                '<span class="text-xs text-gray-500">' + dateStr + '</span>' +
+                '<span class="text-gray-300 text-sm">&middot;</span>' +
+                '<span class="text-xs font-semibold text-gray-800">' + daysLabel + '</span>' +
+                halfBadge +
+                '</div>' +
+                balHtml +
+                reasonHtml +
+                '</div>' +
+                // Action buttons — right column
+                '<div class="flex flex-col justify-center gap-2 px-4 py-4 shrink-0">' +
+                '<button onclick="reviewLeave(' + l.id + ',\'approved\')" class="text-xs font-semibold text-white bg-emerald-500 hover:bg-emerald-600 px-4 py-2 rounded-lg transition-colors shadow-sm whitespace-nowrap">Approve</button>' +
+                '<button onclick="reviewLeave(' + l.id + ',\'rejected\')" class="text-xs font-semibold text-red-500 bg-white hover:bg-red-50 border border-red-200 hover:border-red-300 px-4 py-2 rounded-lg transition-colors whitespace-nowrap">Deny</button>' +
+                '</div>' +
+                '</div>';
         }).join('') + '</div>';
     } catch (e) { c.innerHTML = '<p class="text-red-500 text-sm p-4">Failed to load</p>'; }
 }
