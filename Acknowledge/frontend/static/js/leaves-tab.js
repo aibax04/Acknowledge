@@ -533,10 +533,12 @@ function renderLeaveCards(container, policies, leaves, readOnly, adjustments, ac
         // progress bar + used summary
         if (limit != null && limit > 0) {
             var usedDisp = used % 1 === 0 ? used : parseFloat(used.toFixed(2));
+            var limitDisp = (limit != null && limit % 1 !== 0) ? parseFloat(limit.toFixed(2)) : limit;
             h += '<div class="mt-3"><div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden"><div class="bg-' + color + '-500 h-1.5 rounded-full transition-all duration-700 ease-out" style="width:' + Math.min(pct, 100) + '%"></div></div>';
-            h += '<p class="text-[10px] text-gray-400 mt-1">Used ' + usedDisp + ' of ' + limit + ' this year → see Ledger</p>';
+            h += '<p class="text-[10px] text-gray-400 mt-1">Used ' + usedDisp + ' of ' + limitDisp + ' this year \u2192 see Ledger</p>';
             if (monthlyAllowance != null && monthlyAllowance > 0) {
-                h += '<p class="text-[10px] text-amber-700/80 mt-0.5">' + (readOnly ? 'Credits on the 1st of each month from joining/start date' : 'Credits on the 1st of each month after you are on roll') + ' (' + monthsElapsed + ' mo × allowance this year).</p>';
+                var allowanceDisp = monthlyAllowance % 1 === 0 ? monthlyAllowance : parseFloat(monthlyAllowance.toFixed(2));
+                h += '<p class="text-[10px] text-amber-700/80 mt-0.5">' + (readOnly ? 'Credits on the 1st of each month from joining/start date' : 'Credits on the 1st of each month after you are on roll') + ' (' + monthsElapsed + ' mo \u00d7 ' + allowanceDisp + '/mo this year).</p>';
             }
             h += '</div>';
         }

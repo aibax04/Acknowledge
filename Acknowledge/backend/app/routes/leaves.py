@@ -142,7 +142,7 @@ async def _compute_wallet_for_policy(
     joining = _resolve_joining_date_for_wallet(user, year)
     as_of = date(year, 12, 31) if year != today.year else today
     months_elapsed = _monthly_wallet_accrual_months(joining, year, as_of)
-    accrued = monthly_allowance * months_elapsed
+    accrued = round(float(monthly_allowance) * months_elapsed, 2)
     ids = list(policy_ids_in_group) if policy_ids_in_group else [policy.id]
     year_first = date(year, 1, 1)
     year_last = date(year, 12, 31)
@@ -172,21 +172,21 @@ def compute_leave_balance(user: User, approved_leaves: list, current_year: int):
     joining = _resolve_joining_date_for_wallet(user, current_year)
     accrual_months = _monthly_wallet_accrual_months(joining, current_year, today)
 
-    # EL: 1.25 per accrual month, max 15 per year
+    # EL: 1.25 per accrual month, max 15 per year — keep decimal precision throughout
     el_accrued = round(min(accrual_months * 1.25, 15.0), 2)
-    el_used = sum(
-        getattr(l, "num_days", 0) or 0 for l in approved_leaves
+    el_used = round(sum(
+        float(getattr(l, "num_days", 0) or 0) for l in approved_leaves
         if getattr(l, "leave_type", None) == LeaveType.EARNED_LEAVE
         and getattr(l, "start_date", None) and getattr(l.start_date, "year", None) == current_year
-    )
+    ), 2)
 
     # CSL: 1 per accrual month, max 12 per year (no carry forward) — shared by casual + sick (+ legacy casual_sick)
     csl_accrued = round(min(accrual_months * 1.0, 12.0), 2)
-    csl_used = sum(
-        getattr(l, "num_days", 0) or 0 for l in approved_leaves
+    csl_used = round(sum(
+        float(getattr(l, "num_days", 0) or 0) for l in approved_leaves
         if getattr(l, "leave_type", None) in (LeaveType.CASUAL_SICK_LEAVE, LeaveType.CASUAL_LEAVE, LeaveType.SICK_LEAVE)
         and getattr(l, "start_date", None) and getattr(l.start_date, "year", None) == current_year
-    )
+    ), 2)
 
     is_on_probation = user.is_on_probation or False
     can_use_el = not is_on_probation
@@ -194,10 +194,10 @@ def compute_leave_balance(user: User, approved_leaves: list, current_year: int):
     return {
         "earned_leave_accrued": el_accrued,
         "earned_leave_used": el_used,
-        "earned_leave_balance": max(0, el_accrued - el_used),
+        "earned_leave_balance": round(max(0.0, el_accrued - el_used), 2),
         "casual_sick_leave_accrued": csl_accrued,
         "casual_sick_leave_used": csl_used,
-        "casual_sick_leave_balance": max(0, csl_accrued - csl_used),
+        "casual_sick_leave_balance": round(max(0.0, csl_accrued - csl_used), 2),
         "is_on_probation": is_on_probation,
         "can_use_earned_leave": can_use_el,
         "joining_date": joining.isoformat() if isinstance(joining, date) else None
@@ -293,8 +293,9 @@ async def _compute_policy_balance_for_user(
         joining = _resolve_joining_date_for_wallet(user_obj, year)
         as_of = date(year, 12, 31) if year != today.year else today
         months_elapsed = _monthly_wallet_accrual_months(joining, year, as_of)
-        accrued = float(monthly_allowance) * months_elapsed
-        limit_val = round(accrued, 2)
+        # Preserve decimal precision: e.g. 1.25/mo × 3 months = 3.75, never rounded to integer
+        accrued = round(float(monthly_allowance) * months_elapsed, 2)
+        limit_val = accrued
         available = round(max(0.0, accrued - used + adj_sum), 2)
     elif shared_limit is not None and float(shared_limit) >= 0:
         limit_val = round(float(shared_limit), 2)
@@ -358,12 +359,12 @@ async def get_leave_balance(
 
     balance = compute_leave_balance(target_user, approved_leaves, current_year)
 
-    # Apply adjustments for standard leave types
+    # Apply adjustments for standard leave types — preserve decimal precision
     adjustments = await _get_adjustments_for_user_year(db, target_user_id, current_year)
-    el_adj = sum(a.adjustment_days for a in adjustments if a.leave_type == "earned_leave")
-    csl_adj = sum(a.adjustment_days for a in adjustments if a.leave_type == "casual_sick_leave")
-    balance["earned_leave_balance"] = max(0, balance["earned_leave_balance"] + el_adj)
-    balance["casual_sick_leave_balance"] = max(0, balance["casual_sick_leave_balance"] + csl_adj)
+    el_adj = round(sum(float(a.adjustment_days or 0) for a in adjustments if a.leave_type == "earned_leave"), 2)
+    csl_adj = round(sum(float(a.adjustment_days or 0) for a in adjustments if a.leave_type == "casual_sick_leave"), 2)
+    balance["earned_leave_balance"] = round(max(0.0, balance["earned_leave_balance"] + el_adj), 2)
+    balance["casual_sick_leave_balance"] = round(max(0.0, balance["casual_sick_leave_balance"] + csl_adj), 2)
     balance["adjustments"] = [
         {"leave_type": a.leave_type, "custom_policy_id": a.custom_policy_id, "adjustment_days": a.adjustment_days, "reason": a.reason}
         for a in adjustments
