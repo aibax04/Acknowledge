@@ -286,6 +286,7 @@ async def _compute_policy_balance_for_user(
 
     limit_val = None
     available = None
+    months_elapsed = 0
 
     if monthly_allowance is not None and float(monthly_allowance) > 0:
         user_obj = await db.get(User, user_id)
@@ -304,6 +305,7 @@ async def _compute_policy_balance_for_user(
         "used": round(used, 2),
         "limit": limit_val,
         "adjustments": round(adj_sum, 2),
+        "months_elapsed": months_elapsed,
     }
 
 
@@ -367,6 +369,54 @@ async def get_leave_balance(
         for a in adjustments
     ]
     return balance
+
+
+@router.get("/user-policy-balances")
+async def get_user_policy_balances(
+    user_id: Optional[int] = Query(None, description="Target user ID (directors/managers for others; omit for self)"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Authoritative leave balances for ALL policies available to a user.
+
+    Returns policy list with pre-computed balance_available, balance_used,
+    balance_limit, balance_adjustments, balance_months_elapsed.
+    Every UI surface should use this single endpoint so numbers match everywhere.
+    """
+    target_user = current_user
+    if user_id is not None and int(user_id) != current_user.id:
+        if current_user.role not in (UserRole.SENIOR, UserRole.MANAGER):
+            raise HTTPException(status_code=403, detail="Only directors/managers can view another user's balance")
+        target_user = await db.get(User, user_id)
+        if not target_user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+    # Policies available to target user (role-filtered, director-created only)
+    policies_dicts = await _list_custom_leave_policies_impl(True, db, target_user)
+
+    _office = str(getattr(target_user, "office", None) or "").strip().lower()
+    office = "eigen" if _office == "igen" else ("panscience" if _office == "panscience" else "eigen")
+
+    for p_dict in policies_dicts:
+        policy_id = p_dict.get("id")
+        if not policy_id:
+            p_dict.update({"balance_available": None, "balance_used": None, "balance_limit": None, "balance_adjustments": 0, "balance_months_elapsed": 0})
+            continue
+        policy = await db.get(CustomLeavePolicy, policy_id)
+        if not policy:
+            p_dict.update({"balance_available": None, "balance_used": None, "balance_limit": None, "balance_adjustments": 0, "balance_months_elapsed": 0})
+            continue
+        balance_info = await _compute_policy_balance_for_user(db, target_user.id, policy, office)
+        if balance_info:
+            p_dict["balance_available"] = balance_info["available"]
+            p_dict["balance_used"] = balance_info["used"]
+            p_dict["balance_limit"] = balance_info["limit"]
+            p_dict["balance_adjustments"] = balance_info["adjustments"]
+            p_dict["balance_months_elapsed"] = balance_info.get("months_elapsed", 0)
+        else:
+            p_dict.update({"balance_available": None, "balance_used": None, "balance_limit": None, "balance_adjustments": 0, "balance_months_elapsed": 0})
+
+    return policies_dicts
 
 
 @router.get("/adjustments", response_model=List[LeaveAdjustmentResponse])

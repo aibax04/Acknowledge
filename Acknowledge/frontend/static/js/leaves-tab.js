@@ -207,7 +207,7 @@ function renderTeamLeaves(leaves) {
 
     leaves.forEach(function (l) {
         var type = l.custom_policy_title || l.leave_type;
-        var dates = (l.start_date || '-') + ' to ' + (l.end_date || '-');
+        var dates = l.is_half_day ? (l.start_date || '-') : (l.start_date || '-') + ' to ' + (l.end_date || '-');
         var reasonEsc = (l.reason || '').replace(/"/g, '&quot;');
         var canRevoke = l.status === 'approved' || l.status === 'pending';
         var actionCell = canRevoke
@@ -237,6 +237,8 @@ async function revokeTeamLeave(leaveId) {
         var leaves = await Api.get('/leaves/all');
         _cachedTeamLeaves = leaves || [];
         applyTeamLeaveFilter();
+        // Refresh employee balance in tracker if one is selected
+        if (typeof loadEmployeeLeaveBalance === 'function') loadEmployeeLeaveBalance();
     } catch (e) {
         if (typeof showToast === 'function') showToast(e.message || 'Failed to revoke leave', 'error');
     }
@@ -255,25 +257,9 @@ async function loadEmployeeLeaveBalance() {
     container.classList.remove('hidden');
     container.innerHTML = '<p class="text-sm text-gray-500 py-4">Loading balance...</p>';
     try {
-        var policies = await Api.get('/leaves/user-policies/' + userId);
-        var uid = parseInt(userId, 10);
-        var employeeLeaves = _cachedTeamLeaves.filter(function (l) { return Number(l.user_id) === uid; });
-        var adjustments = [];
-        try {
-            var year = new Date().getFullYear();
-            var adjRes = await Api.get('/leaves/adjustments?user_id=' + encodeURIComponent(userId) + '&year=' + year);
-            if (adjRes && Array.isArray(adjRes)) adjustments = adjRes.map(function (a) { return { leave_type: a.leave_type, custom_policy_id: a.custom_policy_id, adjustment_days: a.adjustment_days, reason: a.reason }; });
-        } catch (e2) { /* ignore */ }
-        var accJoin = null;
-        try {
-            var allUEmp = await Api.get('/auth/all-users');
-            var emp = (allUEmp || []).find(function (x) { return Number(x.id) === uid; });
-            if (emp) {
-                if (emp.joining_date) accJoin = emp.joining_date;
-                else if (emp.created_at) accJoin = String(emp.created_at).substring(0, 10);
-            }
-        } catch (eEmp) { /* ignore */ }
-        renderLeaveCards(container, policies, employeeLeaves, true, adjustments, accJoin === null ? undefined : accJoin);
+        // Single authoritative source — backend computes all balances for this employee
+        var policiesWithBalance = await Api.get('/leaves/user-policy-balances?user_id=' + encodeURIComponent(userId) + '&_=' + Date.now());
+        renderLeaveCards(container, policiesWithBalance || [], [], true, []);
     } catch (e) {
         container.innerHTML = '<p class="text-sm text-red-500 py-4">Failed to load balance.</p>';
     }
@@ -341,8 +327,9 @@ async function loadLeaveBalance() {
     c.innerHTML = '<div class="flex items-center justify-center py-8 text-gray-500 text-sm"><span class="animate-pulse">Loading live balance…</span></div>';
     var ts = '_=' + Date.now();
     try {
-        var policies = await fetchCustomPoliciesForApply('&' + ts);
-        _cachedPoliciesForApply = policies || [];
+        // Single authoritative source — backend computes all balances
+        var policiesWithBalance = await Api.get('/leaves/user-policy-balances?' + ts);
+        _cachedPoliciesForApply = policiesWithBalance || [];
         var leavesRes = await Api.get('/leaves/my-leaves?' + ts);
         _cachedMyLeaves = leavesRes || [];
         var adjustments = [];
@@ -440,6 +427,11 @@ function _usedDaysForPolicyOrGroup(leaves, policy, policies) {
 
 /** Remaining days for a policy (monthly wallet or shared annual); null if no cap — matches backend apply rules for capped types. */
 function _computePolicyRemainingForApply(policy, policies, leaves, adjustments, accrualJoiningDateOpt) {
+    // Use backend-computed balance if available (single source of truth)
+    if (policy.balance_used !== undefined) {
+        return policy.balance_available; // null = no cap, number = remaining
+    }
+    // Fallback to frontend computation
     var currentYear = new Date().getFullYear();
     var used = _usedDaysForPolicyOrGroup(leaves, policy, policies);
     var adjDays = _adjustmentDaysForPolicy(adjustments || [], policy, policies);
@@ -474,27 +466,38 @@ function renderLeaveCards(container, policies, leaves, readOnly, adjustments, ac
     var h = '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">';
     policies.forEach(function (p, idx) {
         var color = colors[idx % colors.length];
-        var used = _usedDaysForPolicyOrGroup(leaves, p, policies);
-        var adjDays = _adjustmentDaysForPolicy(adjustments, p, policies);
         var limitInfo = _limitForPolicyOrGroup(p, policies);
         var monthlyAllowance = limitInfo.monthlyAllowance;
         var sharedLimit = limitInfo.sharedLimit;
         var maxPerMonth = limitInfo.maxPerMonth;
-        var limit = null;
-        var remaining = null;
-        var monthsElapsed = 0;
-        if (monthlyAllowance != null && monthlyAllowance > 0) {
-            var jForAccrual = accrualJoiningDateOpt;
-            if (jForAccrual === undefined && !readOnly) {
-                jForAccrual = _effectiveAccrualJoinDateStrForUser(typeof currentUser !== 'undefined' ? currentUser : null) || undefined;
+        var used, adjDays, limit, remaining, monthsElapsed;
+        // Use backend-computed balance if available (single source of truth)
+        if (p.balance_used !== undefined) {
+            used = p.balance_used || 0;
+            adjDays = p.balance_adjustments || 0;
+            limit = p.balance_limit;
+            remaining = p.balance_available;
+            monthsElapsed = p.balance_months_elapsed || 0;
+        } else {
+            // Fallback to frontend computation
+            used = _usedDaysForPolicyOrGroup(leaves, p, policies);
+            adjDays = _adjustmentDaysForPolicy(adjustments, p, policies);
+            limit = null;
+            remaining = null;
+            monthsElapsed = 0;
+            if (monthlyAllowance != null && monthlyAllowance > 0) {
+                var jForAccrual = accrualJoiningDateOpt;
+                if (jForAccrual === undefined && !readOnly) {
+                    jForAccrual = _effectiveAccrualJoinDateStrForUser(typeof currentUser !== 'undefined' ? currentUser : null) || undefined;
+                }
+                monthsElapsed = _walletAccrualMonthsElapsedForYear(currentYear, jForAccrual, !readOnly);
+                var accrued = monthlyAllowance * monthsElapsed;
+                limit = accrued;
+                remaining = Math.max(0, accrued - used + adjDays);
+            } else if (sharedLimit != null && sharedLimit >= 0) {
+                limit = sharedLimit;
+                remaining = Math.max(0, limit - used + adjDays);
             }
-            monthsElapsed = _walletAccrualMonthsElapsedForYear(currentYear, jForAccrual, !readOnly);
-            var accrued = monthlyAllowance * monthsElapsed;
-            limit = accrued;
-            remaining = Math.max(0, accrued - used + adjDays);
-        } else if (sharedLimit != null && sharedLimit >= 0) {
-            limit = sharedLimit;
-            remaining = Math.max(0, limit - used + adjDays);
         }
         var pct = (limit != null && limit > 0) ? Math.round((used / limit) * 100) : 0;
         var hasCap = limit != null && limit >= 0;
@@ -622,12 +625,24 @@ function openLeaveLogsModal(policyId, policyGroupKey) {
 
 // ---- LEAVE LEDGER MODAL ----
 function _ledgerWalletStats(policy, leaves, adjustments, policies, accrualJoiningDateOpt) {
-    var cy = new Date().getFullYear();
-    var used = _usedDaysForPolicyOrGroup(leaves, policy, policies);
-    var adjDays = _adjustmentDaysForPolicy(adjustments || [], policy, policies);
     var limitInfo = _limitForPolicyOrGroup(policy, policies || []);
     var monthlyAllowance = limitInfo.monthlyAllowance;
     var sharedLimit = limitInfo.sharedLimit;
+    var maxPerMonth = limitInfo.maxPerMonth;
+    // Use backend-computed balance if available (single source of truth)
+    if (policy.balance_used !== undefined) {
+        var accLabel = '';
+        if (monthlyAllowance != null && monthlyAllowance > 0) {
+            accLabel = 'Accrued (' + (policy.balance_months_elapsed || 0) + ' mo × ' + monthlyAllowance + ')';
+        } else if (policy.balance_limit != null) {
+            accLabel = 'Annual limit';
+        }
+        return { used: policy.balance_used || 0, adjDays: policy.balance_adjustments || 0, limit: policy.balance_limit, remaining: policy.balance_available, accruedLabel: accLabel, maxPerMonth: maxPerMonth };
+    }
+    // Fallback to frontend computation
+    var cy = new Date().getFullYear();
+    var used = _usedDaysForPolicyOrGroup(leaves, policy, policies);
+    var adjDays = _adjustmentDaysForPolicy(adjustments || [], policy, policies);
     var limit = null;
     var remaining = null;
     var accruedLabel = '';
@@ -642,7 +657,6 @@ function _ledgerWalletStats(policy, leaves, adjustments, policies, accrualJoinin
         remaining = Math.max(0, limit - used + adjDays);
         accruedLabel = 'Annual limit';
     }
-    var maxPerMonth = limitInfo.maxPerMonth;
     return { used: used, adjDays: adjDays, limit: limit, remaining: remaining, accruedLabel: accruedLabel, maxPerMonth: maxPerMonth };
 }
 
@@ -663,7 +677,7 @@ async function openLeaveLedgerModal(policyId, policyGroupKey) {
     var currentYear = new Date().getFullYear();
 
     try {
-        var policiesF = fetchCustomPoliciesForApply().then(function (p) { policies = p || []; _cachedPoliciesForApply = policies; });
+        var policiesF = Api.get('/leaves/user-policy-balances').then(function (p) { policies = p || []; _cachedPoliciesForApply = policies; });
         var myLeavesF = Api.get('/leaves/my-leaves').then(function (l) { leaves = l || []; _cachedMyLeaves = leaves; });
         var balanceF = Api.get('/leaves/balance').then(function (b) {
             adjustments = (b && b.adjustments) ? b.adjustments : [];
@@ -753,7 +767,7 @@ async function openLeaveLedgerModal(policyId, policyGroupKey) {
         html += '<th class="px-4 py-2.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Status</th>';
         html += '</tr></thead><tbody class="divide-y divide-gray-50">';
         policyLeaves.forEach(function (l) {
-            var desc = (l.start_date && l.end_date) ? l.start_date + ' – ' + l.end_date : 'Leave';
+            var desc = l.is_half_day ? (l.start_date || 'Leave') : ((l.start_date && l.end_date) ? l.start_date + ' – ' + l.end_date : 'Leave');
             if (l.reason) desc += ' · ' + (l.reason.length > 40 ? l.reason.substring(0, 40) + '…' : l.reason);
             html += '<tr class="hover:bg-gray-50/80 transition-colors">';
             html += '<td class="px-4 py-2.5 text-gray-700 whitespace-nowrap">' + (l.start_date || '-') + '</td>';
@@ -882,16 +896,33 @@ function setLeaveDuration(mode) {
     var fullBtn = document.getElementById('leave-full-day-btn');
     var halfBtn = document.getElementById('leave-half-day-btn');
     var periodWrap = document.getElementById('half-day-period-wrap');
+    var startDateInput = document.getElementById('leave-start-date');
+    var endDateInput = document.getElementById('leave-end-date');
+    var endDateWrap = document.getElementById('leave-end-date-wrap');
     if (!fullBtn || !halfBtn) return;
+    var ACTIVE = ['border-primary', 'bg-primary/10', 'text-primary'];
+    var INACTIVE = ['border-gray-200', 'bg-gray-50', 'text-gray-500'];
     if (mode === 'full') {
-        fullBtn.className = fullBtn.className.replace(/border-gray-200 bg-gray-50 text-gray-500/g, '').replace(/border-primary bg-primary\/10 text-primary/g, '') + ' border-primary bg-primary/10 text-primary';
-        halfBtn.className = halfBtn.className.replace(/border-primary bg-primary\/10 text-primary/g, '').replace(/border-gray-200 bg-gray-50 text-gray-500/g, '') + ' border-gray-200 bg-gray-50 text-gray-500';
+        fullBtn.classList.remove.apply(fullBtn.classList, INACTIVE);
+        fullBtn.classList.add.apply(fullBtn.classList, ACTIVE);
+        halfBtn.classList.remove.apply(halfBtn.classList, ACTIVE);
+        halfBtn.classList.add.apply(halfBtn.classList, INACTIVE);
         if (periodWrap) periodWrap.classList.add('hidden');
         _halfDayPeriod = null;
+        // Re-enable and show the end date field
+        if (endDateInput) { endDateInput.disabled = false; endDateInput.style.opacity = ''; }
+        if (endDateWrap) endDateWrap.classList.remove('hidden');
     } else {
-        halfBtn.className = halfBtn.className.replace(/border-gray-200 bg-gray-50 text-gray-500/g, '').replace(/border-primary bg-primary\/10 text-primary/g, '') + ' border-primary bg-primary/10 text-primary';
-        fullBtn.className = fullBtn.className.replace(/border-primary bg-primary\/10 text-primary/g, '').replace(/border-gray-200 bg-gray-50 text-gray-500/g, '') + ' border-gray-200 bg-gray-50 text-gray-500';
+        halfBtn.classList.remove.apply(halfBtn.classList, INACTIVE);
+        halfBtn.classList.add.apply(halfBtn.classList, ACTIVE);
+        fullBtn.classList.remove.apply(fullBtn.classList, ACTIVE);
+        fullBtn.classList.add.apply(fullBtn.classList, INACTIVE);
         if (periodWrap) periodWrap.classList.remove('hidden');
+        // Auto-sync end date with start date and hide the end date field
+        if (startDateInput && endDateInput) {
+            endDateInput.value = startDateInput.value;
+        }
+        if (endDateWrap) endDateWrap.classList.add('hidden');
     }
 }
 
@@ -900,11 +931,15 @@ function setHalfDayPeriod(period) {
     var firstBtn = document.getElementById('leave-first-half-btn');
     var secondBtn = document.getElementById('leave-second-half-btn');
     if (!firstBtn || !secondBtn) return;
+    var ACTIVE = ['border-primary', 'bg-primary/10', 'text-primary'];
+    var INACTIVE = ['border-gray-200', 'bg-gray-50', 'text-gray-500'];
     [firstBtn, secondBtn].forEach(function (btn) {
-        btn.className = btn.className.replace(/border-primary bg-primary\/10 text-primary/g, '').replace(/border-gray-200 bg-gray-50 text-gray-500/g, '') + ' border-gray-200 bg-gray-50 text-gray-500';
+        btn.classList.remove.apply(btn.classList, ACTIVE.concat(INACTIVE));
+        btn.classList.add.apply(btn.classList, INACTIVE);
     });
-    var active = period === 'first_half' ? firstBtn : secondBtn;
-    active.className = active.className.replace(/border-gray-200 bg-gray-50 text-gray-500/g, '') + ' border-primary bg-primary/10 text-primary';
+    var activeBtn = period === 'first_half' ? firstBtn : secondBtn;
+    activeBtn.classList.remove.apply(activeBtn.classList, INACTIVE);
+    activeBtn.classList.add.apply(activeBtn.classList, ACTIVE);
 }
 
 function _resetHalfDayUI() {
@@ -922,6 +957,17 @@ async function openApplyLeaveModal(preselectPolicyId) {
     document.getElementById('leave-end-date').value = '';
     document.getElementById('leave-reason').value = '';
     _resetHalfDayUI();
+    // Bind start-date → end-date auto-sync for half-day mode (once per element lifetime)
+    var startDateEl = document.getElementById('leave-start-date');
+    if (startDateEl && !startDateEl.dataset.halfDaySyncBound) {
+        startDateEl.dataset.halfDaySyncBound = '1';
+        startDateEl.addEventListener('change', function () {
+            if (_leaveDuration === 'half') {
+                var endEl = document.getElementById('leave-end-date');
+                if (endEl) endEl.value = this.value;
+            }
+        });
+    }
     var typeSelect = document.getElementById('leave-type-select');
     typeSelect.innerHTML = '<option value="">Select leave type...</option>';
     try {
@@ -969,13 +1015,15 @@ async function submitLeaveApplication() {
     var end = (document.getElementById('leave-end-date').value || '').trim();
     var reason = (document.getElementById('leave-reason').value || '').trim();
     if (!typeRaw) { showToast('Select leave type', 'error'); return; }
-    if (!start || !end) { showToast('Select From and To dates', 'error'); return; }
+    var isHalf = _leaveDuration === 'half';
+    // For half-day, end date is always the same as start date
+    if (isHalf && start) end = start;
+    if (!start || !end) { showToast('Select a date', 'error'); return; }
     if (!reason) { showToast('Provide a reason', 'error'); return; }
     start = toISODate(start);
     end = toISODate(end);
 
-    var isHalf = _leaveDuration === 'half';
-    if (isHalf && start !== end) { showToast('Half-day leave must be for a single date — set From and To to the same day', 'error'); return; }
+    if (isHalf && start !== end) { showToast('Half-day leave must be for a single date', 'error'); return; }
     if (isHalf && !_halfDayPeriod) { showToast('Select First Half or Second Half', 'error'); return; }
 
     var type = typeRaw;
@@ -1386,7 +1434,7 @@ async function loadPendingLeaves() {
                 '<div class="shrink-0 w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold">' + initials + '</div>' +
                 '<div class="flex-1 min-w-0">' +
                 '<div class="flex items-center justify-between gap-2 mb-1"><p class="text-sm font-semibold text-gray-900 truncate">' + l.user_name + '</p>' + _statusBadge('pending') + '</div>' +
-                '<p class="text-xs text-gray-500"><span class="font-medium text-gray-600">' + typeLabel + '</span> &middot; ' + l.start_date + ' → ' + l.end_date + ' &middot; <span class="font-semibold text-gray-700">' + l.num_days + ' day' + (l.num_days !== 1 ? 's' : '') + '</span>' + (l.is_half_day ? ' ' + _halfDayLabel(l) : '') + '</p>' +
+                '<p class="text-xs text-gray-500"><span class="font-medium text-gray-600">' + typeLabel + '</span> &middot; ' + (l.is_half_day ? l.start_date : l.start_date + ' → ' + l.end_date) + ' &middot; <span class="font-semibold text-gray-700">' + l.num_days + ' day' + (l.num_days !== 1 ? 's' : '') + '</span>' + (l.is_half_day ? ' ' + _halfDayLabel(l) : '') + '</p>' +
                 balanceHtml +
                 '<p class="text-sm text-gray-500 mt-1.5 line-clamp-2">' + (l.reason || '—') + '</p>' +
                 '<div class="flex gap-2 mt-3">' +
@@ -1403,6 +1451,8 @@ async function reviewLeave(id, status) {
         if (typeof showToast === 'function') showToast('Leave ' + status + '!', 'success');
         loadPendingLeaves();
         if (typeof loadLeaveBalance === 'function') loadLeaveBalance();
+        // Refresh employee balance in tracker if one is currently selected
+        if (typeof loadEmployeeLeaveBalance === 'function') loadEmployeeLeaveBalance();
     } catch (e) {
         if (typeof showToast === 'function') showToast(e.message || 'Failed', 'error');
     }
@@ -1572,7 +1622,9 @@ async function submitLeaveAdjustment() {
         await Api.post('/leaves/adjustments', body);
         if (typeof showToast === 'function') showToast('Leave balance updated', 'success');
         document.getElementById('adjust-leave-modal').classList.add('hidden');
+        // Refresh balance everywhere it's visible
         if (typeof loadEmployeeLeaveBalance === 'function') loadEmployeeLeaveBalance();
+        if (typeof loadLeaveBalance === 'function') loadLeaveBalance();
     } catch (e) { if (typeof showToast === 'function') showToast(e.message || 'Failed to apply adjustment', 'error'); }
 }
 
