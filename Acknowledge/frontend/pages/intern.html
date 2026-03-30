@@ -43,6 +43,18 @@
             display: block;
         }
 
+        #policy-modal-content.policy-rich-content ul { list-style: disc; padding-left: 1.25rem; margin: 0.5rem 0; }
+        #policy-modal-content.policy-rich-content ol { list-style: decimal; padding-left: 1.25rem; margin: 0.5rem 0; }
+        #policy-modal-content.policy-rich-content h1,
+        #policy-modal-content.policy-rich-content h2,
+        #policy-modal-content.policy-rich-content h3 { font-weight: 600; margin: 0.75rem 0 0.35rem; font-size: 1rem; }
+        #policy-modal-content.policy-rich-content p { margin-bottom: 0.5rem; }
+        #policy-modal-content.policy-rich-content strong,
+        #policy-modal-content.policy-rich-content b { font-weight: 600; }
+        #policy-modal-content.policy-rich-content em,
+        #policy-modal-content.policy-rich-content i { font-style: italic; }
+        #policy-modal-content.policy-rich-content mark { background-color: #fef08a; padding: 0 0.15em; border-radius: 2px; }
+
         .modal {
             display: none;
         }
@@ -629,6 +641,22 @@
                                 id="leave-end-date" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
                         </div>
                     </div>
+                    <!-- Half-day toggle -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Duration</label>
+                        <div class="flex gap-2">
+                            <button type="button" id="leave-full-day-btn" onclick="setLeaveDuration('full')"
+                                class="flex-1 px-3 py-2 text-sm font-semibold rounded-lg border-2 border-primary bg-primary/10 text-primary transition-all">Full Day</button>
+                            <button type="button" id="leave-half-day-btn" onclick="setLeaveDuration('half')"
+                                class="flex-1 px-3 py-2 text-sm font-semibold rounded-lg border-2 border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300 transition-all">Half Day</button>
+                        </div>
+                        <div id="half-day-period-wrap" class="hidden mt-2 flex gap-2">
+                            <button type="button" id="leave-first-half-btn" onclick="setHalfDayPeriod('first_half')"
+                                class="flex-1 px-3 py-2 text-xs font-semibold rounded-lg border-2 border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300 transition-all">First Half</button>
+                            <button type="button" id="leave-second-half-btn" onclick="setHalfDayPeriod('second_half')"
+                                class="flex-1 px-3 py-2 text-xs font-semibold rounded-lg border-2 border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300 transition-all">Second Half</button>
+                        </div>
+                    </div>
                     <div><label class="block text-sm font-medium text-gray-700 mb-1">Reason</label><textarea
                             id="leave-reason" rows="3"
                             class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -755,7 +783,7 @@
             class="bg-white border border-gray-200 rounded-xl p-6 max-w-2xl w-full mx-4 animate-fade-in max-h-[80vh] overflow-y-auto shadow-xl">
             <h3 id="policy-modal-title" class="text-2xl font-bold text-gray-900 mb-4"></h3>
             <div id="policy-modal-image-container" class="hidden mb-6"></div>
-            <div id="policy-modal-content" class="text-gray-600 mb-6 leading-relaxed"></div>
+            <div id="policy-modal-content" class="policy-rich-content text-gray-600 mb-6 leading-relaxed"></div>
             <input type="hidden" id="policy-modal-id">
             <div class="flex justify-end space-x-3">
                 <button id="close-policy-modal" class="px-4 py-2 text-gray-400 hover:text-white">Close</button>
@@ -771,7 +799,7 @@
     <script src="../static/js/directory-search.js"></script>
     <script src="../static/js/todo-list.js"></script>
     <script src="../static/js/attendance-clock.js"></script>
-    <script src="../static/js/leaves-tab.js"></script>
+    <script src="../static/js/leaves-tab.js?v=8"></script>
     <script src="../static/js/intern.js"></script>
 
     <!-- Mobile Sidebar Toggle Script -->

@@ -616,6 +616,12 @@ async def create_update_request(
         except ValueError:
             raise HTTPException(status_code=400, detail="Invalid clock-out time format")
 
+    if req.manager_id == current_user.id:
+        raise HTTPException(
+            status_code=400,
+            detail="You cannot select yourself as the approving manager. Choose another manager or director.",
+        )
+
     # Verify manager exists and is actually a manager
     mgr_result = await db.execute(select(User).filter(User.id == req.manager_id))
     manager = mgr_result.scalars().first()

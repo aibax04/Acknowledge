@@ -21,3 +21,13 @@ class PolicyResponse(PolicyBase):
 
     class Config:
         from_attributes = True
+
+
+class PolicyDetailResponse(PolicyBase):
+    """Single-policy fetch without nested users (avoids EmailStr failures on bad DB rows)."""
+
+    id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

@@ -209,6 +209,19 @@ async def startup():
                 )
             except Exception:
                 pass
+        # Half-day leave columns
+        try:
+            await conn.execute(text("ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS is_half_day BOOLEAN NOT NULL DEFAULT FALSE"))
+        except Exception:
+            pass
+        try:
+            await conn.execute(text("ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS half_day_period VARCHAR(16)"))
+        except Exception:
+            pass
+        try:
+            await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_pending_approval BOOLEAN NOT NULL DEFAULT FALSE"))
+        except Exception:
+            pass
         # Add 'custom'/'CUSTOM' to leavetype enum if missing (required for custom leave policies)
         for _val in ("custom", "CUSTOM"):
             try:
@@ -232,6 +245,30 @@ async def health():
         "custom_policies_list": True,
         "message": "Backend has GET /leaves/custom-policies/list",
     }
+
+
+@app.get("/health/db")
+async def health_db():
+    """Verify PostgreSQL is reachable (use after tunnels/VPN or when debugging disconnects)."""
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        return {
+            "status": "ok",
+            "database": "connected",
+            "message": "PostgreSQL accepted a connection and responded to SELECT 1.",
+        }
+    except Exception as e:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "error",
+                "database": "unreachable",
+                "detail": str(e)[:500],
+                "hint": "Check DATABASE_URL, VPN/SSH tunnel, and that Postgres is running. "
+                "Tunnels that close idle connections require pool_pre_ping (enabled in app.database).",
+            },
+        )
 
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon():

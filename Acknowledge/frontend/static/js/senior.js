@@ -24,6 +24,19 @@ function showToast(message, type = 'success') {
     }, 5000);
 }
 
+function escapeHtml(str) {
+    if (str == null) return '';
+    const d = document.createElement('div');
+    d.textContent = String(str);
+    return d.innerHTML;
+}
+
+/** Workforce tab: load directory then pending managers (sequential; each function handles its own errors). */
+async function loadWorkforceTabData() {
+    await loadWorkforce();
+    await loadPendingManagers();
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Auth & Session Validation
     const token = localStorage.getItem('access_token');
@@ -147,7 +160,7 @@ function setupEditName() {
             localStorage.setItem('user_name', updated.full_name);
             updateUserDisplay();
             closeModal();
-            if (currentTab === 'workforce') await loadWorkforce();
+            if (currentTab === 'workforce') { await loadWorkforce(); await loadPendingManagers(); }
         } catch (e) {
             alert(e.message || 'Failed to update name');
         }
@@ -200,7 +213,7 @@ function switchTab(tabId) {
     }
 
     // Refresh data for specific tabs
-    if (tabId === 'workforce') loadWorkforce();
+    if (tabId === 'workforce') void loadWorkforceTabData();
     if (tabId === 'compliance') loadPolicyAudit();
     if (tabId === 'reports') loadReports();
     if (tabId === 'track') loadTrackData();
@@ -227,7 +240,10 @@ async function refreshDashboard() {
             loadPolicyAudit(),
             loadReports()
         ]);
-        if (currentTab === 'workforce') await loadWorkforce();
+        if (currentTab === 'workforce') {
+            await loadWorkforce();
+            await loadPendingManagers();
+        }
         if (currentTab === 'projects' && typeof loadProjects === 'function') await loadProjects();
         if (typeof loadSentNotifications === 'function') await loadSentNotifications();
     } catch (error) {
@@ -512,66 +528,68 @@ function closePolicyAckModal() {
 
 // --- POLICY MANAGEMENT ---
 
-function switchPolicyTab(tab) {
-    const writeBtn = document.getElementById('tab-write-policy');
-    const previewBtn = document.getElementById('tab-preview-policy');
-    const writeArea = document.getElementById('policy-write-area');
-    const previewArea = document.getElementById('policy-preview-area');
-    const content = document.getElementById('policy-content').value;
+let _policyQuill = null;
 
-    if (tab === 'write') {
-        // Active Tab Style
-        writeBtn.classList.add('text-primary', 'border-primary', 'border-b-2');
-        writeBtn.classList.remove('text-gray-500', 'hover:text-gray-700', 'border-transparent');
-
-        previewBtn.classList.remove('text-primary', 'border-primary', 'border-b-2');
-        previewBtn.classList.add('text-gray-500', 'hover:text-gray-700');
-
-        // Show Write Area
-        writeArea.classList.remove('hidden');
-        previewArea.classList.add('hidden');
-    } else {
-        // Active Tab Style
-        previewBtn.classList.add('text-primary', 'border-primary', 'border-b-2');
-        previewBtn.classList.remove('text-gray-500', 'hover:text-gray-700');
-
-        writeBtn.classList.remove('text-primary', 'border-primary', 'border-b-2');
-        writeBtn.classList.add('text-gray-500', 'hover:text-gray-700');
-
-        // Show Preview Area
-        writeArea.classList.add('hidden');
-        previewArea.classList.remove('hidden');
-
-        // Render Content
-        if (content.trim()) {
-            // Using formatPopupContent from notification-popup.js
-            previewArea.innerHTML = typeof formatPopupContent === 'function'
-                ? formatPopupContent(content)
-                : `<p>${content}</p>`;
-        } else {
-            previewArea.innerHTML = '<p class="text-gray-400 text-center italic mt-10">Start writing to see a preview...</p>';
+function _getOrInitQuill() {
+    if (_policyQuill) return _policyQuill;
+    const el = document.getElementById('policy-quill-editor');
+    if (!el) return null;
+    _policyQuill = new Quill('#policy-quill-editor', {
+        theme: 'snow',
+        placeholder: 'Write your policy content here...',
+        modules: {
+            toolbar: [
+                [{ header: [1, 2, 3, false] }],
+                ['bold', 'italic', 'underline'],
+                [{ color: [] }, { background: [] }],
+                [{ list: 'ordered' }, { list: 'bullet' }],
+                [{ size: ['small', false, 'large', 'huge'] }],
+                ['clean']
+            ]
         }
+    });
+    return _policyQuill;
+}
+
+function _getPolicyContent() {
+    const q = _getOrInitQuill();
+    if (q) {
+        const html = q.getSemanticHTML ? q.getSemanticHTML() : q.root.innerHTML;
+        return html === '<p><br></p>' ? '' : html;
+    }
+    return document.getElementById('policy-content').value || '';
+}
+
+function _setPolicyContent(html) {
+    const q = _getOrInitQuill();
+    if (q) {
+        if (!html) { q.setContents([]); return; }
+        const isHtml = html.trim().startsWith('<');
+        if (isHtml) {
+            q.clipboard.dangerouslyPasteHTML(html);
+        } else {
+            q.clipboard.dangerouslyPasteHTML('<p>' + html.replace(/\n/g, '</p><p>') + '</p>');
+        }
+    } else {
+        document.getElementById('policy-content').value = html;
     }
 }
 
 
 function openPolicyCreateModal() {
-    document.getElementById('policy-id').value = ''; // Clear ID for new creation
+    document.getElementById('policy-id').value = '';
     document.getElementById('create-policy-modal-title').innerText = 'Publish New Organization Policy';
     document.getElementById('create-policy-btn-text').innerText = 'Publish to Selected Audience';
 
     document.getElementById('policy-title').value = '';
-    // Clear all checkboxes
     document.querySelectorAll('.policy-audience-checkbox').forEach(cb => cb.checked = false);
-    // Default to 'all' checked
     document.getElementById('audience-all').checked = true;
-    document.getElementById('policy-content').value = '';
+    _setPolicyContent('');
     document.getElementById('policy-image-url').value = '';
     document.getElementById('policy-image-preview').classList.add('hidden');
     document.getElementById('policy-upload-placeholder').classList.remove('hidden');
-    updatePolicyCharCount();
-    switchPolicyTab('write');
     document.getElementById('create-policy-modal').classList.remove('hidden');
+    setTimeout(() => _getOrInitQuill(), 50);
 }
 
 function clearPolicyImage(event) {
@@ -660,17 +678,12 @@ async function handlePolicyImageUpload(file) {
 }
 
 function updatePolicyCharCount() {
-    const content = document.getElementById('policy-content').value;
-    const countEl = document.getElementById('policy-char-count');
-    if (countEl) {
-        countEl.textContent = `${content.length} characters`;
-    }
+    // No-op: char count display removed in favour of Quill editor
 }
 
 function initPolicyImageUpload() {
     const uploadArea = document.getElementById('policy-image-upload-area');
     const fileInput = document.getElementById('policy-image-input');
-    const contentTextarea = document.getElementById('policy-content');
 
     if (uploadArea && fileInput) {
         uploadArea.addEventListener('click', () => fileInput.click());
@@ -680,7 +693,6 @@ function initPolicyImageUpload() {
             if (file) handlePolicyImageUpload(file);
         });
 
-        // Drag and drop
         uploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
             uploadArea.classList.add('border-primary', 'bg-primary-light');
@@ -698,11 +710,6 @@ function initPolicyImageUpload() {
                 handlePolicyImageUpload(file);
             }
         });
-    }
-
-    // Character count
-    if (contentTextarea) {
-        contentTextarea.addEventListener('input', updatePolicyCharCount);
     }
 }
 
@@ -747,7 +754,7 @@ async function submitNewPolicy() {
         }
     });
 
-    const content = document.getElementById('policy-content').value; // Preserving exact spacing
+    const content = _getPolicyContent();
     const imageUrl = document.getElementById('policy-image-url').value.trim();
     const policyId = document.getElementById('policy-id').value;
 
@@ -820,11 +827,6 @@ async function editPolicy(id) {
             cb.checked = audiences.includes(cb.value);
         });
 
-        const contentArea = document.getElementById('policy-content');
-        contentArea.value = policy.content;
-        contentArea.scrollTop = 0; // Ensure we start at the top
-        updatePolicyCharCount();
-
         // Handle Image
         if (policy.image_url) {
             document.getElementById('policy-image-url').value = policy.image_url;
@@ -835,8 +837,12 @@ async function editPolicy(id) {
             clearPolicyImage();
         }
 
-        switchPolicyTab('write');
         document.getElementById('create-policy-modal').classList.remove('hidden');
+        const bodyHtml = policy.content || '';
+        setTimeout(() => {
+            _getOrInitQuill();
+            _setPolicyContent(bodyHtml);
+        }, 50);
     } catch (e) {
         console.error("Failed to load policy for editing", e);
         alert("Failed to load policy details");
@@ -857,6 +863,70 @@ async function deletePolicy(id, name) {
         console.error(e);
         alert(e.message || "Failed to delete policy");
     }
+}
+
+async function _fetchPendingManagersList() {
+    try {
+        return await Api.get('/dashboard/senior/workforce/pending-managers');
+    } catch (e) {
+        const msg = e && e.message ? String(e.message) : '';
+        if (msg === 'Not Found' || /not\s*found/i.test(msg)) {
+            return await Api.get('/auth/pending-managers');
+        }
+        throw e;
+    }
+}
+
+async function loadPendingManagers() {
+    const container = document.getElementById('pending-managers-list');
+    const badge = document.getElementById('pending-managers-badge');
+    if (!container) return;
+    try {
+        const managers = await _fetchPendingManagersList();
+        if (!managers || managers.length === 0) {
+            container.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">No pending manager approvals.</p>';
+            if (badge) badge.classList.add('hidden');
+            return;
+        }
+        if (badge) { badge.textContent = managers.length; badge.classList.remove('hidden'); }
+        container.innerHTML = '<div class="space-y-3">' + managers.map(m => {
+            const initials = (m.full_name || '?').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+            const joined = m.created_at ? new Date(m.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+            return `<div class="flex items-center gap-4 p-4 rounded-xl border border-gray-100 bg-white">
+                <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-bold shrink-0">${initials}</div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-semibold text-gray-900">${m.full_name}</p>
+                    <p class="text-xs text-gray-400">${m.email} &middot; Registered ${joined}</p>
+                </div>
+                <div class="flex gap-2 shrink-0">
+                    <button onclick="approveManager(${m.id})" class="text-xs font-semibold text-white bg-emerald-500 hover:bg-emerald-600 px-3.5 py-1.5 rounded-lg transition-colors shadow-sm">Approve</button>
+                    <button onclick="rejectManager(${m.id})" class="text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 px-3.5 py-1.5 rounded-lg transition-colors">Reject</button>
+                </div>
+            </div>`;
+        }).join('') + '</div>';
+    } catch (e) {
+        console.error('loadPendingManagers', e);
+        const msg = (e && e.message) ? e.message : 'Failed to load pending managers.';
+        container.innerHTML = '<p class="text-red-400 text-sm text-center py-4">' + escapeHtml(msg) + '</p>';
+    }
+}
+
+async function approveManager(userId) {
+    try {
+        await Api.post(`/dashboard/senior/workforce/approve-manager/${userId}`, {});
+        showToast('Manager approved!', 'success');
+        await loadPendingManagers();
+        await loadWorkforce();
+    } catch (e) { showToast(e.message || 'Failed to approve', 'error'); }
+}
+
+async function rejectManager(userId) {
+    if (!confirm('Reject this manager account? The account will be permanently removed.')) return;
+    try {
+        await Api.post(`/dashboard/senior/workforce/reject-manager/${userId}`, {});
+        showToast('Manager account rejected.', 'success');
+        await loadPendingManagers();
+    } catch (e) { showToast(e.message || 'Failed to reject', 'error'); }
 }
 
 async function loadWorkforce() {
@@ -995,6 +1065,15 @@ async function loadWorkforce() {
 
     } catch (e) {
         console.error("Failed to load workforce live data", e);
+        const msg = (e && e.message) ? e.message : 'Failed to load organization directory.';
+        const tbody = document.getElementById('workforce-list-body');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-sm text-red-500">' + escapeHtml(msg) + '</td></tr>';
+        }
+        const overList = document.getElementById('overutilized-list');
+        if (overList) {
+            overList.innerHTML = '<p class="text-red-500 text-sm text-center py-4">' + escapeHtml(msg) + '</p>';
+        }
     }
 }
 

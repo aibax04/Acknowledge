@@ -7,26 +7,22 @@ from typing import List
 from app.database import get_db
 from app.models.policy import Policy, policy_acknowledgments
 from app.models.user import User, UserRole
-from app.schemas.policy_schema import PolicyCreate, PolicyResponse
+from app.schemas.policy_schema import PolicyCreate, PolicyResponse, PolicyDetailResponse
 from app.routes.auth import get_current_user
 import logging
 
 logger = logging.getLogger("uvicorn.error")
 
 router = APIRouter(prefix="/policies", tags=["policies"])
-@router.get("/{policy_id}", response_model=PolicyResponse)
+@router.get("/{policy_id}", response_model=PolicyDetailResponse)
 async def get_policy(policy_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    result = await db.execute(
-        select(Policy)
-        .filter(Policy.id == policy_id)
-        .options(selectinload(Policy.acknowledged_by), selectinload(Policy.created_by))
-    )
+    result = await db.execute(select(Policy).filter(Policy.id == policy_id))
     policy = result.scalars().first()
     if not policy:
         raise HTTPException(status_code=404, detail="Policy not found")
     return policy
 
-@router.put("/{policy_id}", response_model=PolicyResponse)
+@router.put("/{policy_id}", response_model=PolicyDetailResponse)
 async def update_policy(
     policy_id: int, 
     policy_update: PolicyCreate, 
@@ -49,13 +45,7 @@ async def update_policy(
     
     await db.commit()
     
-    # Re-fetch with all relationships loaded for response model
-    # This acts as a refresh but ensures async relationships (selectinload) are handled
-    result = await db.execute(
-        select(Policy)
-        .filter(Policy.id == policy_id)
-        .options(selectinload(Policy.acknowledged_by), selectinload(Policy.created_by))
-    )
+    result = await db.execute(select(Policy).filter(Policy.id == policy_id))
     updated_policy = result.scalars().first()
     return updated_policy
 

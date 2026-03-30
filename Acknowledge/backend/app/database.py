@@ -2,11 +2,24 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
 from app.config import settings
 
-# Create the async engine
+# Connection pool tuned for real networks, SSH tunnels, and idle disconnects:
+# - pool_pre_ping: test each connection before use (avoids "connection closed" errors after idle drops)
+# - pool_recycle: drop connections periodically so NAT/tunnel timeouts don't leave stale sockets
+# - connect timeout: fail fast instead of hanging when the DB or tunnel is unreachable
+_ASYNCPG_CONNECT = {
+    "timeout": 30,
+    "server_settings": {"application_name": "acknowledge_api"},
+}
+
 engine = create_async_engine(
     settings.DATABASE_URL,
-    echo=False, # Set to True for SQL query logging
-    future=True
+    echo=False,
+    future=True,
+    pool_pre_ping=True,
+    pool_recycle=280,
+    pool_size=5,
+    max_overflow=10,
+    connect_args=_ASYNCPG_CONNECT,
 )
 
 # Create the session factory

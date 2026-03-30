@@ -1,0 +1,213 @@
+INFO:     Will watch for changes in these directories: ['/home/ubuntu/Acknowledge/Acknowledge/backend']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [3664838] using WatchFiles
+INFO:     Started server process [3664863]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:37270 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37272 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37286 - "GET /health/db HTTP/1.1" 200 OK
+WARNING:  WatchFiles detected changes in 'app/routes/senior_dashboard.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3664863]
+INFO:     Started server process [3669109]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:34274 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45184 - "GET /openapi.json HTTP/1.1" 200 OK
+WARNING:  WatchFiles detected changes in 'app/routes/policies.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3669109]
+WARNING:  WatchFiles detected changes in 'app/routes/policies.py'. Reloading...
+WARNING:  WatchFiles detected changes in 'app/routes/policies.py'. Reloading...
+INFO:     Started server process [3670185]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app/schemas/policy_schema.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3670185]
+WARNING:  WatchFiles detected changes in 'app/routes/policies.py'. Reloading...
+INFO:     Started server process [3670226]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app/routes/policies.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3670226]
+WARNING:  WatchFiles detected changes in 'app/routes/policies.py'. Reloading...
+INFO:     Started server process [3670246]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app/routes/policies.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3670246]
+INFO:     Started server process [3670269]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app/routes/policies.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3670269]
+INFO:     Started server process [3670313]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app/routes/policies.py', 'app/schemas/policy_schema.py', 'app/routes/senior_dashboard.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3670313]
+INFO:     Started server process [3671786]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app/routes/leaves.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3671786]
+INFO:     Started server process [3677481]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app/routes/leaves.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3677481]
+INFO:     Started server process [3677518]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app/routes/leaves.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3677518]
+INFO:     Started server process [3677556]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app/routes/leaves.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3677556]
+INFO:     Started server process [3677570]
+INFO:     Waiting for application startup.
+WARNING:  WatchFiles detected changes in 'app/routes/leaves.py'. Reloading...
+INFO:     Application startup complete.
+ERROR:    Traceback (most recent call last):
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 747, in lifespan
+    await receive()
+  File "/home/ubuntu/Acknowledge/Acknowledge/backend/venv/lib/python3.12/site-packages/uvicorn/lifespan/on.py", line 137, in receive
+    return await self.receive_queue.get()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/queues.py", line 158, in get
+    await getter
+asyncio.exceptions.CancelledError
+
+INFO:     Started server process [3677592]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app/routes/leaves.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3677592]
+INFO:     Started server process [3677641]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app/routes/leaves.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3677641]
+INFO:     Started server process [3683571]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app/routes/leaves.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3683571]
+INFO:     Started server process [3683678]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app/routes/leaves.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3683678]
+WARNING:  WatchFiles detected changes in 'app/routes/policies.py', 'app/schemas/policy_schema.py', 'app/routes/senior_dashboard.py'. Reloading...
+INFO:     Started server process [3808377]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'scripts/update_leave_balances_from_screenshot.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3808377]
+INFO:     Started server process [3810491]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'venv/lib64/python3.12/site-packages/~ttpx/__version__.py', 'venv/lib64/python3.12/site-packages/openpyxl/drawing/drawing.py', 'venv/lib64/python3.12/site-packages/openpyxl/worksheet/picture.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/radar_chart.py', 'venv/lib64/python3.12/site-packages/openpyxl/worksheet/scenario.py', 'venv/lib64/python3.12/site-packages/openpyxl/drawing/connector.py', 'venv/lib64/python3.12/site-packages/openpyxl/xml/__init__.py', 'venv/lib64/python3.12/site-packages/openpyxl/formula/translate.py', 'venv/lib64/python3.12/site-packages/openpyxl/worksheet/_reader.py', 'venv/lib64/python3.12/site-packages/openpyxl/comments/comment_sheet.py', 'venv/lib64/python3.12/site-packages/openpyxl/worksheet/custom.py', 'venv/lib64/python3.12/site-packages/openpyxl/worksheet/__init__.py', 'venv/lib64/python3.12/site-packages/openpyxl/comments/shape_writer.py', 'venv/lib64/python3.12/site-packages/sniffio/_tests/test_sniffio.py', 'venv/lib64/python3.12/site-packages/httpx/_decoders.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/label.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/scatter_chart.py', 'venv/lib64/python3.12/site-packages/openpyxl/packaging/manifest.py', 'venv/lib64/python3.12/site-packages/openpyxl/packaging/workbook.py', 'venv/lib64/python3.12/site-packages/openpyxl/workbook/defined_name.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/legend.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/shapes.py', 'venv/lib64/python3.12/site-packages/openpyxl/pivot/cache.py', 'venv/lib64/python3.12/site-packages/openpyxl/drawing/colors.py', 'venv/lib64/python3.12/site-packages/openpyxl/reader/strings.py', 'venv/lib64/python3.12/site-packages/httpx/_transports/asgi.py', 'venv/lib64/python3.12/site-packages/openpyxl/worksheet/properties.py', 'venv/lib64/python3.12/site-packages/openpyxl/styles/fills.py', 'venv/lib64/python3.12/site-packages/openpyxl/utils/units.py', 'venv/lib64/python3.12/site-packages/openpyxl/worksheet/_writer.py', 'venv/lib64/python3.12/site-packages/~ttpx/_decoders.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/area_chart.py', 'venv/lib64/python3.12/site-packages/openpyxl/workbook/child.py', 'venv/lib64/python3.12/site-packages/openpyxl/worksheet/views.py', 'venv/lib64/python3.12/site-packages/openpyxl/worksheet/hyperlink.py', 'venv/lib64/python3.12/site-packages/openpyxl/worksheet/_read_only.py', 'venv/lib64/python3.12/site-packages/openpyxl/worksheet/dimensions.py', 'venv/lib64/python3.12/site-packages/openpyxl/styles/fonts.py', 'venv/lib64/python3.12/site-packages/~ttpx/_models.py', 'venv/lib64/python3.12/site-packages/openpyxl/worksheet/_write_only.py', 'venv/lib64/python3.12/site-packages/openpyxl/worksheet/formula.py', 'venv/lib64/python3.12/site-packages/openpyxl/drawing/fill.py', 'venv/lib64/python3.12/site-packages/openpyxl/xml/constants.py', 'venv/lib64/python3.12/site-packages/openpyxl/drawing/xdr.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/line_chart.py', 'venv/lib64/python3.12/site-packages/~ttpx/_client.py', 'venv/lib64/python3.12/site-packages/~ttpx/_api.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/bubble_chart.py', 'venv/lib64/python3.12/site-packages/openpyxl/chartsheet/chartsheet.py', 'venv/lib64/python3.12/site-packages/openpyxl/worksheet/cell_watch.py', 'venv/lib64/python3.12/site-packages/openpyxl/pivot/fields.py', 'venv/lib64/python3.12/site-packages/~ttpx/_status_codes.py', 'venv/lib64/python3.12/site-packages/openpyxl/worksheet/merge.py', 'venv/lib64/python3.12/site-packages/openpyxl/worksheet/copier.py', 'venv/lib64/python3.12/site-packages/openpyxl/formula/__init__.py', 'venv/lib64/python3.12/site-packages/openpyxl/descriptors/base.py', 'venv/lib64/python3.12/site-packages/~ttpx/_content.py', 'venv/lib64/python3.12/site-packages/~ttpx/_utils.py', 'venv/lib64/python3.12/site-packages/openpyxl/cell/text.py', 'venv/lib64/python3.12/site-packages/openpyxl/compat/__init__.py', 'venv/lib64/python3.12/site-packages/openpyxl/formatting/formatting.py', 'venv/lib64/python3.12/site-packages/openpyxl/drawing/effect.py', 'venv/lib64/python3.12/site-packages/openpyxl/worksheet/drawing.py', 'venv/lib64/python3.12/site-packages/openpyxl/cell/__init__.py', 'venv/lib64/python3.12/site-packages/openpyxl/styles/numbers.py', 'venv/lib64/python3.12/site-packages/openpyxl/drawing/properties.py', 'venv/lib64/python3.12/site-packages/httpx/_transports/mock.py', 'venv/lib64/python3.12/site-packages/openpyxl/descriptors/serialisable.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/surface_chart.py', 'venv/lib64/python3.12/site-packages/openpyxl/worksheet/pagebreak.py', 'venv/lib64/python3.12/site-packages/~ttpx/_transports/__init__.py', 'venv/lib64/python3.12/site-packages/httpx/_utils.py', 'venv/lib64/python3.12/site-packages/et_xmlfile/xmlfile.py', 'venv/lib64/python3.12/site-packages/openpyxl/writer/excel.py', 'venv/lib64/python3.12/site-packages/openpyxl/packaging/__init__.py', 'venv/lib64/python3.12/site-packages/openpyxl/worksheet/smart_tag.py', 'venv/lib64/python3.12/site-packages/openpyxl/chartsheet/properties.py', 'venv/lib64/python3.12/site-packages/openpyxl/drawing/picture.py', 'venv/lib64/python3.12/site-packages/openpyxl/styles/builtins.py', 'venv/lib64/python3.12/site-packages/openpyxl/drawing/graphic.py', 'venv/lib64/python3.12/site-packages/openpyxl/descriptors/sequence.py', 'venv/lib64/python3.12/site-packages/httpx/__version__.py', 'venv/lib64/python3.12/site-packages/openpyxl/worksheet/controls.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/marker.py', 'venv/lib64/python3.12/site-packages/openpyxl/worksheet/ole.py', 'venv/lib64/python3.12/site-packages/openpyxl/drawing/__init__.py', 'venv/lib64/python3.12/site-packages/openpyxl/compat/singleton.py', 'venv/lib64/python3.12/site-packages/httpx/_transports/default.py', 'venv/lib64/python3.12/site-packages/~ttpx/_exceptions.py', 'venv/lib64/python3.12/site-packages/openpyxl/utils/indexed_list.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/reader.py', 'venv/lib64/python3.12/site-packages/openpyxl/xml/functions.py', 'venv/lib64/python3.12/site-packages/openpyxl/workbook/workbook.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/_chart.py', 'venv/lib64/python3.12/site-packages/openpyxl/reader/workbook.py', 'venv/lib64/python3.12/site-packages/sniffio/__init__.py', 'venv/lib64/python3.12/site-packages/~ttpx/_transports/default.py', 'venv/lib64/python3.12/site-packages/openpyxl/utils/formulas.py', 'venv/lib64/python3.12/site-packages/openpyxl/chartsheet/relation.py', 'venv/lib64/python3.12/site-packages/sniffio/_version.py', 'venv/lib64/python3.12/site-packages/openpyxl/reader/excel.py', 'venv/lib64/python3.12/site-packages/openpyxl/worksheet/print_settings.py', 'venv/lib64/python3.12/site-packages/openpyxl/styles/named_styles.py', 'venv/lib64/python3.12/site-packages/openpyxl/compat/strings.py', 'venv/lib64/python3.12/site-packages/openpyxl/worksheet/header_footer.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/reference.py', 'venv/lib64/python3.12/site-packages/~ttpx/_main.py', 'venv/lib64/python3.12/site-packages/openpyxl/_constants.py', 'venv/lib64/python3.12/site-packages/openpyxl/workbook/views.py', 'venv/lib64/python3.12/site-packages/openpyxl/drawing/spreadsheet_drawing.py', 'venv/lib64/python3.12/site-packages/openpyxl/chartsheet/protection.py', 'venv/lib64/python3.12/site-packages/openpyxl/descriptors/slots.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/series.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/series_factory.py', 'venv/lib64/python3.12/site-packages/openpyxl/workbook/smart_tags.py', 'venv/lib64/python3.12/site-packages/openpyxl/utils/datetime.py', 'venv/lib64/python3.12/site-packages/~ttpx/_auth.py', 'venv/lib64/python3.12/site-packages/openpyxl/styles/stylesheet.py', 'venv/lib64/python3.12/site-packages/openpyxl/writer/theme.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/axis.py', 'venv/lib64/python3.12/site-packages/openpyxl/worksheet/filters.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/bar_chart.py', 'venv/lib64/python3.12/site-packages/openpyxl/workbook/function_group.py', 'venv/lib64/python3.12/site-packages/openpyxl/formatting/__init__.py', 'venv/lib64/python3.12/site-packages/~ttpx/_transports/base.py', 'venv/lib64/python3.12/site-packages/openpyxl/drawing/line.py', 'venv/lib64/python3.12/site-packages/~ttpx/__init__.py', 'venv/lib64/python3.12/site-packages/et_xmlfile/incremental_tree.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/picture.py', 'venv/lib64/python3.12/site-packages/openpyxl/worksheet/datavalidation.py', 'venv/lib64/python3.12/site-packages/openpyxl/descriptors/nested.py', 'venv/lib64/python3.12/site-packages/openpyxl/drawing/relation.py', 'venv/lib64/python3.12/site-packages/~ttpx/_transports/wsgi.py', 'venv/lib64/python3.12/site-packages/httpx/_urls.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/pie_chart.py', 'venv/lib64/python3.12/site-packages/openpyxl/compat/product.py', 'venv/lib64/python3.12/site-packages/~ttpx/_urls.py', 'venv/lib64/python3.12/site-packages/openpyxl/workbook/__init__.py', 'venv/lib64/python3.12/site-packages/openpyxl/styles/table.py', 'venv/lib64/python3.12/site-packages/openpyxl/utils/inference.py', 'venv/lib64/python3.12/site-packages/httpx/_client.py', 'venv/lib64/python3.12/site-packages/openpyxl/reader/drawings.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/title.py', 'venv/lib64/python3.12/site-packages/openpyxl/reader/__init__.py', 'venv/lib64/python3.12/site-packages/openpyxl/drawing/image.py', 'venv/lib64/python3.12/site-packages/openpyxl/pivot/table.py', 'venv/lib64/python3.12/site-packages/openpyxl/styles/styleable.py', 'venv/lib64/python3.12/site-packages/openpyxl/formula/tokenizer.py', 'venv/lib64/python3.12/site-packages/openpyxl/compat/numbers.py', 'venv/lib64/python3.12/site-packages/openpyxl/cell/read_only.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/text.py', 'venv/lib64/python3.12/site-packages/openpyxl/descriptors/namespace.py', 'venv/lib64/python3.12/site-packages/sniffio/_tests/__init__.py', 'venv/lib64/python3.12/site-packages/openpyxl/descriptors/__init__.py', 'venv/lib64/python3.12/site-packages/openpyxl/worksheet/cell_range.py', 'venv/lib64/python3.12/site-packages/~ttpx/_types.py', 'venv/lib64/python3.12/site-packages/openpyxl/styles/proxy.py', 'venv/lib64/python3.12/site-packages/openpyxl/utils/dataframe.py', 'venv/lib64/python3.12/site-packages/httpx/_multipart.py', 'venv/lib64/python3.12/site-packages/openpyxl/cell/cell.py', 'venv/lib64/python3.12/site-packages/~ttpx/_multipart.py', 'venv/lib64/python3.12/site-packages/openpyxl/cell/_writer.py', 'venv/lib64/python3.12/site-packages/httpx/_models.py', 'venv/lib64/python3.12/site-packages/openpyxl/utils/protection.py', 'venv/lib64/python3.12/site-packages/openpyxl/packaging/interface.py', 'venv/lib64/python3.12/site-packages/openpyxl/styles/cell_style.py', 'venv/lib64/python3.12/site-packages/openpyxl/comments/comments.py', 'venv/lib64/python3.12/site-packages/httpx/_exceptions.py', 'venv/lib64/python3.12/site-packages/openpyxl/worksheet/page.py', 'venv/lib64/python3.12/site-packages/openpyxl/formatting/rule.py', 'venv/lib64/python3.12/site-packages/openpyxl/styles/colors.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/pivot.py', 'venv/lib64/python3.12/site-packages/openpyxl/worksheet/related.py', 'venv/lib64/python3.12/site-packages/~ttpx/_urlparse.py', 'venv/lib64/python3.12/site-packages/openpyxl/packaging/core.py', 'venv/lib64/python3.12/site-packages/~ttpx/_transports/mock.py', 'venv/lib64/python3.12/site-packages/openpyxl/descriptors/excel.py', 'venv/lib64/python3.12/site-packages/openpyxl/workbook/external_link/external.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/layout.py', 'venv/lib64/python3.12/site-packages/openpyxl/chartsheet/views.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/stock_chart.py', 'venv/lib64/python3.12/site-packages/openpyxl/styles/protection.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/error_bar.py', 'venv/lib64/python3.12/site-packages/httpx/_compat.py', 'venv/lib64/python3.12/site-packages/openpyxl/writer/__init__.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/chartspace.py', 'venv/lib64/python3.12/site-packages/httpx/_status_codes.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/plotarea.py', 'venv/lib64/python3.12/site-packages/openpyxl/pivot/__init__.py', 'venv/lib64/python3.12/site-packages/openpyxl/__init__.py', 'venv/lib64/python3.12/site-packages/httpx/_transports/wsgi.py', 'venv/lib64/python3.12/site-packages/openpyxl/drawing/text.py', 'venv/lib64/python3.12/site-packages/openpyxl/compat/abc.py', 'venv/lib64/python3.12/site-packages/openpyxl/workbook/_writer.py', 'venv/lib64/python3.12/site-packages/httpx/_urlparse.py', 'venv/lib64/python3.12/site-packages/openpyxl/workbook/external_link/__init__.py', 'venv/lib64/python3.12/site-packages/openpyxl/worksheet/table.py', 'venv/lib64/python3.12/site-packages/openpyxl/worksheet/worksheet.py', 'venv/lib64/python3.12/site-packages/httpx/_types.py', 'venv/lib64/python3.12/site-packages/openpyxl/chartsheet/__init__.py', 'venv/lib64/python3.12/site-packages/openpyxl/styles/alignment.py', 'venv/lib64/python3.12/site-packages/openpyxl/workbook/web.py', 'venv/lib64/python3.12/site-packages/httpx/_content.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/descriptors.py', 'venv/lib64/python3.12/site-packages/et_xmlfile/__init__.py', 'venv/lib64/python3.12/site-packages/openpyxl/worksheet/errors.py', 'venv/lib64/python3.12/site-packages/~ttpx/_config.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/print_settings.py', 'venv/lib64/python3.12/site-packages/openpyxl/worksheet/protection.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/_3d.py', 'venv/lib64/python3.12/site-packages/httpx/__init__.py', 'venv/lib64/python3.12/site-packages/openpyxl/workbook/properties.py', 'venv/lib64/python3.12/site-packages/httpx/_transports/base.py', 'venv/lib64/python3.12/site-packages/openpyxl/packaging/relationship.py', 'venv/lib64/python3.12/site-packages/openpyxl/chartsheet/custom.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/trendline.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/__init__.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/updown_bars.py', 'venv/lib64/python3.12/site-packages/openpyxl/styles/differential.py', 'venv/lib64/python3.12/site-packages/~ttpx/_transports/asgi.py', 'venv/lib64/python3.12/site-packages/openpyxl/packaging/custom.py', 'venv/lib64/python3.12/site-packages/httpx/_api.py', 'venv/lib64/python3.12/site-packages/openpyxl/comments/__init__.py', 'venv/lib64/python3.12/site-packages/openpyxl/cell/rich_text.py', 'venv/lib64/python3.12/site-packages/openpyxl/utils/exceptions.py', 'venv/lib64/python3.12/site-packages/openpyxl/workbook/external_reference.py', 'venv/lib64/python3.12/site-packages/openpyxl/utils/escape.py', 'venv/lib64/python3.12/site-packages/openpyxl/chart/data_source.py', 'venv/lib64/python3.12/site-packages/openpyxl/workbook/protection.py', 'venv/lib64/python3.12/site-packages/openpyxl/chartsheet/publish.py', 'venv/lib64/python3.12/site-packages/openpyxl/pivot/record.py', 'venv/lib64/python3.12/site-packages/httpx/_config.py', 'venv/lib64/python3.12/site-packages/openpyxl/packaging/extended.py', 'venv/lib64/python3.12/site-packages/openpyxl/styles/__init__.py', 'venv/lib64/python3.12/site-packages/httpx/_auth.py', 'venv/lib64/python3.12/site-packages/openpyxl/comments/author.py', 'venv/lib64/python3.12/site-packages/openpyxl/drawing/geometry.py', 'venv/lib64/python3.12/site-packages/openpyxl/styles/borders.py', 'venv/lib64/python3.12/site-packages/sniffio/_impl.py', 'venv/lib64/python3.12/site-packages/httpx/_main.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3810491]
+INFO:     Started server process [3812646]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'scripts/update_leave_balances_from_screenshot.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3812646]
+INFO:     Started server process [3813517]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'scripts/update_leave_balances_from_screenshot.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3813517]
+INFO:     Started server process [3814300]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'scripts/update_leave_balances_from_screenshot.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3814300]
+INFO:     Started server process [3814579]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'scripts/update_leave_balances_from_screenshot.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3814579]
+INFO:     Started server process [3814894]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3814894]
+INFO:     Stopping reloader process [3664838]
+INFO:     Started server process [3829597]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:58000 - "POST /auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58008 - "GET /leaves/balance HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3829597]

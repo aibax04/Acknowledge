@@ -157,15 +157,35 @@ async function openAttendanceUpdateModal(dateStr) {
     document.getElementById('update-att-reason').value = '';
     var ciE = document.getElementById('update-att-clock-in'), coE = document.getElementById('update-att-clock-out');
     if (ciE) ciE.value = '09:00'; if (coE) coE.value = '18:00';
-    try { var mgrs = await Api.get('/attendance/managers'); var sel = document.getElementById('update-att-manager'); sel.innerHTML = '<option value="">Select Manager...</option>'; mgrs.forEach(function (m) { sel.innerHTML += '<option value="' + m.id + '">' + m.full_name + ' (' + m.role + ')</option>'; }); } catch (e) { console.error(e); }
+    try {
+        var mgrs = await Api.get('/attendance/managers');
+        var sel = document.getElementById('update-att-manager');
+        var myId = (typeof currentUser !== 'undefined' && currentUser && currentUser.id) ? currentUser.id : null;
+        sel.innerHTML = '<option value="">Select Manager...</option>';
+        (mgrs || []).forEach(function (m) {
+            if (myId != null && m.id === myId) return;
+            sel.innerHTML += '<option value="' + m.id + '">' + m.full_name + ' (' + m.role + ')</option>';
+        });
+    } catch (e) { console.error(e); }
     modal.classList.remove('hidden');
 }
 
 async function submitAttendanceUpdate() {
     var dv = document.getElementById('update-att-date').value, r = document.getElementById('update-att-reason').value.trim(), mi = document.getElementById('update-att-manager').value;
     var ci = document.getElementById('update-att-clock-in').value, co = document.getElementById('update-att-clock-out').value;
-    if (!r) { showToast('Please provide a reason', 'error'); return; } if (!mi) { showToast('Please select a manager', 'error'); return; }
-    try { await Api.post('/attendance/update-request', { date: dv, requested_clock_in: ci ? dv + 'T' + ci + ':00' : null, requested_clock_out: co ? dv + 'T' + co + ':00' : null, reason: r, manager_id: parseInt(mi) }); showToast('Update request submitted!', 'success'); document.getElementById('attendance-update-modal').classList.add('hidden'); loadAttendanceTab(); }
+    if (!r) { showToast('Please provide a reason', 'error'); return; }
+    if (!mi) { showToast('Please select a manager', 'error'); return; }
+    var mid = parseInt(mi, 10);
+    if (typeof currentUser !== 'undefined' && currentUser && currentUser.id === mid) {
+        showToast('You cannot select yourself as manager. Pick another approver.', 'error');
+        return;
+    }
+    try {
+        await Api.post('/attendance/update-request', { date: dv, requested_clock_in: ci ? dv + 'T' + ci + ':00' : null, requested_clock_out: co ? dv + 'T' + co + ':00' : null, reason: r, manager_id: mid });
+        showToast('Update request submitted!', 'success');
+        document.getElementById('attendance-update-modal').classList.add('hidden');
+        loadAttendanceTab();
+    }
     catch (e) { showToast(e.message || 'Failed', 'error'); }
 }
 

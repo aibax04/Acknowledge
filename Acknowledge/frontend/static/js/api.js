@@ -34,8 +34,14 @@ class Api {
         }
         if (!response.ok) {
             const err = await response.json().catch(() => ({}));
-            const msg = typeof err.detail === 'string' ? err.detail : (Array.isArray(err.detail) ? (err.detail[0]?.msg || err.detail[0]) : err.detail);
-            throw new Error(msg || response.statusText || 'API Request failed');
+            const d = err.detail;
+            let msg = response.statusText || 'API Request failed';
+            if (typeof d === 'string') msg = d;
+            else if (Array.isArray(d) && d.length) {
+                const first = d[0];
+                msg = (first && (first.msg || first.message)) || String(first);
+            } else if (d && typeof d === 'object' && (d.msg || d.message)) msg = d.msg || d.message;
+            throw new Error(msg);
         }
         return response.json();
     }

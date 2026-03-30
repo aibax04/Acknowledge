@@ -157,7 +157,8 @@ async def microsoft_callback(
                 full_name=display_name,
                 hashed_password=hashed_password,
                 role=role,
-                is_active=True
+                is_active=True,
+                is_pending_approval=(role == UserRole.MANAGER),
             )
             db.add(user)
             await db.commit()
@@ -175,6 +176,7 @@ async def microsoft_callback(
                 "full_name": user.full_name,
                 "role": user.role.value,
                 "is_active": user.is_active,
+                "is_pending_approval": bool(getattr(user, "is_pending_approval", False)),
                 "created_at": user.created_at
             }
         }
@@ -279,7 +281,8 @@ async def google_callback(
                 full_name=display_name,
                 hashed_password=hashed_password,
                 role=role,
-                is_active=True
+                is_active=True,
+                is_pending_approval=(role == UserRole.MANAGER),
             )
              db.add(user)
              await db.commit()
@@ -296,6 +299,7 @@ async def google_callback(
                 "full_name": user.full_name,
                 "role": user.role.value,
                 "is_active": user.is_active,
+                "is_pending_approval": bool(getattr(user, "is_pending_approval", False)),
                 "created_at": user.created_at
             }
         }
@@ -447,4 +451,66 @@ async def delete_user(user_id: int, db: AsyncSession = Depends(get_db), current_
             detail=f"Could not delete user credentials: {str(e)}"
         )
     return {"message": "User credentials deleted successfully"}
+
+
+@router.get("/pending-managers", response_model=list[UserResponse])
+async def get_pending_managers(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get all managers awaiting approval. Only directors (seniors) can access."""
+    if current_user.role != UserRole.SENIOR:
+        raise HTTPException(status_code=403, detail="Only directors can view pending managers")
+    from sqlalchemy.future import select
+    result = await db.execute(
+        select(User)
+        .where(
+            User.role == UserRole.MANAGER,
+            User.is_pending_approval.is_(True),
+        )
+        .order_by(User.created_at.asc())
+    )
+    return result.scalars().all()
+
+
+@router.post("/approve-manager/{user_id}")
+async def approve_manager(
+    user_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Approve a pending manager account. Only directors can do this."""
+    if current_user.role != UserRole.SENIOR:
+        raise HTTPException(status_code=403, detail="Only directors can approve managers")
+    from sqlalchemy.future import select
+    result = await db.execute(select(User).filter(User.id == user_id))
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.role != UserRole.MANAGER:
+        raise HTTPException(status_code=400, detail="User is not a manager")
+    user.is_pending_approval = False
+    await db.commit()
+    return {"message": "Manager approved successfully"}
+
+
+@router.post("/reject-manager/{user_id}")
+async def reject_manager(
+    user_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Reject/delete a pending manager account."""
+    if current_user.role != UserRole.SENIOR:
+        raise HTTPException(status_code=403, detail="Only directors can reject managers")
+    from sqlalchemy.future import select
+    result = await db.execute(select(User).filter(User.id == user_id))
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.role != UserRole.MANAGER or not user.is_pending_approval:
+        raise HTTPException(status_code=400, detail="User is not a pending manager")
+    await db.delete(user)
+    await db.commit()
+    return {"message": "Manager account rejected and removed"}
 

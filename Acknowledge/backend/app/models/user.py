@@ -18,6 +18,7 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     role = Column(Enum(UserRole), default=UserRole.EMPLOYEE, nullable=False)
     is_active = Column(Boolean, default=True)
+    is_pending_approval = Column(Boolean, default=False, nullable=False, server_default="false")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     office = Column(String, nullable=True)  # "panscience" or "eigen"
     joining_date = Column(Date, nullable=True)

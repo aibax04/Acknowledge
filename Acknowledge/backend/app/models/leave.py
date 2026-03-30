@@ -33,6 +33,8 @@ class LeaveRequest(Base):
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)
     num_days = Column(Float, nullable=False)  # Float for half-days
+    is_half_day = Column(Boolean, default=False, nullable=False, server_default="false")
+    half_day_period = Column(String(16), nullable=True)  # "first_half" or "second_half"; NULL when full-day
     reason = Column(String, nullable=False)
     status = Column(Enum(LeaveStatus), default=LeaveStatus.PENDING)
     approved_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)

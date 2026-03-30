@@ -38,6 +38,21 @@ def count_working_days(start: date, end: date, office: str) -> float:
     return float(days)
 
 
+def _effective_days(leave, office: str, scope_fn=None) -> float:
+    """Return the actual days a leave consumes, respecting half-day.
+
+    scope_fn: optional callable(leave) -> float that returns the
+              scoped working days (e.g. only days in a given month/year).
+              When the leave is half-day the result is always 0.5 regardless
+              of scope because a half-day leave spans only one day.
+    """
+    if getattr(leave, "is_half_day", False):
+        return 0.5
+    if scope_fn is not None:
+        return scope_fn(leave)
+    return float(getattr(leave, "num_days", 0) or 0)
+
+
 def _working_days_in_month(range_start: date, range_end: date, year: int, month: int, office: str) -> float:
     """Working days of the range that fall in the given (year, month)."""
     first = date(year, month, 1)
@@ -63,6 +78,47 @@ def _working_days_in_year(range_start: date, range_end: date, year: int, office:
     return count_working_days(s, e, office)
 
 
+def _resolve_joining_date_for_wallet(user: Optional[User], wallet_year: int) -> date:
+    """Joining date for leave accrual; fallback created_at date, then Jan 1 of wallet year."""
+    if user is None:
+        return date(wallet_year, 1, 1)
+    j = getattr(user, "joining_date", None)
+    if j is not None and isinstance(j, date):
+        return j
+    try:
+        ca = getattr(user, "created_at", None)
+        if ca is not None:
+            return ca.date() if hasattr(ca, "date") else date(wallet_year, 1, 1)
+    except (AttributeError, TypeError):
+        pass
+    return date(wallet_year, 1, 1)
+
+
+def _monthly_wallet_accrual_months(joining: date, wallet_year: int, as_of: date) -> int:
+    """
+    Count months in wallet_year credited toward monthly-allowance wallet (accrual on the 1st).
+
+    A month M counts only if the employee was on roll by the 1st: joining_date <= month_start,
+    and the 1st of M is not after `as_of` (no future months).
+
+    Example: join 28 Mar → no credit for March; first credit on 1 Apr (once April has started).
+    """
+    if as_of.year < wallet_year:
+        return 0
+    if as_of.year > wallet_year:
+        as_of_cap = date(wallet_year, 12, 31)
+    else:
+        as_of_cap = min(as_of, date(wallet_year, 12, 31))
+    n = 0
+    for m in range(1, 13):
+        month_start = date(wallet_year, m, 1)
+        if month_start > as_of_cap:
+            break
+        if joining <= month_start:
+            n += 1
+    return n
+
+
 async def _compute_wallet_for_policy(
     db: AsyncSession,
     user_id: int,
@@ -70,20 +126,22 @@ async def _compute_wallet_for_policy(
     year: int,
     office: str = "eigen",
     policy_ids_in_group: Optional[List[int]] = None,
+    user: Optional["User"] = None,
 ) -> Optional[float]:
     """
     Compute leave wallet (balance) when policy has monthly_allowance.
-    Wallet = (monthly_allowance * months_elapsed_this_year) - used_this_year + adjustments.
-    Unused days from previous months carry over (accrued each month).
+    Wallet = (monthly_allowance * accrual_months) - used_this_year + adjustments.
+    Accrual months follow calendar month starts vs joining_date (see _monthly_wallet_accrual_months).
     """
     monthly_allowance = getattr(policy, "monthly_allowance", None)
     if monthly_allowance is None or float(monthly_allowance) <= 0:
         return None
     today = date.today()
-    if year != today.year:
-        months_elapsed = 12
-    else:
-        months_elapsed = today.month
+    if user is None:
+        user = await db.get(User, user_id)
+    joining = _resolve_joining_date_for_wallet(user, year)
+    as_of = date(year, 12, 31) if year != today.year else today
+    months_elapsed = _monthly_wallet_accrual_months(joining, year, as_of)
     accrued = monthly_allowance * months_elapsed
     ids = list(policy_ids_in_group) if policy_ids_in_group else [policy.id]
     year_first = date(year, 1, 1)
@@ -99,7 +157,7 @@ async def _compute_wallet_for_policy(
     )
     leaves = result.scalars().all()
     used = sum(
-        _working_days_in_year(l.start_date, l.end_date, year, office)
+        _effective_days(l, office, lambda lv: _working_days_in_year(lv.start_date, lv.end_date, year, office))
         for l in leaves
     )
     adjustments = await _get_adjustments_for_user_year(db, user_id, year)
@@ -109,36 +167,21 @@ async def _compute_wallet_for_policy(
 
 
 def compute_leave_balance(user: User, approved_leaves: list, current_year: int):
-    """Compute leave balance for a user."""
+    """Compute leave balance for a user (standard EL/CSL). Accrual months match monthly wallet rules."""
     today = date.today()
-    joining = getattr(user, "joining_date", None)
-    if joining is None or not isinstance(joining, date):
-        try:
-            joining = user.created_at.date() if getattr(user, "created_at", None) else date(current_year, 1, 1)
-        except (AttributeError, TypeError):
-            joining = date(current_year, 1, 1)
-    if not isinstance(joining, date):
-        joining = date(current_year, 1, 1)
-    year_start = date(current_year, 1, 1)
-    effective_start = max(joining, year_start)
+    joining = _resolve_joining_date_for_wallet(user, current_year)
+    accrual_months = _monthly_wallet_accrual_months(joining, current_year, today)
 
-    # Months elapsed from effective start to today (in current year)
-    if effective_start.year < current_year:
-        months_elapsed = today.month
-    else:
-        months_elapsed = today.month - effective_start.month + 1
-    months_elapsed = max(0, min(months_elapsed, 12))
-
-    # EL: 1.25 per month, max 15 per year
-    el_accrued = round(min(months_elapsed * 1.25, 15.0), 2)
+    # EL: 1.25 per accrual month, max 15 per year
+    el_accrued = round(min(accrual_months * 1.25, 15.0), 2)
     el_used = sum(
         getattr(l, "num_days", 0) or 0 for l in approved_leaves
         if getattr(l, "leave_type", None) == LeaveType.EARNED_LEAVE
         and getattr(l, "start_date", None) and getattr(l.start_date, "year", None) == current_year
     )
 
-    # CSL: 1 per month, max 12 per year (no carry forward) — shared by casual + sick (+ legacy casual_sick)
-    csl_accrued = round(min(months_elapsed * 1.0, 12.0), 2)
+    # CSL: 1 per accrual month, max 12 per year (no carry forward) — shared by casual + sick (+ legacy casual_sick)
+    csl_accrued = round(min(accrual_months * 1.0, 12.0), 2)
     csl_used = sum(
         getattr(l, "num_days", 0) or 0 for l in approved_leaves
         if getattr(l, "leave_type", None) in (LeaveType.CASUAL_SICK_LEAVE, LeaveType.CASUAL_LEAVE, LeaveType.SICK_LEAVE)
@@ -157,7 +200,7 @@ def compute_leave_balance(user: User, approved_leaves: list, current_year: int):
         "casual_sick_leave_balance": max(0, csl_accrued - csl_used),
         "is_on_probation": is_on_probation,
         "can_use_earned_leave": can_use_el,
-        "joining_date": joining.isoformat() if joining else None
+        "joining_date": joining.isoformat() if isinstance(joining, date) else None
     }
 
 
@@ -170,6 +213,98 @@ async def _get_adjustments_for_user_year(db: AsyncSession, user_id: int, year: i
         ).order_by(LeaveBalanceAdjustment.created_at.desc())
     )
     return result.scalars().all()
+
+
+def _standard_balance_manual_override(adjustments: list) -> Optional[dict]:
+    """
+    If standard leave balances were manually set (bulk sync), treat those values as authoritative everywhere.
+
+    Returns dict with keys 'earned_leave_balance' and 'casual_sick_leave_balance' if override applies, else None.
+    """
+    if not adjustments:
+        return None
+    # Heuristic: any adjustment with this marker means we should use ONLY adjustments for standard balances.
+    marked = [
+        a for a in adjustments
+        if getattr(a, "leave_type", None) in ("earned_leave", "casual_sick_leave")
+        and "bulk sync" in (getattr(a, "reason", "") or "").lower()
+    ]
+    if not marked:
+        return None
+    el = sum(float(a.adjustment_days or 0) for a in adjustments if a.leave_type == "earned_leave")
+    csl = sum(float(a.adjustment_days or 0) for a in adjustments if a.leave_type == "casual_sick_leave")
+    return {
+        "earned_leave_balance": max(0.0, round(el, 2)),
+        "casual_sick_leave_balance": max(0.0, round(csl, 2)),
+    }
+
+
+async def _compute_policy_balance_for_user(
+    db: AsyncSession,
+    user_id: int,
+    policy: "CustomLeavePolicy",
+    office: str = "eigen",
+) -> Optional[dict]:
+    """Compute leave balance summary for a user + policy (or policy group)."""
+    year = date.today().year
+    today = date.today()
+
+    policy_ids = [policy.id]
+    if getattr(policy, "policy_group_key", None):
+        group_result = await db.execute(
+            select(CustomLeavePolicy.id).filter(
+                CustomLeavePolicy.policy_group_key == policy.policy_group_key
+            )
+        )
+        policy_ids = [row[0] for row in group_result.all()]
+
+    year_first = date(year, 1, 1)
+    year_last = date(year, 12, 31)
+    result = await db.execute(
+        select(LeaveRequest).filter(
+            LeaveRequest.user_id == user_id,
+            LeaveRequest.custom_policy_id.in_(policy_ids),
+            LeaveRequest.status.in_([LeaveStatus.APPROVED, LeaveStatus.PENDING]),
+            LeaveRequest.start_date <= year_last,
+            LeaveRequest.end_date >= year_first,
+        )
+    )
+    user_leaves = result.scalars().all()
+    used = sum(
+        _effective_days(l, office, lambda lv: _working_days_in_year(lv.start_date, lv.end_date, year, office))
+        for l in user_leaves
+    )
+
+    adjustments = await _get_adjustments_for_user_year(db, user_id, year)
+    adj_sum = sum(
+        a.adjustment_days for a in adjustments
+        if a.custom_policy_id is not None and a.custom_policy_id in policy_ids
+    )
+
+    monthly_allowance = getattr(policy, "monthly_allowance", None)
+    shared_limit = getattr(policy, "shared_annual_limit", None)
+
+    limit_val = None
+    available = None
+
+    if monthly_allowance is not None and float(monthly_allowance) > 0:
+        user_obj = await db.get(User, user_id)
+        joining = _resolve_joining_date_for_wallet(user_obj, year)
+        as_of = date(year, 12, 31) if year != today.year else today
+        months_elapsed = _monthly_wallet_accrual_months(joining, year, as_of)
+        accrued = float(monthly_allowance) * months_elapsed
+        limit_val = round(accrued, 2)
+        available = round(max(0.0, accrued - used + adj_sum), 2)
+    elif shared_limit is not None and float(shared_limit) >= 0:
+        limit_val = round(float(shared_limit), 2)
+        available = round(max(0.0, float(shared_limit) - used + adj_sum), 2)
+
+    return {
+        "available": available,
+        "used": round(used, 2),
+        "limit": limit_val,
+        "adjustments": round(adj_sum, 2),
+    }
 
 
 @router.get("/balance")
@@ -297,6 +432,27 @@ async def create_leave_adjustment(
     )
 
 
+@router.get("/policy-balance")
+async def get_policy_balance(
+    user_id: int = Query(..., description="Target user ID"),
+    policy_id: int = Query(..., description="Custom policy ID"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get leave balance for a specific user + policy. Directors only."""
+    if current_user.role != UserRole.SENIOR:
+        raise HTTPException(status_code=403, detail="Only directors can view policy balance")
+    user = await db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    policy = await db.get(CustomLeavePolicy, policy_id)
+    if not policy:
+        raise HTTPException(status_code=404, detail="Policy not found")
+    _office = str(getattr(user, "office", None) or "").strip().lower()
+    office = "eigen" if _office == "igen" else ("panscience" if _office == "panscience" else "eigen")
+    return await _compute_policy_balance_for_user(db, user_id, policy, office)
+
+
 @router.post("/apply")
 async def apply_leave(
     req: LeaveApplyRequest,
@@ -327,6 +483,13 @@ async def _apply_leave_impl(req: LeaveApplyRequest, db: AsyncSession, current_us
         raise HTTPException(status_code=400, detail="Start date must be before or equal to end date")
     if req.start_date < today:
         raise HTTPException(status_code=400, detail="Cannot apply for past dates")
+
+    # Half-day validation
+    if req.is_half_day:
+        if req.start_date != req.end_date:
+            raise HTTPException(status_code=400, detail="Half-day leave must be for a single date (From and To must be the same)")
+        if not req.half_day_period or req.half_day_period not in ("first_half", "second_half"):
+            raise HTTPException(status_code=400, detail="Please select First Half or Second Half for half-day leave")
 
     leave_type = LeaveType(req.leave_type)
 
@@ -380,7 +543,7 @@ async def _apply_leave_impl(req: LeaveApplyRequest, db: AsyncSession, current_us
 
         # Wallet check: when policy has monthly_allowance, user can only apply up to wallet (accrued - used + adjustments)
         if getattr(policy, "monthly_allowance", None) is not None and float(policy.monthly_allowance) > 0:
-            requested_days = count_working_days(req.start_date, req.end_date, office_for_policy)
+            requested_days = 0.5 if req.is_half_day else count_working_days(req.start_date, req.end_date, office_for_policy)
             if requested_days > 0:
                 policy_ids_for_wallet = [policy.id]
                 if getattr(policy, "policy_group_key", None):
@@ -391,20 +554,27 @@ async def _apply_leave_impl(req: LeaveApplyRequest, db: AsyncSession, current_us
                     )
                     policy_ids_for_wallet = [row[0] for row in group_result.all()]
                 wallet = await _compute_wallet_for_policy(
-                    db, current_user.id, policy, req.start_date.year, office_for_policy, policy_ids_for_wallet
+                    db, current_user.id, policy, req.start_date.year, office_for_policy, policy_ids_for_wallet,
+                    user=current_user
                 )
-                if wallet is not None and requested_days > wallet:
-                    raise HTTPException(
-                        status_code=400,
-                        detail=f"Leave wallet balance is {wallet} days. You cannot apply for more than your available balance (unused days carry over each month)."
-                    )
+                if wallet is not None and requested_days > 0:
+                    if wallet <= 0:
+                        raise HTTPException(
+                            status_code=400,
+                            detail="Your leave balance for this policy is zero. You cannot apply until days accrue or your balance is adjusted.",
+                        )
+                    if requested_days > wallet:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Leave wallet balance is {wallet} days. You cannot apply for more than your available balance (unused days carry over each month)."
+                        )
 
         # Enforce max days per month if set
         if getattr(policy, "max_days_per_month", None) is not None:
             month_start = req.start_date
             while month_start <= req.end_date:
                 y, m = month_start.year, month_start.month
-                new_in_month = _working_days_in_month(req.start_date, req.end_date, y, m, office_for_policy)
+                new_in_month = 0.5 if req.is_half_day else _working_days_in_month(req.start_date, req.end_date, y, m, office_for_policy)
                 if new_in_month > 0:
                     existing_result = await db.execute(
                         select(LeaveRequest).filter(
@@ -417,7 +587,7 @@ async def _apply_leave_impl(req: LeaveApplyRequest, db: AsyncSession, current_us
                     )
                     existing_leaves = existing_result.scalars().all()
                     existing_in_month = sum(
-                        _working_days_in_month(l.start_date, l.end_date, y, m, office_for_policy)
+                        _effective_days(l, office_for_policy, lambda lv, _y=y, _m=m: _working_days_in_month(lv.start_date, lv.end_date, _y, _m, office_for_policy))
                         for l in existing_leaves
                     )
                     if existing_in_month + new_in_month > policy.max_days_per_month:
@@ -430,19 +600,24 @@ async def _apply_leave_impl(req: LeaveApplyRequest, db: AsyncSession, current_us
                 else:
                     month_start = date(y, m + 1, 1)
 
-        # Enforce shared annual pool across grouped sub-types (if configured).
-        if getattr(policy, "policy_group_key", None) and getattr(policy, "shared_annual_limit", None):
-            group_result = await db.execute(
-                select(CustomLeavePolicy.id).filter(
-                    CustomLeavePolicy.policy_group_key == policy.policy_group_key
+        # Enforce shared annual cap: same group of sub-types, or a single policy with shared_annual_limit only.
+        shared_lim = getattr(policy, "shared_annual_limit", None)
+        if shared_lim is not None and float(shared_lim) > 0:
+            gkey = getattr(policy, "policy_group_key", None)
+            if gkey:
+                group_result = await db.execute(
+                    select(CustomLeavePolicy.id).filter(
+                        CustomLeavePolicy.policy_group_key == gkey
+                    )
                 )
-            )
-            group_policy_ids = [row[0] for row in group_result.all()]
+                group_policy_ids = [row[0] for row in group_result.all()]
+            else:
+                group_policy_ids = [policy.id]
             if group_policy_ids:
                 start_year = req.start_date.year
                 end_year = req.end_date.year
                 for y in range(start_year, end_year + 1):
-                    new_in_year = _working_days_in_year(req.start_date, req.end_date, y, office_for_policy)
+                    new_in_year = 0.5 if req.is_half_day else _working_days_in_year(req.start_date, req.end_date, y, office_for_policy)
                     if new_in_year <= 0:
                         continue
                     year_first = date(y, 1, 1)
@@ -459,16 +634,16 @@ async def _apply_leave_impl(req: LeaveApplyRequest, db: AsyncSession, current_us
                     )
                     existing_group_leaves = existing_result.scalars().all()
                     existing_in_year = sum(
-                        _working_days_in_year(l.start_date, l.end_date, y, office_for_policy)
+                        _effective_days(l, office_for_policy, lambda lv, _y=y: _working_days_in_year(lv.start_date, lv.end_date, _y, office_for_policy))
                         for l in existing_group_leaves
                     )
                     proposed = existing_in_year + new_in_year
-                    if proposed > policy.shared_annual_limit:
+                    if proposed > float(shared_lim):
                         raise HTTPException(
                             status_code=400,
                             detail=(
-                                f"Shared annual limit exceeded for this leave family. "
-                                f"Limit: {policy.shared_annual_limit} days/year, "
+                                f"Annual leave limit reached for this policy. "
+                                f"Limit: {shared_lim} days/year, "
                                 f"Year {y}: existing {existing_in_year:.1f} + requested {new_in_year:.1f} = {proposed:.1f}."
                             )
                         )
@@ -484,6 +659,9 @@ async def _apply_leave_impl(req: LeaveApplyRequest, db: AsyncSession, current_us
     num_days = count_working_days(req.start_date, req.end_date, office)
     if num_days <= 0:
         raise HTTPException(status_code=400, detail="No working days in the selected range")
+
+    if req.is_half_day:
+        num_days = 0.5
 
     # EL specific validations: 7 days in advance
     if leave_type == LeaveType.EARNED_LEAVE:
@@ -506,6 +684,12 @@ async def _apply_leave_impl(req: LeaveApplyRequest, db: AsyncSession, current_us
         )
         approved_leaves = result.scalars().all()
         balance = compute_leave_balance(current_user, approved_leaves, today.year)
+        adjs = await _get_adjustments_for_user_year(db, current_user.id, today.year)
+        balance["earned_leave_balance"] = max(
+            0,
+            balance["earned_leave_balance"]
+            + sum(a.adjustment_days for a in adjs if a.leave_type == "earned_leave"),
+        )
         if num_days > balance["earned_leave_balance"]:
             raise HTTPException(
                 status_code=400,
@@ -522,13 +706,19 @@ async def _apply_leave_impl(req: LeaveApplyRequest, db: AsyncSession, current_us
         )
         approved_leaves = result.scalars().all()
         balance = compute_leave_balance(current_user, approved_leaves, today.year)
+        adjs = await _get_adjustments_for_user_year(db, current_user.id, today.year)
+        balance["casual_sick_leave_balance"] = max(
+            0,
+            balance["casual_sick_leave_balance"]
+            + sum(a.adjustment_days for a in adjs if a.leave_type == "casual_sick_leave"),
+        )
         if num_days > balance["casual_sick_leave_balance"]:
             raise HTTPException(
                 status_code=400,
                 detail=f"Insufficient CSL balance. Available: {balance['casual_sick_leave_balance']} days, Requested: {num_days} days"
             )
 
-    # Check for overlapping leave requests
+    # Check for overlapping leave requests (half-day aware)
     result = await db.execute(
         select(LeaveRequest).filter(
             LeaveRequest.user_id == current_user.id,
@@ -537,11 +727,14 @@ async def _apply_leave_impl(req: LeaveApplyRequest, db: AsyncSession, current_us
             LeaveRequest.end_date >= req.start_date
         )
     )
-    overlapping = result.scalars().first()
-    if overlapping:
+    overlapping_candidates = result.scalars().all()
+    for existing in overlapping_candidates:
+        if req.is_half_day and getattr(existing, "is_half_day", False):
+            if existing.start_date == req.start_date and existing.half_day_period != req.half_day_period:
+                continue
         raise HTTPException(
             status_code=400,
-            detail=f"You already have a {overlapping.status.value} leave request for overlapping dates"
+            detail=f"You already have a {existing.status.value} leave request for overlapping dates"
         )
 
     reason_text = (getattr(req, "reason", None) or "").strip() or "—"
@@ -553,6 +746,8 @@ async def _apply_leave_impl(req: LeaveApplyRequest, db: AsyncSession, current_us
         start_date=req.start_date,
         end_date=req.end_date,
         num_days=num_days_val,
+        is_half_day=bool(req.is_half_day),
+        half_day_period=req.half_day_period if req.is_half_day else None,
         reason=reason_text,
         status=LeaveStatus.PENDING
     )
@@ -894,6 +1089,8 @@ async def get_my_leaves(
             "start_date": l.start_date.isoformat(),
             "end_date": l.end_date.isoformat(),
             "num_days": l.num_days,
+            "is_half_day": bool(getattr(l, "is_half_day", False)),
+            "half_day_period": getattr(l, "half_day_period", None),
             "reason": l.reason,
             "status": l.status.value,
             "approved_by_name": approved_by_name,
@@ -946,6 +1143,8 @@ async def get_all_leaves(
             "start_date": l.start_date.isoformat(),
             "end_date": l.end_date.isoformat(),
             "num_days": l.num_days,
+            "is_half_day": bool(getattr(l, "is_half_day", False)),
+            "half_day_period": getattr(l, "half_day_period", None),
             "reason": l.reason,
             "status": l.status.value,
             "applied_at": l.applied_at.isoformat() if l.applied_at else None
@@ -983,14 +1182,27 @@ async def get_pending_leaves(
     leaves = filtered
 
     response = []
+    balance_cache = {}
     for l in leaves:
         user_result = await db.execute(select(User).filter(User.id == l.user_id))
         user = user_result.scalars().first()
         custom_policy_title = None
+        pol = None
         if l.leave_type == LeaveType.CUSTOM and l.custom_policy_id:
             pol = await db.get(CustomLeavePolicy, l.custom_policy_id)
             custom_policy_title = pol.title if pol else None
-        response.append({
+
+        bal_info = None
+        if l.custom_policy_id and pol and user:
+            group_key = getattr(pol, "policy_group_key", None)
+            cache_key = (l.user_id, group_key or l.custom_policy_id)
+            if cache_key not in balance_cache:
+                _office = str(getattr(user, "office", None) or "").strip().lower()
+                office = "eigen" if _office == "igen" else ("panscience" if _office == "panscience" else "eigen")
+                balance_cache[cache_key] = await _compute_policy_balance_for_user(db, l.user_id, pol, office)
+            bal_info = balance_cache[cache_key]
+
+        item = {
             "id": l.id,
             "user_id": l.user_id,
             "user_name": user.full_name if user else "Unknown",
@@ -1001,10 +1213,17 @@ async def get_pending_leaves(
             "start_date": l.start_date.isoformat(),
             "end_date": l.end_date.isoformat(),
             "num_days": l.num_days,
+            "is_half_day": bool(getattr(l, "is_half_day", False)),
+            "half_day_period": getattr(l, "half_day_period", None),
             "reason": l.reason,
             "status": l.status.value,
-            "applied_at": l.applied_at.isoformat() if l.applied_at else None
-        })
+            "applied_at": l.applied_at.isoformat() if l.applied_at else None,
+        }
+        if bal_info:
+            item["balance_available"] = bal_info["available"]
+            item["balance_used"] = bal_info["used"]
+            item["balance_limit"] = bal_info["limit"]
+        response.append(item)
 
     return response
 
@@ -1063,3 +1282,25 @@ async def cancel_leave(
     leave.status = LeaveStatus.CANCELLED
     await db.commit()
     return {"message": "Leave request cancelled"}
+
+
+@router.post("/{leave_id}/revoke")
+async def revoke_leave(
+    leave_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Revoke an approved or pending leave (directors and managers only)."""
+    if current_user.role not in (UserRole.SENIOR, UserRole.MANAGER):
+        raise HTTPException(status_code=403, detail="Only directors and managers can revoke leaves")
+
+    result = await db.execute(select(LeaveRequest).filter(LeaveRequest.id == leave_id))
+    leave = result.scalars().first()
+    if not leave:
+        raise HTTPException(status_code=404, detail="Leave request not found")
+    if leave.status not in (LeaveStatus.APPROVED, LeaveStatus.PENDING):
+        raise HTTPException(status_code=400, detail="Only approved or pending leaves can be revoked")
+
+    leave.status = LeaveStatus.CANCELLED
+    await db.commit()
+    return {"message": "Leave revoked successfully"}

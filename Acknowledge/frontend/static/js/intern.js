@@ -621,7 +621,7 @@ function renderPolicies(policies) {
                 '<span class="bg-amber-50 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-100 uppercase">Pending</span>'
             }
                     </div>
-                    <p class="text-sm text-gray-600 mb-6 line-clamp-3 leading-relaxed">${policy.content.substring(0, 120)}...</p>
+                    <p class="text-sm text-gray-600 mb-6 line-clamp-3 leading-relaxed">${(policy.content || '').replace(/<[^>]*>/g, '').substring(0, 120)}...</p>
                     <div class="flex justify-between items-center pt-4 border-t border-gray-50 mt-auto">
                         <span class="text-[11px] font-medium text-gray-400 capitalize">
                              ${new Date(policy.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -643,12 +643,15 @@ function openPolicyModal(policyId) {
     document.getElementById('policy-modal-id').value = policyId;
     document.getElementById('policy-modal-title').innerText = policy.title;
 
-    // Set content with formatting
     const contentEl = document.getElementById('policy-modal-content');
-    if (typeof formatPopupContent === 'function') {
-        contentEl.innerHTML = formatPopupContent(policy.content);
+    if (contentEl) contentEl.classList.add('policy-rich-content');
+    const rawContent = policy.content || '';
+    if (rawContent.trim().startsWith('<')) {
+        contentEl.innerHTML = rawContent;
+    } else if (typeof formatPopupContent === 'function') {
+        contentEl.innerHTML = formatPopupContent(rawContent);
     } else {
-        contentEl.innerHTML = `<p style="white-space: pre-wrap">${policy.content}</p>`;
+        contentEl.innerHTML = `<p style="white-space: pre-wrap">${rawContent}</p>`;
     }
 
     // Set image

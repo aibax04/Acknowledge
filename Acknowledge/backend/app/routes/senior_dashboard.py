@@ -181,6 +181,60 @@ async def get_workforce_overview(db: AsyncSession = Depends(get_db), current_use
         ]
     }
 
+
+@router.get("/workforce/pending-managers", response_model=List[UserResponse])
+async def get_workforce_pending_managers(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_senior),
+):
+    """Pending managers (same data as GET /auth/pending-managers). Under /dashboard/senior so reverse proxies that forward this prefix but not all /auth/* paths still work."""
+    result = await db.execute(
+        select(User)
+        .where(
+            User.role == UserRole.MANAGER,
+            User.is_pending_approval.is_(True),
+        )
+        .order_by(User.created_at.asc())
+    )
+    return result.scalars().all()
+
+
+@router.post("/workforce/approve-manager/{user_id}")
+async def workforce_approve_manager(
+    user_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_senior),
+):
+    """Approve a pending manager (alias of POST /auth/approve-manager/{user_id})."""
+    result = await db.execute(select(User).filter(User.id == user_id))
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.role != UserRole.MANAGER:
+        raise HTTPException(status_code=400, detail="User is not a manager")
+    user.is_pending_approval = False
+    await db.commit()
+    return {"message": "Manager approved successfully"}
+
+
+@router.post("/workforce/reject-manager/{user_id}")
+async def workforce_reject_manager(
+    user_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_senior),
+):
+    """Reject a pending manager (alias of POST /auth/reject-manager/{user_id})."""
+    result = await db.execute(select(User).filter(User.id == user_id))
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.role != UserRole.MANAGER or not user.is_pending_approval:
+        raise HTTPException(status_code=400, detail="User is not a pending manager")
+    await db.delete(user)
+    await db.commit()
+    return {"message": "Manager account rejected and removed"}
+
+
 @router.get("/track")
 async def get_tracking_data(db: AsyncSession = Depends(get_db), current_user: User = Depends(require_senior)):
     """Get comprehensive tracking data for directors"""

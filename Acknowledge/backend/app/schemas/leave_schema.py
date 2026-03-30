@@ -44,12 +44,17 @@ def _parse_date(v: Union[str, date]) -> date:
     raise ValueError(f"Invalid date format. Use YYYY-MM-DD or DD/MM/YYYY: {s[:20]}")
 
 
+VALID_HALF_DAY_PERIODS = {"first_half", "second_half"}
+
+
 class LeaveApplyRequest(BaseModel):
     leave_type: str  # casual_sick_leave, earned_leave, unpaid_leave, custom
     start_date: date
     end_date: date
     reason: str
     custom_policy_id: Optional[int] = None  # required when leave_type is custom; validated in route
+    is_half_day: bool = False
+    half_day_period: Optional[str] = None  # "first_half" or "second_half"
 
     @field_validator("leave_type")
     @classmethod
@@ -61,6 +66,16 @@ class LeaveApplyRequest(BaseModel):
             raise ValueError(
                 "Leave type must be one of: casual_sick_leave, earned_leave, unpaid_leave, custom"
             )
+        return normalized
+
+    @field_validator("half_day_period")
+    @classmethod
+    def validate_half_day_period(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        normalized = v.strip().lower()
+        if normalized not in VALID_HALF_DAY_PERIODS:
+            raise ValueError("half_day_period must be 'first_half' or 'second_half'")
         return normalized
 
     @field_validator("start_date", "end_date", mode="before")
@@ -77,6 +92,8 @@ class LeaveResponse(BaseModel):
     start_date: date
     end_date: date
     num_days: float
+    is_half_day: bool = False
+    half_day_period: Optional[str] = None
     reason: str
     status: str
     approved_by_id: Optional[int] = None
