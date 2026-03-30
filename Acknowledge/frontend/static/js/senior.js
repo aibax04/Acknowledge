@@ -169,50 +169,59 @@ function setupEditName() {
 
 let currentTab = 'stats';
 
+const LEAVE_SUB_TABS = ['leave-approvals', 'leave-tracker', 'leave-policies'];
+
+function toggleLeavesMenu() {
+    const submenu = document.getElementById('nav-leaves-submenu');
+    const chevron = document.getElementById('nav-leaves-chevron');
+    if (!submenu) return;
+    const opening = submenu.classList.contains('hidden');
+    submenu.classList.toggle('hidden');
+    if (chevron) chevron.style.transform = opening ? 'rotate(180deg)' : '';
+}
+
 function switchTab(tabId) {
     currentTab = tabId;
 
     // Hide all views
-    document.getElementById('view-stats').classList.add('hidden');
-    document.getElementById('view-compliance').classList.add('hidden');
-    document.getElementById('view-workforce').classList.add('hidden');
-    const projectsView = document.getElementById('view-projects');
-    if (projectsView) projectsView.classList.add('hidden');
-    const calendarView = document.getElementById('view-calendar');
-    if (calendarView) calendarView.classList.add('hidden');
-    const reportsView = document.getElementById('view-reports');
-    if (reportsView) reportsView.classList.add('hidden');
-    const trackView = document.getElementById('view-track');
-    if (trackView) trackView.classList.add('hidden');
-    const leavesView = document.getElementById('view-leaves');
-    if (leavesView) leavesView.classList.add('hidden');
+    ['stats', 'compliance', 'workforce', 'projects', 'calendar', 'reports', 'track', ...LEAVE_SUB_TABS].forEach(id => {
+        const el = document.getElementById('view-' + id);
+        if (el) el.classList.add('hidden');
+    });
 
-    // Reset nav styles
-    const navs = ['nav-stats', 'nav-compliance', 'nav-workforce', 'nav-projects', 'nav-calendar', 'nav-reports', 'nav-track', 'nav-leaves'];
-    navs.forEach(id => {
+    // Reset nav styles for all top-level + sub-items
+    const allNavIds = ['nav-stats', 'nav-compliance', 'nav-workforce', 'nav-projects', 'nav-calendar', 'nav-reports', 'nav-track', 'nav-leave-approvals', 'nav-leave-tracker', 'nav-leave-policies'];
+    allNavIds.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
-            el.classList.remove('bg-primary-light', 'text-primary');
-            el.classList.add('text-gray-600', 'hover:bg-gray-50');
+            el.classList.remove('bg-primary/15', 'text-primary');
+            el.classList.add('text-gray-500');
         }
     });
 
     // Show active view
-    document.getElementById(`view-${tabId}`).classList.remove('hidden');
+    const view = document.getElementById('view-' + tabId);
+    if (view) view.classList.remove('hidden');
 
     // Active nav style
-    const activeNav = document.getElementById(`nav-${tabId}`);
+    const activeNav = document.getElementById('nav-' + tabId);
     if (activeNav) {
-        activeNav.classList.remove('text-gray-600', 'hover:bg-gray-50');
-        activeNav.classList.add('bg-primary-light', 'text-primary');
+        activeNav.classList.remove('text-gray-500');
+        activeNav.classList.add('bg-primary/15', 'text-primary');
+    }
+
+    // Auto-open leaves submenu when any leave sub-tab is active
+    if (LEAVE_SUB_TABS.includes(tabId)) {
+        const submenu = document.getElementById('nav-leaves-submenu');
+        const chevron = document.getElementById('nav-leaves-chevron');
+        if (submenu) submenu.classList.remove('hidden');
+        if (chevron) chevron.style.transform = 'rotate(180deg)';
     }
 
     // Load data
     if (tabId === 'calendar') {
         if (typeof loadPersonalCalendar === 'function') loadPersonalCalendar();
     }
-
-    // Refresh data for specific tabs
     if (tabId === 'workforce') void loadWorkforceTabData();
     if (tabId === 'compliance') loadPolicyAudit();
     if (tabId === 'reports') loadReports();
@@ -221,12 +230,15 @@ function switchTab(tabId) {
         if (typeof loadKanbanDashboard === 'function') loadKanbanDashboard('projects-kanban-container');
         if (typeof loadProjects === 'function') loadProjects();
     }
-    if (tabId === 'leaves') {
-        if (typeof loadLeavesTab === 'function') loadLeavesTab();
-        else {
-            if (typeof loadPendingLeaves === 'function') loadPendingLeaves();
-            if (typeof loadCustomPolicies === 'function') loadCustomPolicies();
-        }
+    if (tabId === 'leave-approvals') {
+        if (typeof ensureLeavesFilter === 'function') ensureLeavesFilter('pending', 'Filter by month:');
+        if (typeof loadPendingLeaves === 'function') loadPendingLeaves();
+    }
+    if (tabId === 'leave-tracker') {
+        if (typeof loadTeamLeaves === 'function') loadTeamLeaves();
+    }
+    if (tabId === 'leave-policies') {
+        if (typeof loadCustomPolicies === 'function') loadCustomPolicies();
     }
 }
 

@@ -136,15 +136,44 @@
                     </svg>
                     Track
                 </button>
-                <button onclick="switchTab('leaves')" id="nav-leaves"
-                    class="w-full flex items-center px-4 py-3 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-lg font-medium transition-colors text-left">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    Leave Approvals
-                </button>
+                <!-- Leave Approvals dropdown -->
+                <div>
+                    <button onclick="toggleLeavesMenu()"
+                        class="w-full flex items-center justify-between px-4 py-3 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-lg font-medium transition-colors text-left">
+                        <span class="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            Leave Approvals
+                        </span>
+                        <svg id="nav-leaves-chevron" class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                    <div id="nav-leaves-submenu" class="hidden mt-1 ml-3 pl-3 border-l-2 border-gray-100 space-y-0.5">
+                        <button onclick="switchTab('leave-approvals')" id="nav-leave-approvals"
+                            class="w-full flex items-center gap-2.5 px-3 py-2 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-lg text-sm font-medium transition-colors text-left">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                            </svg>
+                            Approvals
+                        </button>
+                        <button onclick="switchTab('leave-tracker')" id="nav-leave-tracker"
+                            class="w-full flex items-center gap-2.5 px-3 py-2 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-lg text-sm font-medium transition-colors text-left">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                            Team Tracker
+                        </button>
+                        <button onclick="switchTab('leave-policies')" id="nav-leave-policies"
+                            class="w-full flex items-center gap-2.5 px-3 py-2 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-lg text-sm font-medium transition-colors text-left">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            Leave Policies
+                        </button>
+                    </div>
+                </div>
                 <button onclick="switchTab('calendar')" id="nav-calendar"
                     class="w-full flex items-center px-4 py-3 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-lg font-medium transition-colors text-left">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
@@ -582,17 +611,8 @@
                 </div>
             </div>
 
-            <!-- TAB: LEAVE APPROVALS + CUSTOM POLICIES (Director only) -->
-            <div id="view-leaves" class="hidden space-y-6 animate-fade-in">
-                <!-- Track my leaves (director's own pending & taken) -->
-                <div class="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
-                    <div class="px-5 py-4 border-b border-gray-100">
-                        <h2 class="text-base font-semibold text-gray-900">Track my leaves</h2>
-                        <p class="text-xs text-gray-400 mt-0.5">Your pending and taken leave at a glance.</p>
-                    </div>
-                    <div id="my-leaves-list"></div>
-                </div>
-                <!-- Leave approvals -->
+            <!-- TAB: LEAVE APPROVALS -->
+            <div id="view-leave-approvals" class="hidden animate-fade-in">
                 <div class="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
                     <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
                         <div>
@@ -605,15 +625,15 @@
                         <p class="text-center text-gray-300 py-8 text-sm">Loading…</p>
                     </div>
                 </div>
-                <!-- Team Leave Tracker -->
-                <div class="mt-8 bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden"
-                    id="team-leave-tracker-section">
-                    <div
-                        class="px-6 py-4 border-b border-gray-100 bg-gray-50/30 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+            </div>
+
+            <!-- TAB: TEAM LEAVE TRACKER -->
+            <div id="view-leave-tracker" class="hidden animate-fade-in">
+                <div class="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden" id="team-leave-tracker-section">
+                    <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/30 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                         <div>
                             <h3 class="text-base font-semibold text-gray-900">Team Leave Tracker</h3>
-                            <p class="text-xs text-gray-500 mt-0.5">View and search through everyone's recorded leaves.
-                            </p>
+                            <p class="text-xs text-gray-500 mt-0.5">View and search through everyone's recorded leaves.</p>
                         </div>
                         <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                             <select id="team-leave-status-filter" onchange="applyTeamLeaveFilter()"
@@ -628,10 +648,8 @@
                                 class="w-full sm:w-56 text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
                         </div>
                     </div>
-                    <div
-                        class="px-6 py-4 border-b border-gray-100 bg-white flex flex-col sm:flex-row items-baseline gap-4">
-                        <label class="block text-xs font-semibold text-gray-600 sm:w-auto">Track Employee
-                            Balance:</label>
+                    <div class="px-6 py-4 border-b border-gray-100 bg-white flex flex-col sm:flex-row items-baseline gap-4">
+                        <label class="block text-xs font-semibold text-gray-600 sm:w-auto">Track Employee Balance:</label>
                         <input type="text" id="team-leave-balance-search" placeholder="Search user..."
                             class="w-full sm:w-48 text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
                         <select id="team-leave-balance-user" onchange="loadEmployeeLeaveBalance()"
@@ -640,33 +658,33 @@
                         </select>
                     </div>
                     <div id="team-leave-balance-container" class="hidden p-6 bg-gray-50 border-b border-gray-100"></div>
-                    <div id="team-leaves-list" class="max-h-[500px] overflow-y-auto divide-y divide-gray-100"></div>
+                    <div id="team-leaves-list" class="max-h-[600px] overflow-y-auto divide-y divide-gray-100"></div>
                 </div>
+            </div>
 
-                <!-- Custom Leave Policies -->
-                <div id="custom-leave-policies-section"
-                    class="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
+            <!-- TAB: LEAVE POLICIES -->
+            <div id="view-leave-policies" class="hidden animate-fade-in">
+                <div id="custom-leave-policies-section" class="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
                     <div class="px-5 py-4 border-b border-gray-100 flex justify-between items-center">
                         <div>
-                            <h3 class="text-base font-semibold text-gray-900">Custom Leave Policies</h3>
-                            <p class="text-xs text-gray-400 mt-0.5">Create leave types with prior notice and audience
-                                rules. You approve all applications.</p>
+                            <h3 class="text-base font-semibold text-gray-900">Leave Policies</h3>
+                            <p class="text-xs text-gray-400 mt-0.5">Create and manage custom leave types. You approve all applications under these policies.</p>
                         </div>
                         <div class="flex items-center gap-2">
                             <button type="button" onclick="openAdjustLeaveModal()"
                                 class="bg-amber-500 text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-amber-600 transition-colors shadow-sm flex items-center gap-1.5">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                                 </svg>
-                                Adjust Leave</button>
+                                Adjust Leave
+                            </button>
                             <button type="button" onclick="openCreateCustomPolicyModal()"
                                 class="bg-primary text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-primary-hover transition-colors shadow-sm flex items-center gap-1.5">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 4v16m8-8H4" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                                 </svg>
-                                New Policy</button>
+                                New Policy
+                            </button>
                         </div>
                     </div>
                     <div id="custom-leave-policies-list" class="p-5">
