@@ -849,14 +849,35 @@ function _leavesTable(leaves, showStatus, showAction) {
 }
 
 // ---- MY LEAVES RENDERER ----
+function _switchMyLeavesTab(tab) {
+    var tabs = ['pending', 'approved', 'other'];
+    var ACTIVE = ['bg-primary', 'text-white', 'border-primary'];
+    var INACTIVE = ['bg-white', 'text-gray-500', 'border-gray-200', 'hover:border-gray-300', 'hover:text-gray-700'];
+    tabs.forEach(function (t) {
+        var btn = document.getElementById('my-leaves-tab-' + t);
+        var content = document.getElementById('my-leaves-content-' + t);
+        if (!btn || !content) return;
+        if (t === tab) {
+            btn.classList.remove.apply(btn.classList, INACTIVE);
+            btn.classList.add.apply(btn.classList, ACTIVE);
+            content.classList.remove('hidden');
+        } else {
+            btn.classList.remove.apply(btn.classList, ACTIVE);
+            btn.classList.add.apply(btn.classList, INACTIVE);
+            content.classList.add('hidden');
+        }
+    });
+}
+
 function renderMyLeaves(leaves) {
     var c = document.getElementById('my-leaves-list');
     if (!c) return;
 
     if (!leaves || leaves.length === 0) {
-        c.innerHTML = '<div class="p-6"><div class="grid grid-cols-2 gap-3 mb-4">' +
+        c.innerHTML = '<div class="p-6"><div class="grid grid-cols-3 gap-3 mb-4">' +
             '<div class="bg-amber-50/50 rounded-xl p-4 text-center border border-amber-100/40"><p class="text-2xl font-bold text-amber-500">0</p><p class="text-[10px] font-semibold text-amber-400 uppercase tracking-wider mt-0.5">Pending</p></div>' +
-            '<div class="bg-emerald-50/50 rounded-xl p-4 text-center border border-emerald-100/40"><p class="text-2xl font-bold text-emerald-500">0</p><p class="text-[10px] font-semibold text-emerald-400 uppercase tracking-wider mt-0.5">Approved</p></div></div>' +
+            '<div class="bg-emerald-50/50 rounded-xl p-4 text-center border border-emerald-100/40"><p class="text-2xl font-bold text-emerald-500">0</p><p class="text-[10px] font-semibold text-emerald-400 uppercase tracking-wider mt-0.5">Approved</p></div>' +
+            '<div class="bg-gray-50 rounded-xl p-4 text-center border border-gray-100"><p class="text-2xl font-bold text-gray-400">0</p><p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mt-0.5">Rejected</p></div></div>' +
             _emptyState('No leave requests yet') + '</div>';
         return;
     }
@@ -865,22 +886,29 @@ function renderMyLeaves(leaves) {
     var taken = leaves.filter(function (l) { return l.status === 'approved'; });
     var other = leaves.filter(function (l) { return l.status !== 'pending' && l.status !== 'approved'; });
 
-    // Summary cards
-    var colCount = other.length > 0 ? 4 : 3;
+    // Summary stat cards (clickable to switch tab)
     var summary = '<div class="p-5 border-b border-gray-100">' +
-        '<div class="grid grid-cols-2 sm:grid-cols-' + colCount + ' gap-3">' +
-        '<div class="bg-amber-50/50 rounded-xl p-3.5 text-center border border-amber-100/40"><p class="text-2xl font-bold text-amber-600">' + pending.length + '</p><p class="text-[10px] font-semibold text-amber-400 uppercase tracking-wider mt-0.5">Pending</p></div>' +
-        '<div class="bg-emerald-50/50 rounded-xl p-3.5 text-center border border-emerald-100/40"><p class="text-2xl font-bold text-emerald-600">' + taken.length + '</p><p class="text-[10px] font-semibold text-emerald-400 uppercase tracking-wider mt-0.5">Approved</p></div>' +
-        '<div class="bg-blue-50/50 rounded-xl p-3.5 text-center border border-blue-100/40"><p class="text-2xl font-bold text-blue-600">' + leaves.length + '</p><p class="text-[10px] font-semibold text-blue-400 uppercase tracking-wider mt-0.5">Total</p></div>';
-    if (other.length > 0) summary += '<div class="bg-gray-50 rounded-xl p-3.5 text-center border border-gray-100"><p class="text-2xl font-bold text-gray-500">' + other.length + '</p><p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mt-0.5">Other</p></div>';
-    summary += '</div></div>';
+        '<div class="grid grid-cols-3 gap-3">' +
+        '<button onclick="_switchMyLeavesTab(\'pending\')" class="bg-amber-50/50 rounded-xl p-3.5 text-center border border-amber-100/40 hover:border-amber-300 transition-colors cursor-pointer w-full"><p class="text-2xl font-bold text-amber-600">' + pending.length + '</p><p class="text-[10px] font-semibold text-amber-400 uppercase tracking-wider mt-0.5">Pending</p></button>' +
+        '<button onclick="_switchMyLeavesTab(\'approved\')" class="bg-emerald-50/50 rounded-xl p-3.5 text-center border border-emerald-100/40 hover:border-emerald-300 transition-colors cursor-pointer w-full"><p class="text-2xl font-bold text-emerald-600">' + taken.length + '</p><p class="text-[10px] font-semibold text-emerald-400 uppercase tracking-wider mt-0.5">Approved</p></button>' +
+        '<button onclick="_switchMyLeavesTab(\'other\')" class="bg-gray-50 rounded-xl p-3.5 text-center border border-gray-100 hover:border-gray-300 transition-colors cursor-pointer w-full"><p class="text-2xl font-bold text-gray-500">' + other.length + '</p><p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mt-0.5">Rejected</p></button>' +
+        '</div></div>';
 
-    // Sections
-    var pendingSection = '<div class="px-5 py-4"><h4 class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3">Pending Requests</h4>' + _leavesTable(pending, true, true) + '</div>';
-    var takenSection = '<div class="px-5 py-4 border-t border-gray-50"><h4 class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3">Approved Leaves</h4>' + _leavesTable(taken, false, false) + '</div>';
-    var otherSection = other.length > 0 ? '<div class="px-5 py-4 border-t border-gray-50"><h4 class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3">Rejected / Cancelled</h4>' + _leavesTable(other, true, false) + '</div>' : '';
+    // Tab buttons bar
+    var tabBar = '<div class="px-5 py-3 border-b border-gray-100 flex gap-2 flex-wrap">' +
+        '<button id="my-leaves-tab-pending" onclick="_switchMyLeavesTab(\'pending\')" class="text-xs font-semibold px-3.5 py-1.5 rounded-lg border transition-colors">Pending <span class="ml-0.5 opacity-75">(' + pending.length + ')</span></button>' +
+        '<button id="my-leaves-tab-approved" onclick="_switchMyLeavesTab(\'approved\')" class="text-xs font-semibold px-3.5 py-1.5 rounded-lg border transition-colors">Approved <span class="ml-0.5 opacity-75">(' + taken.length + ')</span></button>' +
+        '<button id="my-leaves-tab-other" onclick="_switchMyLeavesTab(\'other\')" class="text-xs font-semibold px-3.5 py-1.5 rounded-lg border transition-colors">Rejected / Cancelled <span class="ml-0.5 opacity-75">(' + other.length + ')</span></button>' +
+        '</div>';
 
-    c.innerHTML = summary + pendingSection + takenSection + otherSection;
+    // Tab content panels
+    var contentPending = '<div id="my-leaves-content-pending" class="px-5 py-4">' + (pending.length ? _leavesTable(pending, true, true) : _emptyState('No pending requests')) + '</div>';
+    var contentApproved = '<div id="my-leaves-content-approved" class="hidden px-5 py-4">' + (taken.length ? _leavesTable(taken, false, false) : _emptyState('No approved leaves')) + '</div>';
+    var contentOther = '<div id="my-leaves-content-other" class="hidden px-5 py-4">' + (other.length ? _leavesTable(other, true, false) : _emptyState('No rejected or cancelled leaves')) + '</div>';
+
+    c.innerHTML = summary + tabBar + contentPending + contentApproved + contentOther;
+    // Default to pending tab; if no pending, show approved
+    _switchMyLeavesTab(pending.length > 0 ? 'pending' : 'approved');
 }
 
 async function cancelLeave(id) {
