@@ -550,6 +550,52 @@
             <!-- TAB 6: STRATEGIC REPORTS -->
             <!-- TRACK TAB -->
             <div id="view-track" class="hidden space-y-8 animate-fade-in">
+
+                <!-- Attendance Download Card -->
+                <div class="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                        <div>
+                            <h2 class="text-base font-semibold text-gray-900">Download Attendance</h2>
+                            <p class="text-xs text-gray-400 mt-0.5">Export everyone's attendance for a selected month as a clean Excel file.</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <select id="att-export-month"
+                                class="text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white">
+                                <option value="1">January</option>
+                                <option value="2">February</option>
+                                <option value="3">March</option>
+                                <option value="4">April</option>
+                                <option value="5">May</option>
+                                <option value="6">June</option>
+                                <option value="7">July</option>
+                                <option value="8">August</option>
+                                <option value="9">September</option>
+                                <option value="10">October</option>
+                                <option value="11">November</option>
+                                <option value="12">December</option>
+                            </select>
+                            <select id="att-export-year"
+                                class="text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white">
+                            </select>
+                            <button onclick="downloadAllAttendance()" id="att-export-btn"
+                                class="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-primary-hover transition-colors shadow-sm whitespace-nowrap">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                </svg>
+                                Download Excel
+                            </button>
+                        </div>
+                    </div>
+                    <div class="px-6 py-3 bg-gray-50/50 flex flex-wrap gap-6 text-xs text-gray-500">
+                        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-green-100 border border-green-200 inline-block"></span>Present</span>
+                        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-red-100 border border-red-200 inline-block"></span>Absent</span>
+                        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-amber-100 border border-amber-200 inline-block"></span>On Leave</span>
+                        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-purple-100 border border-purple-200 inline-block"></span>Holiday</span>
+                        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-gray-100 border border-gray-200 inline-block"></span>Weekly Off</span>
+                        <span class="ml-auto text-gray-400 italic">Includes Summary sheet + Detailed daily records for all employees</span>
+                    </div>
+                </div>
+
                 <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
                     <h2 class="text-xl font-bold text-gray-900 mb-6">Activity Tracking & Analytics</h2>
 

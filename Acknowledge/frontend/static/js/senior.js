@@ -89,6 +89,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // Populate attendance export year dropdown
+    (function () {
+        const yearSel = document.getElementById('att-export-year');
+        const monthSel = document.getElementById('att-export-month');
+        if (!yearSel || !monthSel) return;
+        const now = new Date();
+        for (let y = now.getFullYear(); y >= now.getFullYear() - 3; y--) {
+            const opt = document.createElement('option');
+            opt.value = y;
+            opt.textContent = y;
+            if (y === now.getFullYear()) opt.selected = true;
+            yearSel.appendChild(opt);
+        }
+        monthSel.value = String(now.getMonth() + 1);
+    })();
+
     // Initialize policy image upload handlers
     initPolicyImageUpload();
 
@@ -2079,5 +2095,48 @@ async function promoteUser() {
     } finally {
         btn.disabled = false;
         btn.textContent = 'Promote';
+    }
+}
+
+// ── Attendance Export ────────────────────────────────────────────────
+async function downloadAllAttendance() {
+    const monthSel = document.getElementById('att-export-month');
+    const yearSel = document.getElementById('att-export-year');
+    const btn = document.getElementById('att-export-btn');
+    if (!monthSel || !yearSel) return;
+
+    const month = parseInt(monthSel.value, 10);
+    const year = parseInt(yearSel.value, 10);
+    if (!month || !year) { showToast('Select a month and year', 'error'); return; }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12a8 8 0 018-8v8z"/></svg> Preparing…';
+    }
+    try {
+        const token = localStorage.getItem('access_token');
+        const url = `/api/attendance/export-all?year=${year}&month=${month}`;
+        const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            throw new Error(err.detail || 'Export failed');
+        }
+        const blob = await resp.blob();
+        const monthName = monthSel.options[monthSel.selectedIndex].text;
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `Attendance_All_${monthName}_${year}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(a.href);
+        showToast('Attendance downloaded!', 'success');
+    } catch (e) {
+        showToast(e.message || 'Download failed', 'error');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg> Download Excel';
+        }
     }
 }

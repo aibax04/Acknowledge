@@ -585,6 +585,268 @@ async def export_attendance_excel(
     )
 
 
+@router.get("/export-all")
+async def export_all_attendance_excel(
+    year: int,
+    month: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Export all employees' monthly attendance as a single Excel file. Director/Senior only."""
+    if current_user.role not in (UserRole.MANAGER, UserRole.SENIOR):
+        raise HTTPException(status_code=403, detail="Only managers and directors can export attendance")
+
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    except ImportError:
+        raise HTTPException(status_code=500, detail="Excel library not available. Ask admin to install openpyxl.")
+
+    month_name = date(year, month, 1).strftime("%B %Y")
+    first_day = date(year, month, 1)
+    last_day = date(year, month + 1, 1) - timedelta(days=1) if month < 12 else date(year, 12, 31)
+    ist = timedelta(hours=5, minutes=30)
+    today = date.today()
+    day_names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+
+    # Fetch all active users
+    users_result = await db.execute(
+        select(User).filter(User.is_active == True).order_by(User.full_name)
+    )
+    all_users = users_result.scalars().all()
+
+    # Fetch all attendance for the month in one query
+    att_result = await db.execute(
+        select(Attendance).filter(
+            Attendance.date >= first_day,
+            Attendance.date <= last_day
+        )
+    )
+    all_att = att_result.scalars().all()
+    att_map = {}  # {user_id: {date: record}}
+    for rec in all_att:
+        att_map.setdefault(rec.user_id, {})[rec.date] = rec
+
+    # Fetch all holidays for the month
+    hol_result = await db.execute(
+        select(Holiday).filter(
+            Holiday.date >= first_day,
+            Holiday.date <= last_day
+        )
+    )
+    all_holidays = hol_result.scalars().all()
+    holidays_by_office = {}  # {office: {date: holiday}}
+    for h in all_holidays:
+        for off in (["panscience", "eigen"] if h.office == "both" else [h.office]):
+            holidays_by_office.setdefault(off, {})[h.date] = h
+
+    # Fetch all approved leaves for the month
+    leave_result = await db.execute(
+        select(LeaveRequest).filter(
+            LeaveRequest.status == LeaveStatus.APPROVED,
+            LeaveRequest.start_date <= last_day,
+            LeaveRequest.end_date >= first_day
+        )
+    )
+    all_leaves = leave_result.scalars().all()
+    leave_map = {}  # {user_id: set of dates}
+    for lv in all_leaves:
+        s = max(lv.start_date, first_day)
+        while s <= min(lv.end_date, last_day):
+            leave_map.setdefault(lv.user_id, set()).add(s)
+            s += timedelta(days=1)
+
+    # Styles
+    thin = Border(
+        left=Side(style="thin", color="D1D5DB"),
+        right=Side(style="thin", color="D1D5DB"),
+        top=Side(style="thin", color="D1D5DB"),
+        bottom=Side(style="thin", color="D1D5DB"),
+    )
+    hdr_font = Font(bold=True, color="FFFFFF", size=10)
+    hdr_fill = PatternFill(start_color="10B981", end_color="10B981", fill_type="solid")
+    sub_fill = PatternFill(start_color="F0FDF4", end_color="F0FDF4", fill_type="solid")
+    sub_font = Font(bold=True, size=10, color="065F46")
+    status_fills = {
+        "Present":    PatternFill(start_color="D1FAE5", end_color="D1FAE5", fill_type="solid"),
+        "Absent":     PatternFill(start_color="FEE2E2", end_color="FEE2E2", fill_type="solid"),
+        "Weekly Off": PatternFill(start_color="F3F4F6", end_color="F3F4F6", fill_type="solid"),
+        "On Leave":   PatternFill(start_color="FEF3C7", end_color="FEF3C7", fill_type="solid"),
+        "Holiday":    PatternFill(start_color="EDE9FE", end_color="EDE9FE", fill_type="solid"),
+    }
+
+    def _day_status(d, user, records, leave_dates, hols):
+        if d > today:
+            return "Future", "", ""
+        if is_weekly_off(d, user.office or "eigen"):
+            return "Weekly Off", "", ""
+        if d in hols:
+            return f"Holiday", "", ""
+        if d in leave_dates:
+            return "On Leave", "", ""
+        rec = records.get(d)
+        if rec:
+            if rec.status == AttendanceStatus.ABSENT:
+                return "Absent", "", ""
+            ci = (rec.clock_in + ist).strftime("%I:%M %p") if rec.clock_in else "-"
+            co = (rec.clock_out + ist).strftime("%I:%M %p") if rec.clock_out else "-"
+            return "Present", ci, co
+        return "Absent", "", ""
+
+    wb = Workbook()
+
+    # ── SHEET 1: SUMMARY ──────────────────────────────────────────────
+    ws_sum = wb.active
+    ws_sum.title = "Summary"
+
+    ws_sum.merge_cells("A1:I1")
+    t = ws_sum["A1"]
+    t.value = f"Attendance Summary — {month_name}"
+    t.font = Font(bold=True, size=14, color="111827")
+    t.alignment = Alignment(horizontal="center")
+
+    ws_sum.merge_cells("A2:I2")
+    m = ws_sum["A2"]
+    m.value = f"Exported by: {current_user.full_name}   |   Total Employees: {len(all_users)}"
+    m.font = Font(size=10, color="6B7280")
+    m.alignment = Alignment(horizontal="center")
+
+    sum_headers = ["#", "Employee", "Role", "Office", "Present", "Absent", "On Leave", "Holiday / W.Off", "Total Hours"]
+    for ci, h in enumerate(sum_headers, 1):
+        cell = ws_sum.cell(row=4, column=ci, value=h)
+        cell.font = hdr_font
+        cell.fill = hdr_fill
+        cell.alignment = Alignment(horizontal="center")
+        cell.border = thin
+
+    sum_row = 5
+    for idx, user in enumerate(all_users, 1):
+        office = _normalize_office(user.office) or "eigen"
+        records = att_map.get(user.id, {})
+        leave_dates = leave_map.get(user.id, set())
+        hols = holidays_by_office.get(office, {})
+        present = absent = on_leave = hol_woff = 0
+        total_hrs = 0.0
+        d = first_day
+        while d <= last_day:
+            if d > today:
+                pass
+            elif is_weekly_off(d, office):
+                hol_woff += 1
+            elif d in hols:
+                hol_woff += 1
+            elif d in leave_dates:
+                on_leave += 1
+            elif d in records:
+                rec = records[d]
+                if rec.status == AttendanceStatus.ABSENT:
+                    absent += 1
+                else:
+                    present += 1
+                    if rec.clock_in and rec.clock_out:
+                        total_hrs += (rec.clock_out - rec.clock_in).total_seconds() / 3600
+            else:
+                absent += 1
+            d += timedelta(days=1)
+
+        row_data = [idx, user.full_name, (user.role.value if user.role else "").capitalize(),
+                    office.capitalize(), present, absent, on_leave, hol_woff,
+                    round(total_hrs, 1) if total_hrs else ""]
+        for ci, val in enumerate(row_data, 1):
+            cell = ws_sum.cell(row=sum_row, column=ci, value=val)
+            cell.border = thin
+            cell.alignment = Alignment(horizontal="center" if ci != 2 else "left")
+        sum_row += 1
+
+    ws_sum.column_dimensions["A"].width = 5
+    ws_sum.column_dimensions["B"].width = 22
+    ws_sum.column_dimensions["C"].width = 12
+    ws_sum.column_dimensions["D"].width = 12
+    ws_sum.column_dimensions["E"].width = 10
+    ws_sum.column_dimensions["F"].width = 10
+    ws_sum.column_dimensions["G"].width = 10
+    ws_sum.column_dimensions["H"].width = 16
+    ws_sum.column_dimensions["I"].width = 13
+
+    # ── SHEET 2: DETAILED RECORDS ────────────────────────────────────
+    ws_det = wb.create_sheet("Detailed Records")
+
+    ws_det.merge_cells("A1:H1")
+    t2 = ws_det["A1"]
+    t2.value = f"Detailed Attendance — {month_name}"
+    t2.font = Font(bold=True, size=14, color="111827")
+    t2.alignment = Alignment(horizontal="center")
+
+    det_headers = ["Employee", "Role", "Office", "Date", "Day", "Status", "Clock In (IST)", "Clock Out (IST)"]
+    for ci, h in enumerate(det_headers, 1):
+        cell = ws_det.cell(row=3, column=ci, value=h)
+        cell.font = hdr_font
+        cell.fill = hdr_fill
+        cell.alignment = Alignment(horizontal="center")
+        cell.border = thin
+
+    det_row = 4
+    for user in all_users:
+        office = _normalize_office(user.office) or "eigen"
+        records = att_map.get(user.id, {})
+        leave_dates = leave_map.get(user.id, set())
+        hols = holidays_by_office.get(office, {})
+
+        # Employee name sub-header row
+        ws_det.merge_cells(start_row=det_row, start_column=1, end_row=det_row, end_column=8)
+        emp_cell = ws_det.cell(row=det_row, column=1,
+                               value=f"{user.full_name}  —  {(user.role.value or '').capitalize()}  |  {office.capitalize()}")
+        emp_cell.font = sub_font
+        emp_cell.fill = sub_fill
+        emp_cell.alignment = Alignment(horizontal="left")
+        emp_cell.border = thin
+        det_row += 1
+
+        d = first_day
+        while d <= last_day:
+            status, ci_str, co_str = _day_status(d, user, records, leave_dates, hols)
+            row_vals = [
+                user.full_name,
+                (user.role.value or "").capitalize(),
+                office.capitalize(),
+                d.strftime("%d %b %Y"),
+                day_names[d.weekday()],
+                status,
+                ci_str,
+                co_str,
+            ]
+            status_key = status.split(" —")[0].strip()
+            fill = status_fills.get(status_key)
+            for ci, val in enumerate(row_vals, 1):
+                cell = ws_det.cell(row=det_row, column=ci, value=val)
+                cell.border = thin
+                cell.alignment = Alignment(horizontal="center" if ci not in (1, 6) else "left")
+                if fill:
+                    cell.fill = fill
+            det_row += 1
+            d += timedelta(days=1)
+
+    ws_det.column_dimensions["A"].width = 22
+    ws_det.column_dimensions["B"].width = 12
+    ws_det.column_dimensions["C"].width = 12
+    ws_det.column_dimensions["D"].width = 14
+    ws_det.column_dimensions["E"].width = 7
+    ws_det.column_dimensions["F"].width = 14
+    ws_det.column_dimensions["G"].width = 16
+    ws_det.column_dimensions["H"].width = 16
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+
+    filename = f"Attendance_All_{month_name.replace(' ', '_')}.xlsx"
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
+
+
 # ============================================
 # ATTENDANCE UPDATE REQUESTS
 # ============================================
