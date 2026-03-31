@@ -61,21 +61,29 @@ function clearLeavesFilter(prefix) {
 }
 
 async function loadLeavesTab() {
-    ensureLeavesFilter('my', 'Filter by month:');
-    ensureLeavesFilter('pending', 'Filter by month:');
-    await Promise.all([loadLeaveBalance(), loadMyLeaves()]);
+    // Director role uses separate sub-tab views — skip the combined tab loading
+    if (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'senior') return;
+
+    if (document.getElementById('my-leaves-list')) {
+        ensureLeavesFilter('my', 'Filter by month:');
+        await Promise.all([loadLeaveBalance(), loadMyLeaves()]);
+    }
+
     var teamTrackerSec = document.getElementById('team-leave-tracker-section');
-    if (teamTrackerSec && typeof currentUser !== 'undefined' && currentUser && (currentUser.role === 'manager' || currentUser.role === 'senior')) {
+    if (teamTrackerSec && typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'manager') {
         teamTrackerSec.classList.remove('hidden');
         loadTeamLeaves();
     }
 
     var sec = document.getElementById('custom-leave-policies-section');
-    if (sec && typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'senior') {
+    if (sec && typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'manager') {
         sec.classList.remove('hidden');
         await loadCustomPolicies();
+        ensureLeavesFilter('pending', 'Filter by month:');
         loadPendingLeaves();
-    } else if (sec) sec.classList.add('hidden');
+    } else if (sec && typeof currentUser !== 'undefined' && currentUser && currentUser.role !== 'senior') {
+        sec.classList.add('hidden');
+    }
 }
 
 var _cachedTeamLeaves = [];
@@ -205,9 +213,15 @@ function renderTeamLeaves(leaves) {
     h += '<th class="px-6 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Actions</th>';
     h += '</tr></thead><tbody class="divide-y divide-gray-50 bg-white">';
 
+    function _fmtDate(iso) {
+        if (!iso) return '-';
+        var p = iso.split('-');
+        return p.length === 3 ? p[2] + '-' + p[1] + '-' + p[0] : iso;
+    }
+
     leaves.forEach(function (l) {
         var type = l.custom_policy_title || l.leave_type;
-        var dates = l.is_half_day ? (l.start_date || '-') : (l.start_date || '-') + ' to ' + (l.end_date || '-');
+        var dates = l.is_half_day ? _fmtDate(l.start_date) : _fmtDate(l.start_date) + ' to ' + _fmtDate(l.end_date);
         var reasonEsc = (l.reason || '').replace(/"/g, '&quot;');
         var canRevoke = l.status === 'approved' || l.status === 'pending';
         var actionCell = canRevoke
