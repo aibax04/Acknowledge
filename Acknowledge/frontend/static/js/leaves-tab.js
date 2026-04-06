@@ -121,63 +121,115 @@ function _escapeHtmlAttr(s) {
         .replace(/>/g, '&gt;');
 }
 
-/** Rebuild employee <select> from cached users + current search box (alphabetical, filtered). */
+/** Show/hide custom combobox dropdown with filtered, alphabetical employee list. */
 function renderTeamLeaveBalanceUserSelect() {
-    var userSel = document.getElementById('team-leave-balance-user');
-    if (!userSel || !window._allUsersForLeaveBalance) return;
+    var dropdown = document.getElementById('team-leave-balance-dropdown');
+    if (!dropdown || !window._allUsersForLeaveBalance) return;
     var searchEl = document.getElementById('team-leave-balance-search');
     var q = (searchEl && searchEl.value) ? searchEl.value.trim().toLowerCase() : '';
-    var users = window._allUsersForLeaveBalance;
+    var users = window._allUsersForLeaveBalance; // already sorted alphabetically
     var filtered = !q ? users : users.filter(function (u) {
         var name = (u.full_name || '').toLowerCase();
         var role = (u.role || '').toLowerCase();
-        var email = (u.email || '').toLowerCase();
         var office = (u.office || '').toLowerCase();
-        var idStr = String(u.id != null ? u.id : '');
-        return name.indexOf(q) !== -1 || role.indexOf(q) !== -1 || email.indexOf(q) !== -1 || office.indexOf(q) !== -1 || idStr.indexOf(q) !== -1;
+        return name.indexOf(q) !== -1 || role.indexOf(q) !== -1 || office.indexOf(q) !== -1;
     });
-    var prev = userSel.value;
-    var opts = filtered.map(function (u) {
-        var label = (u.full_name || 'User') + ' (' + (u.role || '') + ')';
-        return '<option value="' + _escapeHtmlAttr(u.id) + '">' + _escapeHtmlAttr(label) + '</option>';
-    }).join('');
-    userSel.innerHTML = '<option value="">Select employee...</option>' + opts;
-    if (filtered.length === 1 && q) {
-        userSel.value = String(filtered[0].id);
-        loadEmployeeLeaveBalance();
+
+    if (!filtered.length) {
+        dropdown.innerHTML = '<div class="px-4 py-6 text-center text-sm text-gray-400">No employees found</div>';
+        dropdown.classList.remove('hidden');
         return;
     }
-    var stillThere = prev && filtered.some(function (u) { return String(u.id) === String(prev); });
-    if (stillThere) {
-        userSel.value = prev;
-    } else {
-        userSel.value = '';
-        var container = document.getElementById('team-leave-balance-container');
-        if (container) container.classList.add('hidden');
-    }
+
+    var roleColors = { senior: 'bg-purple-50 text-purple-700', manager: 'bg-blue-50 text-blue-700', employee: 'bg-gray-100 text-gray-600', intern: 'bg-amber-50 text-amber-700' };
+    dropdown.innerHTML = filtered.map(function (u) {
+        var initials = (u.full_name || '?').split(' ').map(function (w) { return w[0]; }).join('').substring(0, 2).toUpperCase();
+        var role = (u.role || 'employee').toLowerCase();
+        var roleClass = roleColors[role] || 'bg-gray-100 text-gray-600';
+        var roleLabel = role.charAt(0).toUpperCase() + role.slice(1);
+        var office = u.office ? (' · ' + u.office.charAt(0).toUpperCase() + u.office.slice(1)) : '';
+        return '<button type="button" class="w-full flex items-center gap-3 px-4 py-3 hover:bg-primary/5 transition-colors text-left" onclick="_selectTeamLeaveBalanceUser(' + _escapeHtmlAttr(u.id) + ', \'' + _escapeHtmlAttr(u.full_name) + '\')">' +
+            '<div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0">' + initials + '</div>' +
+            '<div class="flex-1 min-w-0">' +
+            '<p class="text-sm font-medium text-gray-900 truncate">' + _escapeHtmlAttr(u.full_name || 'User') + '</p>' +
+            '<p class="text-xs text-gray-400 truncate">' + _escapeHtmlAttr(office ? roleLabel + office : roleLabel) + '</p>' +
+            '</div>' +
+            '<span class="text-[10px] font-semibold px-1.5 py-0.5 rounded ' + roleClass + ' shrink-0">' + roleLabel + '</span>' +
+            '</button>';
+    }).join('');
+    dropdown.classList.remove('hidden');
+}
+
+function _selectTeamLeaveBalanceUser(userId, name) {
+    var hiddenInput = document.getElementById('team-leave-balance-user');
+    var searchEl = document.getElementById('team-leave-balance-search');
+    var clearBtn = document.getElementById('team-leave-balance-clear');
+    var dropdown = document.getElementById('team-leave-balance-dropdown');
+    if (hiddenInput) hiddenInput.value = String(userId);
+    if (searchEl) { searchEl.value = name; searchEl.blur(); }
+    if (clearBtn) clearBtn.classList.remove('hidden');
+    if (dropdown) dropdown.classList.add('hidden');
+    loadEmployeeLeaveBalance();
+}
+
+function clearTeamLeaveBalanceSelection() {
+    var hiddenInput = document.getElementById('team-leave-balance-user');
+    var searchEl = document.getElementById('team-leave-balance-search');
+    var clearBtn = document.getElementById('team-leave-balance-clear');
+    var dropdown = document.getElementById('team-leave-balance-dropdown');
+    var container = document.getElementById('team-leave-balance-container');
+    if (hiddenInput) hiddenInput.value = '';
+    if (searchEl) { searchEl.value = ''; searchEl.focus(); }
+    if (clearBtn) clearBtn.classList.add('hidden');
+    if (dropdown) dropdown.classList.add('hidden');
+    if (container) container.classList.add('hidden');
+}
+
+function _initTeamLeaveBalanceCombobox() {
+    var searchEl = document.getElementById('team-leave-balance-search');
+    var dropdown = document.getElementById('team-leave-balance-dropdown');
+    if (!searchEl || searchEl.dataset.comboboxBound) return;
+    searchEl.dataset.comboboxBound = '1';
+
+    searchEl.addEventListener('input', function () {
+        var hiddenInput = document.getElementById('team-leave-balance-user');
+        var clearBtn = document.getElementById('team-leave-balance-clear');
+        // Clear selection if user edits the text
+        if (hiddenInput) hiddenInput.value = '';
+        if (clearBtn) clearBtn.classList.add('hidden');
+        renderTeamLeaveBalanceUserSelect();
+    });
+
+    searchEl.addEventListener('focus', function () {
+        if (window._allUsersForLeaveBalance && window._allUsersForLeaveBalance.length) {
+            renderTeamLeaveBalanceUserSelect();
+        }
+    });
+
+    // Close dropdown on outside click
+    document.addEventListener('click', function (e) {
+        var combobox = document.getElementById('team-leave-balance-combobox');
+        if (combobox && !combobox.contains(e.target)) {
+            if (dropdown) dropdown.classList.add('hidden');
+        }
+    }, true);
 }
 
 async function loadTeamLeaves() {
     var c = document.getElementById('team-leaves-list');
     if (!c) return;
     try {
-        var balanceSearchInput = document.getElementById('team-leave-balance-search');
-        if (balanceSearchInput && typeof window._balanceSearchBound === 'undefined') {
-            window._balanceSearchBound = true;
-            balanceSearchInput.addEventListener('input', function () {
-                renderTeamLeaveBalanceUserSelect();
-            });
-        }
+        _initTeamLeaveBalanceCombobox();
 
         var leaves = await Api.get('/leaves/all');
         _cachedTeamLeaves = leaves || [];
         renderTeamLeaves(_cachedTeamLeaves);
 
-        var userSel = document.getElementById('team-leave-balance-user');
-        if (userSel) {
+        var hiddenInput = document.getElementById('team-leave-balance-user');
+        if (hiddenInput) {
             var users = await Api.get('/auth/all-users');
             window._allUsersForLeaveBalance = _sortUsersForLeaveBalance(users || []);
-            renderTeamLeaveBalanceUserSelect();
+            // Don't auto-open dropdown on load — wait for user focus/type
         }
 
         var searchInput = document.getElementById('team-leave-search');
