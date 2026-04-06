@@ -1430,37 +1430,30 @@ async function openAssignTaskModal(userId = null, userName = null) {
     document.getElementById('task-priority').value = 'medium';
     document.getElementById('task-deadline').value = '';
 
-    // Populate Assign To Dropdown
-    const assigneeSelect = document.getElementById('task-assignee');
-    assigneeSelect.innerHTML = '<option value="">Loading users...</option>';
+    // Init or reset task-assignee combobox
+    if (!window._taskAssigneeCfg) {
+        window._taskAssigneeCfg = {
+            searchId: 'task-assignee-search', hiddenId: 'task-assignee',
+            dropdownId: 'task-assignee-dropdown', clearBtnId: 'task-assignee-clear',
+            placeholder: 'Search person…', users: []
+        };
+        if (typeof _initCombobox === 'function') _initCombobox(window._taskAssigneeCfg);
+    }
+    if (typeof _resetCombobox === 'function') _resetCombobox(window._taskAssigneeCfg);
 
     try {
         const users = await Api.get('/auth/all-users');
-        assigneeSelect.innerHTML = '<option value="">Select person...</option>';
-
-        const myName = localStorage.getItem('user_name') || 'Me';
-
-        users.forEach(user => {
-            const option = document.createElement('option');
-            option.value = user.id;
-            const roleLabel = user.role.charAt(0).toUpperCase() + user.role.slice(1);
-            option.textContent = `${user.full_name} (${roleLabel})`;
-
-            // Check if this user is me (simple check by name, or if we had ID)
-            if (user.full_name === myName) {
-                option.textContent += ' (Me)';
-                option.style.fontWeight = 'bold';
-            }
-
-            if (userId && user.id === userId) {
-                option.selected = true;
-            }
-            assigneeSelect.appendChild(option);
-        });
-
+        const sorted = (users || []).slice().sort((a, b) => (a.full_name || '').localeCompare(b.full_name || ''));
+        window._taskAssigneeCfg.users = sorted;
+        // Pre-select if userId provided
+        if (userId && userName) {
+            const hiddenEl = document.getElementById('task-assignee');
+            const searchEl = document.getElementById('task-assignee-search');
+            if (hiddenEl) hiddenEl.value = String(userId);
+            if (searchEl) searchEl.value = userName;
+        }
     } catch (e) {
         console.error("Failed to load users for assignment", e);
-        assigneeSelect.innerHTML = '<option value="">Error loading users</option>';
     }
     // Populate Projects Dropdown
     const projectSelect = document.getElementById('task-project');

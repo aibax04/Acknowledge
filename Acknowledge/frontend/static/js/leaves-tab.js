@@ -215,6 +215,96 @@ function _initTeamLeaveBalanceCombobox() {
     }, true);
 }
 
+/**
+ * Generic reusable searchable user combobox.
+ * cfg: { searchId, hiddenId, dropdownId, clearBtnId, users: [], onSelect: fn(uid,name), placeholder }
+ * Call once to bind events. To update users afterwards, set cfg.users = newArr and call cfg._render().
+ */
+function _initCombobox(cfg) {
+    var searchEl = document.getElementById(cfg.searchId);
+    var hiddenEl = document.getElementById(cfg.hiddenId);
+    var dropdownEl = document.getElementById(cfg.dropdownId);
+    if (!searchEl || !hiddenEl || !dropdownEl) return;
+    if (searchEl.dataset.comboboxBound === '1') { cfg._render && cfg._render(); return; }
+    searchEl.dataset.comboboxBound = '1';
+    if (cfg.placeholder) searchEl.placeholder = cfg.placeholder;
+
+    var roleColors = { senior: 'bg-purple-50 text-purple-700', manager: 'bg-blue-50 text-blue-700', employee: 'bg-gray-100 text-gray-600', intern: 'bg-amber-50 text-amber-700' };
+
+    function renderDropdown() {
+        var q = searchEl.value.trim().toLowerCase();
+        var users = cfg.users || [];
+        var filtered = !q ? users : users.filter(function (u) {
+            return (u.full_name || '').toLowerCase().indexOf(q) !== -1
+                || (u.role || '').toLowerCase().indexOf(q) !== -1
+                || (u.office || '').toLowerCase().indexOf(q) !== -1;
+        });
+        if (!filtered.length) {
+            dropdownEl.innerHTML = '<div class="px-4 py-5 text-center text-sm text-gray-400">No employees found</div>';
+            dropdownEl.classList.remove('hidden');
+            return;
+        }
+        dropdownEl.innerHTML = filtered.map(function (u) {
+            var initials = (u.full_name || '?').split(' ').map(function (w) { return w[0]; }).join('').substring(0, 2).toUpperCase();
+            var role = (u.role || 'employee').toLowerCase();
+            var roleClass = roleColors[role] || 'bg-gray-100 text-gray-600';
+            var roleLabel = role.charAt(0).toUpperCase() + role.slice(1);
+            var office = u.office ? ' \u00b7 ' + u.office.charAt(0).toUpperCase() + u.office.slice(1) : '';
+            return '<button type="button" data-uid="' + u.id + '" data-uname="' + _escapeHtmlAttr(u.full_name || '') + '" ' +
+                'class="w-full flex items-center gap-3 px-4 py-3 hover:bg-primary/5 transition-colors text-left">' +
+                '<div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0">' + initials + '</div>' +
+                '<div class="flex-1 min-w-0">' +
+                '<p class="text-sm font-medium text-gray-900 truncate">' + _escapeHtmlAttr(u.full_name || 'User') + '</p>' +
+                '<p class="text-xs text-gray-400">' + _escapeHtmlAttr(roleLabel + office) + '</p>' +
+                '</div>' +
+                '<span class="text-[10px] font-semibold px-1.5 py-0.5 rounded ' + roleClass + ' shrink-0">' + roleLabel + '</span>' +
+                '</button>';
+        }).join('');
+        dropdownEl.classList.remove('hidden');
+    }
+    cfg._render = renderDropdown;
+
+    // Result click via delegation
+    dropdownEl.addEventListener('click', function (e) {
+        var btn = e.target.closest('button[data-uid]');
+        if (!btn) return;
+        hiddenEl.value = btn.dataset.uid;
+        searchEl.value = btn.dataset.uname;
+        dropdownEl.classList.add('hidden');
+        var clearBtn = cfg.clearBtnId ? document.getElementById(cfg.clearBtnId) : null;
+        if (clearBtn) clearBtn.classList.remove('hidden');
+        if (typeof cfg.onSelect === 'function') cfg.onSelect(btn.dataset.uid, btn.dataset.uname);
+    });
+
+    searchEl.addEventListener('input', function () {
+        hiddenEl.value = '';
+        var clearBtn = cfg.clearBtnId ? document.getElementById(cfg.clearBtnId) : null;
+        if (clearBtn) clearBtn.classList.add('hidden');
+        renderDropdown();
+    });
+
+    searchEl.addEventListener('focus', function () {
+        if (cfg.users && cfg.users.length) renderDropdown();
+    });
+
+    document.addEventListener('mousedown', function (e) {
+        var parent = dropdownEl.parentElement;
+        if (parent && !parent.contains(e.target)) dropdownEl.classList.add('hidden');
+    });
+}
+
+/** Reset a combobox to empty state (call when opening a modal). */
+function _resetCombobox(cfg) {
+    var searchEl = document.getElementById(cfg.searchId);
+    var hiddenEl = document.getElementById(cfg.hiddenId);
+    var dropdownEl = document.getElementById(cfg.dropdownId);
+    var clearBtn = cfg.clearBtnId ? document.getElementById(cfg.clearBtnId) : null;
+    if (searchEl) searchEl.value = '';
+    if (hiddenEl) hiddenEl.value = '';
+    if (dropdownEl) dropdownEl.classList.add('hidden');
+    if (clearBtn) clearBtn.classList.add('hidden');
+}
+
 async function loadTeamLeaves() {
     var c = document.getElementById('team-leaves-list');
     if (!c) return;
@@ -1615,28 +1705,10 @@ async function reviewLeave(id, status) {
 var _adjustLeaveUsersCache = [];
 var _adjustLeaveUserSearchBound = false;
 
+var _adjustLeaveComboboxCfg = null;
+
 function renderAdjustLeaveUserSelect() {
-    var userSel = document.getElementById('adjust-leave-user');
-    var searchEl = document.getElementById('adjust-leave-user-search');
-    if (!userSel) return;
-    var q = (searchEl && searchEl.value) ? searchEl.value.trim().toLowerCase() : '';
-    var filtered = !q ? _adjustLeaveUsersCache : _adjustLeaveUsersCache.filter(function (u) {
-        var name = (u.full_name || '').toLowerCase();
-        var role = (u.role || '').toLowerCase();
-        var email = (u.email || '').toLowerCase();
-        var office = (u.office || '').toLowerCase();
-        var idStr = String(u.id != null ? u.id : '');
-        return name.indexOf(q) !== -1 || role.indexOf(q) !== -1 || email.indexOf(q) !== -1 || office.indexOf(q) !== -1 || idStr.indexOf(q) !== -1;
-    });
-    var prev = userSel.value;
-    userSel.innerHTML = '<option value="">Select...</option>' + filtered.map(function (u) {
-        return '<option value="' + _escapeHtmlAttr(u.id) + '">' + _escapeHtmlAttr((u.full_name || 'User #' + u.id) + ' (' + (u.role || '') + ')') + '</option>';
-    }).join('');
-    if (prev && filtered.some(function (u) { return String(u.id) === String(prev); })) {
-        userSel.value = prev;
-    } else {
-        userSel.value = '';
-    }
+    if (_adjustLeaveComboboxCfg && _adjustLeaveComboboxCfg._render) _adjustLeaveComboboxCfg._render();
 }
 
 var _adjustBalanceEventsBound = false;
@@ -1644,28 +1716,32 @@ var _adjustBalanceEventsBound = false;
 async function openAdjustLeaveModal() {
     var modal = document.getElementById('adjust-leave-modal');
     if (!modal) return;
-    var userSel = document.getElementById('adjust-leave-user');
-    var userSearchEl = document.getElementById('adjust-leave-user-search');
     var yearEl = document.getElementById('adjust-leave-year');
     var typeSel = document.getElementById('adjust-leave-type');
     var daysEl = document.getElementById('adjust-leave-days');
     var reasonEl = document.getElementById('adjust-leave-reason');
-    if (!userSel || !yearEl || !typeSel || !daysEl) return;
+    if (!yearEl || !typeSel || !daysEl) return;
     var y = new Date().getFullYear();
     yearEl.value = y;
     daysEl.value = '';
     if (reasonEl) reasonEl.value = '';
-    if (userSearchEl) userSearchEl.value = '';
     _adjustBalanceCache = { user_id: null, policy_id: null, data: null };
     var preview = document.getElementById('adjust-leave-balance-preview');
     if (preview) preview.classList.add('hidden');
-    if (userSearchEl && !_adjustLeaveUserSearchBound) {
-        _adjustLeaveUserSearchBound = true;
-        userSearchEl.addEventListener('input', renderAdjustLeaveUserSelect);
+
+    if (!_adjustLeaveComboboxCfg) {
+        _adjustLeaveComboboxCfg = {
+            searchId: 'adjust-leave-user-search', hiddenId: 'adjust-leave-user',
+            dropdownId: 'adjust-leave-user-dropdown', clearBtnId: 'adjust-leave-user-clear',
+            placeholder: 'Search team member…', users: [],
+            onSelect: function () { fetchAdjustLeaveBalance(); }
+        };
+        _initCombobox(_adjustLeaveComboboxCfg);
     }
+    _resetCombobox(_adjustLeaveComboboxCfg);
+
     if (!_adjustBalanceEventsBound) {
         _adjustBalanceEventsBound = true;
-        userSel.addEventListener('change', fetchAdjustLeaveBalance);
         typeSel.addEventListener('change', fetchAdjustLeaveBalance);
         daysEl.addEventListener('input', updateAdjustBalancePreview);
     }
@@ -1673,7 +1749,7 @@ async function openAdjustLeaveModal() {
         var users = await Api.get('/auth/all-users');
         users = users || [];
         _adjustLeaveUsersCache = _sortUsersForLeaveBalance(users.filter(function (u) { return u.role !== 'senior'; }));
-        renderAdjustLeaveUserSelect();
+        _adjustLeaveComboboxCfg.users = _adjustLeaveUsersCache;
         var policies = await Api.get('/leaves/custom-policies/list');
         policies = policies || [];
         typeSel.innerHTML = '<option value="">Select...</option>' + policies.map(function (p) { return '<option value="c_' + p.id + '">' + (p.title || 'Policy #' + p.id) + '</option>'; }).join('');

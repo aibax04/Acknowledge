@@ -384,35 +384,22 @@ function getTimeAgo(dateString) {
 
 async function loadEmployees() {
     try {
-        // Get all employees
         const users = await Api.get('/auth/users');
         allEmployees = users;
 
-        // Populate dropdown
-        const select = document.getElementById('task-assignee');
-        if (!select) return; // Modal not loaded yet
+        // Sort alphabetically
+        const sorted = (allEmployees || []).slice().sort((a, b) => (a.full_name || '').localeCompare(b.full_name || ''));
 
-        select.innerHTML = '<option value="">Select person...</option>';
-
-        // Add "Assign to Me" option
-        if (currentUser) {
-            const meOption = document.createElement('option');
-            meOption.value = currentUser.id;
-            meOption.textContent = `${currentUser.full_name} (Me)`;
-            meOption.style.fontWeight = 'bold';
-            select.appendChild(meOption);
+        if (!window._taskAssigneeCfg) {
+            window._taskAssigneeCfg = {
+                searchId: 'task-assignee-search', hiddenId: 'task-assignee',
+                dropdownId: 'task-assignee-dropdown', clearBtnId: 'task-assignee-clear',
+                placeholder: 'Search person…', users: sorted
+            };
+            if (typeof _initCombobox === 'function') _initCombobox(window._taskAssigneeCfg);
+        } else {
+            window._taskAssigneeCfg.users = sorted;
         }
-
-        allEmployees.forEach(emp => {
-            // Prevent duplicate if current user is in list
-            if (currentUser && emp.id === currentUser.id) return;
-
-            const option = document.createElement('option');
-            option.value = emp.id;
-            const roleLabel = emp.role.charAt(0).toUpperCase() + emp.role.slice(1);
-            option.textContent = `${emp.full_name} (${roleLabel})`;
-            select.appendChild(option);
-        });
     } catch (error) {
         console.error('Failed to load employees:', error);
         showToast('Failed to load employees', 'error');
@@ -1962,19 +1949,27 @@ function viewNudge(nudgeId) {
 let _exportUsersLoaded = false;
 
 async function initAttendanceExport() {
-    const userSel = document.getElementById('export-att-user');
     const monthSel = document.getElementById('export-att-month');
     const yearSel = document.getElementById('export-att-year');
-    const markAbsentUserSel = document.getElementById('mark-absent-user');
-    if (!userSel || !monthSel || !yearSel) return;
+    if (!monthSel || !yearSel) return;
 
     if (!_exportUsersLoaded) {
         try {
             const users = await Api.get('/auth/all-users');
-            const opts = (users || []).map(u => `<option value="${u.id}">${u.full_name} (${u.role})</option>`).join('');
-            userSel.innerHTML = '<option value="">Select employee...</option>' + opts;
-            if (markAbsentUserSel) {
-                markAbsentUserSel.innerHTML = '<option value="">Select employee...</option>' + opts;
+            const sorted = (users || []).slice().sort((a, b) => (a.full_name || '').localeCompare(b.full_name || ''));
+            if (!window._exportAttCfg) {
+                window._exportAttCfg = { searchId: 'export-att-user-search', hiddenId: 'export-att-user', dropdownId: 'export-att-user-dropdown', clearBtnId: 'export-att-user-clear', placeholder: 'Search employee…', users: sorted };
+                if (typeof _initCombobox === 'function') _initCombobox(window._exportAttCfg);
+            } else {
+                window._exportAttCfg.users = sorted;
+                if (window._exportAttCfg._render) window._exportAttCfg._render();
+            }
+            if (!window._markAbsentCfg) {
+                window._markAbsentCfg = { searchId: 'mark-absent-user-search', hiddenId: 'mark-absent-user', dropdownId: 'mark-absent-user-dropdown', clearBtnId: 'mark-absent-user-clear', placeholder: 'Search employee…', users: sorted };
+                if (typeof _initCombobox === 'function') _initCombobox(window._markAbsentCfg);
+            } else {
+                window._markAbsentCfg.users = sorted;
+                if (window._markAbsentCfg._render) window._markAbsentCfg._render();
             }
             _exportUsersLoaded = true;
         } catch (e) {
