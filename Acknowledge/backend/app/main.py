@@ -1,3 +1,6 @@
+import asyncio
+import logging
+from datetime import datetime, timezone, timedelta
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -148,13 +151,32 @@ app.include_router(attendance.router)
 app.include_router(leaves.router)
 app.include_router(holidays.router)
 
+async def _monthly_credit_scheduler():
+    """Background task: run leave credits daily; on the 1st of the month it will insert new rows."""
+    while True:
+        try:
+            from app.services.leave_credit_service import run_monthly_leave_credits
+            await run_monthly_leave_credits()
+        except Exception as exc:
+            logging.getLogger(__name__).error("Monthly leave credit run failed: %s", exc)
+        # Sleep until next midnight UTC
+        now = datetime.now(timezone.utc)
+        tomorrow = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        await asyncio.sleep((tomorrow - now).total_seconds())
+
+
 @app.on_event("startup")
 async def startup():
     # Ensure all models are registered (including custom_leave_policies)
     from app.models import leave, custom_leave_policy  # noqa: F401
+    from app.models.attendance import ClockLocation  # noqa: F401
     async with engine.begin() as conn:
-        # Create tables (includes new: attendance, attendance_update_requests, leave_requests, holidays, custom_leave_policies)
-        await conn.run_sync(Base.metadata.create_all)
+        # Create tables — wrapped in try/except because multiple gunicorn workers can race here;
+        # the unique constraint violation on pg_class is harmless (table already exists).
+        try:
+            await conn.run_sync(Base.metadata.create_all)
+        except Exception as _create_err:
+            logging.getLogger(__name__).warning("create_all skipped (likely concurrent worker): %s", _create_err)
         # Minimal forward-compatible schema patch (non-destructive)
         # create_all won't add new columns to existing tables.
         try:
@@ -231,6 +253,27 @@ async def startup():
                     await conn.execute(text(f"ALTER TYPE leavetype ADD VALUE '{_val}'"))
                 except Exception:
                     pass
+
+        # Unique index on leave_monthly_credits (handles NULL columns via COALESCE)
+        try:
+            await conn.execute(text("""
+                CREATE UNIQUE INDEX IF NOT EXISTS uix_leave_monthly_credits
+                ON leave_monthly_credits (user_id, year, month, COALESCE(leave_type,''), COALESCE(custom_policy_id,0))
+            """))
+        except Exception:
+            pass
+
+    # Run monthly leave credit backfill (idempotent — safe every startup)
+    try:
+        from app.services.leave_credit_service import run_monthly_leave_credits
+        await run_monthly_leave_credits()
+        logging.getLogger(__name__).info("Monthly leave credit backfill complete.")
+    except Exception as exc:
+        logging.getLogger(__name__).error("Leave credit backfill failed at startup: %s", exc)
+
+    # Start background scheduler (runs daily, credits on the 1st of each month)
+    asyncio.create_task(_monthly_credit_scheduler())
+
 
 @app.get("/")
 async def root():

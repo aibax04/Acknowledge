@@ -5,6 +5,22 @@ from app.database import Base
 import enum
 
 
+class ClockLocation(Base):
+    __tablename__ = "clock_locations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    attendance_id = Column(Integer, ForeignKey("attendance.id"), nullable=True)
+    action = Column(String, nullable=False)  # "clock_in" or "clock_out"
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    address = Column(String, nullable=True)
+    recorded_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", foreign_keys=[user_id])
+    attendance = relationship("Attendance", foreign_keys=[attendance_id])
+
+
 class AttendanceStatus(str, enum.Enum):
     PRESENT = "present"
     ABSENT = "absent"

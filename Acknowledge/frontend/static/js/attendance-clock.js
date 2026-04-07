@@ -59,6 +59,7 @@ function renderClockWidget() {
 
 async function handleClockIn() {
     var btn = document.getElementById('btn-clock-in');
+    if (!confirm('Are you sure you want to Clock In now?')) return;
     if (btn) { btn.disabled = true; btn.textContent = 'Getting location...'; }
     try {
         var loc = await getUserLocation();
@@ -74,6 +75,7 @@ async function handleClockIn() {
 
 async function handleClockOut() {
     var btn = document.getElementById('btn-clock-out');
+    if (!confirm('Are you sure you want to Clock Out now?')) return;
     if (btn) { btn.disabled = true; btn.textContent = 'Getting location...'; }
     try {
         var loc = await getUserLocation();

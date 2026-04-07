@@ -5,7 +5,7 @@ from sqlalchemy.future import select
 from sqlalchemy import and_, func, extract
 from app.database import get_db
 from app.models.user import User, UserRole
-from app.models.leave import LeaveRequest, LeaveType, LeaveStatus, LeaveBalanceAdjustment
+from app.models.leave import LeaveRequest, LeaveType, LeaveStatus, LeaveBalanceAdjustment, LeaveMonthlyCredit
 from app.models.custom_leave_policy import CustomLeavePolicy
 from app.routes.auth import get_current_user
 from app.schemas.leave_schema import (
@@ -130,8 +130,8 @@ async def _compute_wallet_for_policy(
 ) -> Optional[float]:
     """
     Compute leave wallet (balance) when policy has monthly_allowance.
-    Wallet = (monthly_allowance * accrual_months) - used_this_year + adjustments.
-    Accrual months follow calendar month starts vs joining_date (see _monthly_wallet_accrual_months).
+    Wallet = sum(credited rows from leave_monthly_credits) - used_this_year + adjustments.
+    Falls back to dynamic computation if no credit rows exist yet.
     """
     monthly_allowance = getattr(policy, "monthly_allowance", None)
     if monthly_allowance is None or float(monthly_allowance) <= 0:
@@ -139,11 +139,27 @@ async def _compute_wallet_for_policy(
     today = date.today()
     if user is None:
         user = await db.get(User, user_id)
-    joining = _resolve_joining_date_for_wallet(user, year)
-    as_of = date(year, 12, 31) if year != today.year else today
-    months_elapsed = _monthly_wallet_accrual_months(joining, year, as_of)
-    accrued = round(float(monthly_allowance) * months_elapsed, 2)
     ids = list(policy_ids_in_group) if policy_ids_in_group else [policy.id]
+
+    # Use actual credited rows as source of truth
+    credit_result = await db.execute(
+        select(LeaveMonthlyCredit).filter(
+            LeaveMonthlyCredit.user_id == user_id,
+            LeaveMonthlyCredit.custom_policy_id.in_(ids),
+            LeaveMonthlyCredit.year == year,
+        )
+    )
+    credit_rows = credit_result.scalars().all()
+
+    if credit_rows:
+        accrued = round(sum(float(r.days_credited) for r in credit_rows), 2)
+    else:
+        # Fallback: dynamic computation (e.g. before first credit run)
+        joining = _resolve_joining_date_for_wallet(user, year)
+        as_of = date(year, 12, 31) if year != today.year else today
+        months_elapsed = _monthly_wallet_accrual_months(joining, year, as_of)
+        accrued = round(float(monthly_allowance) * months_elapsed, 2)
+
     year_first = date(year, 1, 1)
     year_last = date(year, 12, 31)
     result = await db.execute(
@@ -166,29 +182,50 @@ async def _compute_wallet_for_policy(
     return max(0.0, round(wallet, 2))
 
 
-def compute_leave_balance(user: User, approved_leaves: list, current_year: int):
-    """Compute leave balance for a user (standard EL/CSL). Accrual months match monthly wallet rules."""
+def compute_leave_balance(user: User, approved_leaves: list, current_year: int, credit_rows: Optional[list] = None):
+    """Compute leave balance for a user (standard EL/CSL).
+
+    If credit_rows is provided (list of LeaveMonthlyCredit), use them as source of truth.
+    Otherwise falls back to dynamic accrual formula (used before credit system backfills).
+    """
     today = date.today()
     joining = _resolve_joining_date_for_wallet(user, current_year)
-    accrual_months = _monthly_wallet_accrual_months(joining, current_year, today)
 
-    # EL: 1.25 per accrual month, max 15 per year — keep decimal precision throughout
-    el_accrued = round(min(accrual_months * 1.25, 15.0), 2)
+    # Determine accrued amounts from credit rows or dynamic formula
+    if credit_rows is not None:
+        el_accrued = round(sum(
+            float(r.days_credited) for r in credit_rows
+            if r.leave_type == "earned_leave" and r.year == current_year
+        ), 2)
+        csl_accrued = round(sum(
+            float(r.days_credited) for r in credit_rows
+            if r.leave_type == "casual_sick_leave" and r.year == current_year
+        ), 2)
+        # If no credit rows yet (new user, system just started), fall back to formula
+        if el_accrued == 0.0 and csl_accrued == 0.0:
+            accrual_months = _monthly_wallet_accrual_months(joining, current_year, today)
+            is_on_probation = user.is_on_probation or False
+            el_accrued = round(min(accrual_months * 1.25, 15.0), 2) if not is_on_probation else 0.0
+            csl_accrued = round(min(accrual_months * 1.0, 12.0), 2)
+    else:
+        accrual_months = _monthly_wallet_accrual_months(joining, current_year, today)
+        is_on_probation = user.is_on_probation or False
+        el_accrued = round(min(accrual_months * 1.25, 15.0), 2) if not is_on_probation else 0.0
+        csl_accrued = round(min(accrual_months * 1.0, 12.0), 2)
+
     el_used = round(sum(
         float(getattr(l, "num_days", 0) or 0) for l in approved_leaves
         if getattr(l, "leave_type", None) == LeaveType.EARNED_LEAVE
         and getattr(l, "start_date", None) and getattr(l.start_date, "year", None) == current_year
     ), 2)
 
-    # CSL: 1 per accrual month, max 12 per year (no carry forward) — shared by casual + sick (+ legacy casual_sick)
-    csl_accrued = round(min(accrual_months * 1.0, 12.0), 2)
     csl_used = round(sum(
         float(getattr(l, "num_days", 0) or 0) for l in approved_leaves
         if getattr(l, "leave_type", None) in (LeaveType.CASUAL_SICK_LEAVE, LeaveType.CASUAL_LEAVE, LeaveType.SICK_LEAVE)
         and getattr(l, "start_date", None) and getattr(l.start_date, "year", None) == current_year
     ), 2)
 
-    is_on_probation = user.is_on_probation or False
+    is_on_probation = getattr(user, "is_on_probation", False) or False
     can_use_el = not is_on_probation
 
     return {
@@ -290,11 +327,24 @@ async def _compute_policy_balance_for_user(
 
     if monthly_allowance is not None and float(monthly_allowance) > 0:
         user_obj = await db.get(User, user_id)
-        joining = _resolve_joining_date_for_wallet(user_obj, year)
-        as_of = date(year, 12, 31) if year != today.year else today
-        months_elapsed = _monthly_wallet_accrual_months(joining, year, as_of)
-        # Preserve decimal precision: e.g. 1.25/mo × 3 months = 3.75, never rounded to integer
-        accrued = round(float(monthly_allowance) * months_elapsed, 2)
+        # Use actual credited rows as source of truth
+        credit_result = await db.execute(
+            select(LeaveMonthlyCredit).filter(
+                LeaveMonthlyCredit.user_id == user_id,
+                LeaveMonthlyCredit.custom_policy_id.in_(policy_ids),
+                LeaveMonthlyCredit.year == year,
+            )
+        )
+        credit_rows = credit_result.scalars().all()
+        if credit_rows:
+            accrued = round(sum(float(r.days_credited) for r in credit_rows), 2)
+            months_elapsed = len(credit_rows)
+        else:
+            # Fallback to dynamic formula if no credit rows yet
+            joining = _resolve_joining_date_for_wallet(user_obj, year)
+            as_of = date(year, 12, 31) if year != today.year else today
+            months_elapsed = _monthly_wallet_accrual_months(joining, year, as_of)
+            accrued = round(float(monthly_allowance) * months_elapsed, 2)
         limit_val = accrued
         available = round(max(0.0, accrued - used + adj_sum), 2)
     elif shared_limit is not None and float(shared_limit) >= 0:
@@ -357,7 +407,17 @@ async def get_leave_balance(
     )
     approved_leaves = result.scalars().all()
 
-    balance = compute_leave_balance(target_user, approved_leaves, current_year)
+    # Use actual credited rows as source of truth for EL/CSL
+    credit_result = await db.execute(
+        select(LeaveMonthlyCredit).filter(
+            LeaveMonthlyCredit.user_id == target_user_id,
+            LeaveMonthlyCredit.year == current_year,
+            LeaveMonthlyCredit.leave_type.in_(["earned_leave", "casual_sick_leave"]),
+        )
+    )
+    credit_rows = credit_result.scalars().all()
+
+    balance = compute_leave_balance(target_user, approved_leaves, current_year, credit_rows=credit_rows or None)
 
     # Apply adjustments for standard leave types — preserve decimal precision
     adjustments = await _get_adjustments_for_user_year(db, target_user_id, current_year)
@@ -1355,3 +1415,52 @@ async def revoke_leave(
     leave.status = LeaveStatus.CANCELLED
     await db.commit()
     return {"message": "Leave revoked successfully"}
+
+
+@router.post("/admin/run-monthly-credits")
+async def admin_run_monthly_credits(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Director-only: manually trigger monthly leave credit backfill for all months up to today."""
+    if current_user.role != UserRole.SENIOR:
+        raise HTTPException(status_code=403, detail="Only directors can trigger credit runs")
+    from app.services.leave_credit_service import run_monthly_leave_credits
+    results = await run_monthly_leave_credits()
+    return {"message": "Monthly credit run complete", "results": results}
+
+
+@router.get("/admin/monthly-credits")
+async def admin_list_monthly_credits(
+    user_id: Optional[int] = Query(None),
+    year: Optional[int] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Director-only: view monthly credit rows for audit."""
+    if current_user.role != UserRole.SENIOR:
+        raise HTTPException(status_code=403, detail="Only directors can view credit records")
+    filters = []
+    if user_id:
+        filters.append(LeaveMonthlyCredit.user_id == user_id)
+    if year:
+        filters.append(LeaveMonthlyCredit.year == year)
+    result = await db.execute(
+        select(LeaveMonthlyCredit).filter(*filters).order_by(
+            LeaveMonthlyCredit.year.desc(), LeaveMonthlyCredit.month.desc()
+        )
+    )
+    rows = result.scalars().all()
+    return [
+        {
+            "id": r.id,
+            "user_id": r.user_id,
+            "year": r.year,
+            "month": r.month,
+            "leave_type": r.leave_type,
+            "custom_policy_id": r.custom_policy_id,
+            "days_credited": r.days_credited,
+            "credited_at": r.credited_at.isoformat() if r.credited_at else None,
+        }
+        for r in rows
+    ]

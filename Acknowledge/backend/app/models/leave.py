@@ -47,6 +47,23 @@ class LeaveRequest(Base):
     custom_policy = relationship("CustomLeavePolicy", foreign_keys=[custom_policy_id])
 
 
+class LeaveMonthlyCredit(Base):
+    """Tracks automatic monthly leave credits applied on the 1st of each month. One row per user+policy+year+month."""
+    __tablename__ = "leave_monthly_credits"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    year = Column(Integer, nullable=False)
+    month = Column(Integer, nullable=False)  # 1–12
+    # Exactly one of leave_type (standard) or custom_policy_id (custom) should be set.
+    leave_type = Column(String(32), nullable=True)   # "earned_leave" or "casual_sick_leave"
+    custom_policy_id = Column(Integer, ForeignKey("custom_leave_policies.id"), nullable=True)
+    days_credited = Column(Float, nullable=False)
+    credited_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", foreign_keys=[user_id])
+
+
 class LeaveBalanceAdjustment(Base):
     """Director-applied adjustment to a user's leave balance (add or deduct days)."""
     __tablename__ = "leave_balance_adjustments"

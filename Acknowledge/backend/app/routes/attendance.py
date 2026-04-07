@@ -7,7 +7,7 @@ from sqlalchemy.future import select
 from sqlalchemy import and_
 from app.database import get_db
 from app.models.user import User, UserRole
-from app.models.attendance import Attendance, AttendanceStatus, AttendanceUpdateRequest
+from app.models.attendance import Attendance, AttendanceStatus, AttendanceUpdateRequest, ClockLocation
 from app.models.holiday import Holiday
 from app.models.leave import LeaveRequest, LeaveStatus
 from app.routes.auth import get_current_user
@@ -113,6 +113,18 @@ async def clock_in(
         )
         db.add(attendance)
 
+    await db.flush()
+    att_record = existing if existing else attendance
+    clock_loc = ClockLocation(
+        user_id=current_user.id,
+        attendance_id=att_record.id,
+        action="clock_in",
+        latitude=req.latitude,
+        longitude=req.longitude,
+        address=req.address,
+    )
+    db.add(clock_loc)
+
     await db.commit()
     return {"message": "Clocked in successfully", "time": now.isoformat()}
 
@@ -150,8 +162,18 @@ async def clock_out(
     existing.clock_out_lat = req.latitude
     existing.clock_out_lng = req.longitude
     existing.clock_out_address = req.address
-    await db.commit()
 
+    clock_loc = ClockLocation(
+        user_id=current_user.id,
+        attendance_id=existing.id,
+        action="clock_out",
+        latitude=req.latitude,
+        longitude=req.longitude,
+        address=req.address,
+    )
+    db.add(clock_loc)
+
+    await db.commit()
     return {"message": "Clocked out successfully", "time": now.isoformat()}
 
 
