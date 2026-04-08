@@ -1159,13 +1159,19 @@ async def _is_leave_under_director_policy(l: LeaveRequest, db: AsyncSession) -> 
 async def get_my_leaves(
     month: Optional[int] = None,
     year: Optional[int] = None,
+    user_id: Optional[int] = Query(None, description="Target user ID (directors/managers only)"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Get current user's leave requests. Optionally filter by month (1-12) and year, or by year only."""
+    """Get leave requests. Directors/managers can pass user_id to view another user's leaves."""
+    target_id = current_user.id
+    if user_id is not None and user_id != current_user.id:
+        if current_user.role not in (UserRole.SENIOR, UserRole.MANAGER):
+            raise HTTPException(status_code=403, detail="Only directors/managers can view another user's leaves")
+        target_id = user_id
     result = await db.execute(
         select(LeaveRequest).filter(
-            LeaveRequest.user_id == current_user.id
+            LeaveRequest.user_id == target_id
         ).order_by(LeaveRequest.applied_at.desc())
     )
     leaves = result.scalars().all()
@@ -1268,18 +1274,29 @@ async def get_all_leaves(
 async def get_pending_leaves(
     month: Optional[int] = None,
     year: Optional[int] = None,
+    status: Optional[str] = Query(None, description="Filter by status: pending, approved, rejected, cancelled"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Get all pending leave requests. Only directors (seniors) can approve. Optionally filter by month (1-12) and year, or by year only."""
+    """Get leave requests for director review. Optionally filter by month, year, and/or status."""
     if current_user.role != UserRole.SENIOR:
         raise HTTPException(status_code=403, detail="Only directors can view pending leave requests")
 
-    result = await db.execute(
-        select(LeaveRequest).filter(
-            LeaveRequest.status == LeaveStatus.PENDING
-        ).order_by(LeaveRequest.applied_at.desc())
-    )
+    # Build status filter
+    valid_statuses = {"pending": LeaveStatus.PENDING, "approved": LeaveStatus.APPROVED,
+                      "rejected": LeaveStatus.REJECTED, "cancelled": LeaveStatus.CANCELLED}
+    status_filter = valid_statuses.get((status or "").lower()) if status else None
+
+    query = select(LeaveRequest)
+    if status and status.lower() == "all":
+        pass  # no status filter — return all
+    elif status_filter:
+        query = query.filter(LeaveRequest.status == status_filter)
+    else:
+        # Default: pending only (backwards compat)
+        query = query.filter(LeaveRequest.status == LeaveStatus.PENDING)
+
+    result = await db.execute(query.order_by(LeaveRequest.applied_at.desc()))
     leaves = result.scalars().all()
     if month is not None and year is not None and 1 <= month <= 12:
         leaves = [l for l in leaves if _leave_overlaps_month(l, year, month)]

@@ -105,6 +105,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         monthSel.value = String(now.getMonth() + 1);
     })();
 
+    // Populate attendance view year dropdown
+    (function () {
+        const yearSel = document.getElementById('att-view-year');
+        const monthSel = document.getElementById('att-view-month');
+        if (!yearSel) return;
+        const now = new Date();
+        for (let y = now.getFullYear() + 1; y >= now.getFullYear() - 3; y--) {
+            const opt = document.createElement('option');
+            opt.value = y; opt.textContent = y;
+            if (y === now.getFullYear()) opt.selected = true;
+            yearSel.appendChild(opt);
+        }
+        if (monthSel) monthSel.value = String(now.getMonth() + 1);
+    })();
+
+    // Init att-view employee combobox
+    initAttViewCombobox();
+
     // Initialize policy image upload handlers
     initPolicyImageUpload();
 
@@ -247,11 +265,32 @@ function switchTab(tabId) {
         if (typeof loadProjects === 'function') loadProjects();
     }
     if (tabId === 'leave-approvals') {
-        if (typeof ensureLeavesFilter === 'function') ensureLeavesFilter('pending', 'Filter by month:');
+        // Populate year dropdown once
+        const yearSel = document.getElementById('leaves-year-pending');
+        if (yearSel && yearSel.options.length <= 1) {
+            const cy = new Date().getFullYear();
+            for (let y = cy + 1; y >= cy - 3; y--) {
+                yearSel.innerHTML += `<option value="${y}"${y === cy ? ' selected' : ''}>${y}</option>`;
+            }
+        }
         if (typeof loadPendingLeaves === 'function') loadPendingLeaves();
     }
     if (tabId === 'leave-tracker') {
         if (typeof loadTeamLeaves === 'function') loadTeamLeaves();
+        // Init tracker year/month selects on first open
+        const now = new Date();
+        const yearSel = document.getElementById('tracker-year-select');
+        if (yearSel && !yearSel.options.length) {
+            const cy = now.getFullYear();
+            for (let y = cy + 1; y >= cy - 4; y--) {
+                yearSel.innerHTML += `<option value="${y}"${y === cy ? ' selected' : ''}>${y}</option>`;
+            }
+        }
+        const monthSel = document.getElementById('tracker-month-select');
+        if (monthSel && !monthSel.dataset.set) {
+            monthSel.value = String(now.getMonth() + 1);
+            monthSel.dataset.set = '1';
+        }
     }
     if (tabId === 'leave-policies') {
         if (typeof loadCustomPolicies === 'function') loadCustomPolicies();
@@ -2131,5 +2170,127 @@ async function downloadAllAttendance() {
             btn.disabled = false;
             btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg> Download Excel';
         }
+    }
+}
+
+// ============================================
+// EMPLOYEE ATTENDANCE VIEW (Director)
+// ============================================
+
+var _attViewAllUsers = [];
+
+function initAttViewCombobox() {
+    Api.get('/auth/all-users').then(function(users) {
+        _attViewAllUsers = (users || []).slice().sort((a,b) => (a.full_name||'').localeCompare(b.full_name||''));
+        if (typeof _initCombobox === 'function') {
+            window._attViewCfg = {
+                searchId: 'att-view-employee-search',
+                hiddenId: 'att-view-employee-id',
+                dropdownId: 'att-view-employee-dropdown',
+                clearBtnId: 'att-view-employee-clear',
+                placeholder: 'Search employee by name…',
+                users: _attViewAllUsers,
+                onSelect: function(user) { loadEmployeeAttendance(); }
+            };
+            _initCombobox(window._attViewCfg);
+        }
+    }).catch(function(){});
+}
+
+function clearAttViewEmployee() {
+    if (window._attViewCfg && typeof _resetCombobox === 'function') _resetCombobox(window._attViewCfg);
+    document.getElementById('att-view-summary') && (document.getElementById('att-view-summary').classList.add('hidden'));
+    document.getElementById('att-view-table') && (document.getElementById('att-view-table').classList.add('hidden'));
+    document.getElementById('att-view-employee-info') && (document.getElementById('att-view-employee-info').classList.add('hidden'));
+}
+
+async function loadEmployeeAttendance() {
+    const userId = document.getElementById('att-view-employee-id') && document.getElementById('att-view-employee-id').value;
+    const month = document.getElementById('att-view-month') && document.getElementById('att-view-month').value;
+    const year = document.getElementById('att-view-year') && document.getElementById('att-view-year').value;
+    const summary = document.getElementById('att-view-summary');
+    const table = document.getElementById('att-view-table');
+    const info = document.getElementById('att-view-employee-info');
+
+    if (!userId) return;
+
+    if (summary) { summary.classList.remove('hidden'); summary.innerHTML = '<span class="text-gray-400 animate-pulse">Loading…</span>'; }
+    if (table) { table.classList.add('hidden'); table.innerHTML = ''; }
+
+    try {
+        const data = await Api.get(`/attendance/monthly?year=${year}&month=${month}&user_id=${encodeURIComponent(userId)}`);
+        const emp = _attViewAllUsers.find(u => String(u.id) === String(userId));
+
+        // Info bar
+        if (info && emp) {
+            info.textContent = `Attendance logs of the selected employee is displayed below. ${emp.full_name}'s joining date is ${emp.joining_date ? emp.joining_date.split('-').reverse().join('-') : 'not set'}.`;
+            info.classList.remove('hidden');
+        }
+
+        const records = data.records || data || [];
+        const presentDays = records.filter(r => r.status === 'present').length;
+        const absentDays = records.filter(r => r.status === 'absent').length;
+        const leaveDays = records.filter(r => r.status === 'on_leave').length;
+
+        if (summary) {
+            summary.classList.remove('hidden');
+            summary.innerHTML = `
+                <div class="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-lg border border-green-100">
+                    <span class="text-xs text-green-600 font-medium">Present Days</span>
+                    <span class="text-lg font-bold text-green-700">→ ${presentDays}</span>
+                </div>
+                <div class="flex items-center gap-2 px-4 py-2 bg-red-50 rounded-lg border border-red-100">
+                    <span class="text-xs text-red-600 font-medium">Absent Days</span>
+                    <span class="text-lg font-bold text-red-700">→ ${absentDays}</span>
+                </div>
+                ${leaveDays > 0 ? `<div class="flex items-center gap-2 px-4 py-2 bg-amber-50 rounded-lg border border-amber-100">
+                    <span class="text-xs text-amber-600 font-medium">On Leave</span>
+                    <span class="text-lg font-bold text-amber-700">→ ${leaveDays}</span>
+                </div>` : ''}
+            `;
+        }
+
+        if (!records.length) {
+            if (table) { table.classList.remove('hidden'); table.innerHTML = '<p class="text-center text-gray-400 py-8 text-sm">No attendance records for this period.</p>'; }
+            return;
+        }
+
+        // Build daily table
+        const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        const statusColor = { present: 'text-gray-700', absent: 'text-red-500 font-semibold', on_leave: 'text-amber-600', weekly_off: 'text-gray-400', holiday: 'text-purple-500' };
+        const statusLabel = { present: 'Present', absent: 'Absent', on_leave: 'On Leave', weekly_off: 'Weekly Off', holiday: 'Holiday' };
+
+        let rows = records.slice().sort((a,b) => b.date.localeCompare(a.date)).map(r => {
+            const d = new Date(r.date);
+            const dateStr = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}, ${days[d.getDay()]}`;
+            const st = r.status || 'absent';
+            const color = statusColor[st] || 'text-gray-600';
+            const label = statusLabel[st] || st;
+            const inTime = r.clock_in ? new Date(r.clock_in).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '—';
+            const outTime = r.clock_out ? new Date(r.clock_out).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '—';
+            return `<tr class="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                <td class="px-6 py-3 text-sm text-gray-600 whitespace-nowrap">${dateStr}</td>
+                <td class="px-6 py-3 text-sm ${color} whitespace-nowrap">${label}</td>
+                <td class="px-6 py-3 text-sm text-gray-600 whitespace-nowrap">${inTime}</td>
+                <td class="px-6 py-3 text-sm text-gray-600 whitespace-nowrap">${outTime}</td>
+            </tr>`;
+        }).join('');
+
+        if (table) {
+            table.classList.remove('hidden');
+            table.innerHTML = `<div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead><tr class="border-b border-gray-100 bg-gray-50/60">
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date ↓</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Attendance Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">In Time</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Out Time</th>
+                    </tr></thead>
+                    <tbody class="divide-y divide-gray-50">${rows}</tbody>
+                </table>
+            </div>`;
+        }
+    } catch(e) {
+        if (summary) { summary.classList.remove('hidden'); summary.innerHTML = '<span class="text-red-400 text-sm">Failed to load attendance data.</span>'; }
     }
 }

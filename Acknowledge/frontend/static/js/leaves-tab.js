@@ -402,6 +402,11 @@ async function revokeTeamLeave(leaveId) {
 
 var _cachedEmployeeLeavesPolicies = {};
 async function loadEmployeeLeaveBalance() {
+    // If on senior tracker page with full employee data view, use that instead
+    if (document.getElementById('leave-history-section')) {
+        loadEmployeeLeaveData();
+        return;
+    }
     var sel = document.getElementById('team-leave-balance-user');
     var userId = sel ? sel.value : null;
     var container = document.getElementById('team-leave-balance-container');
@@ -415,7 +420,7 @@ async function loadEmployeeLeaveBalance() {
     try {
         // Single authoritative source — backend computes all balances for this employee
         var policiesWithBalance = await Api.get('/leaves/user-policy-balances?user_id=' + encodeURIComponent(userId) + '&_=' + Date.now());
-        renderLeaveCards(container, policiesWithBalance || [], [], true, []);
+        renderLeaveCards(container, policiesWithBalance || [], [], true, [], null, userId);
     } catch (e) {
         container.innerHTML = '<p class="text-sm text-red-500 py-4">Failed to load balance.</p>';
     }
@@ -610,7 +615,7 @@ function _computePolicyRemainingForApply(policy, policies, leaves, adjustments, 
 }
 
 // ---- LEAVE BALANCE CARDS (employee/intern/manager) ----
-function renderLeaveCards(container, policies, leaves, readOnly, adjustments, accrualJoiningDateOpt) {
+function renderLeaveCards(container, policies, leaves, readOnly, adjustments, accrualJoiningDateOpt, targetUserId) {
     if (!container) return;
     adjustments = adjustments || [];
     if (!policies || policies.length === 0) {
@@ -711,7 +716,11 @@ function renderLeaveCards(container, policies, leaves, readOnly, adjustments, ac
             }
             h += '</div>';
         } else {
-            h += '<div class="mt-4 pt-3 border-t border-gray-50"><p class="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Track</p></div>';
+            // Director/admin read-only view — show Ledger button for the target employee
+            var _tuid = (typeof targetUserId !== 'undefined' && targetUserId) ? targetUserId : '';
+            h += '<div class="flex items-center gap-2 mt-4 pt-3 border-t border-gray-50">';
+            h += '<button type="button" onclick="openLeaveLedgerModal(' + policyId + ',\'' + (groupKey || '').replace(/'/g, "\\'") + '\',' + (_tuid || 'null') + ')" class="text-xs text-gray-400 hover:text-gray-700 font-medium transition-colors">Ledger</button>';
+            h += '</div>';
         }
         h += '</div></div>';
     });
@@ -818,7 +827,7 @@ function _ledgerWalletStats(policy, leaves, adjustments, policies, accrualJoinin
     return { used: used, adjDays: adjDays, limit: limit, remaining: remaining, accruedLabel: accruedLabel, maxPerMonth: maxPerMonth };
 }
 
-async function openLeaveLedgerModal(policyId, policyGroupKey) {
+async function openLeaveLedgerModal(policyId, policyGroupKey, targetUserId) {
     var modal = document.getElementById('leave-ledger-modal');
     var content = document.getElementById('leave-ledger-content');
     if (!modal || !content) return;
@@ -831,16 +840,35 @@ async function openLeaveLedgerModal(policyId, policyGroupKey) {
     var adjustments = [];
     var adjustmentsFull = [];
 
-    var userId = (typeof currentUser !== 'undefined' && currentUser && currentUser.id) ? currentUser.id : null;
+    // If targetUserId provided (director viewing an employee), use that; otherwise self
+    var isAdminView = targetUserId && targetUserId != ((typeof currentUser !== 'undefined' && currentUser) ? currentUser.id : null);
+    var userId = targetUserId || ((typeof currentUser !== 'undefined' && currentUser && currentUser.id) ? currentUser.id : null);
     var currentYear = new Date().getFullYear();
 
     try {
-        var policiesF = Api.get('/leaves/user-policy-balances').then(function (p) { policies = p || []; _cachedPoliciesForApply = policies; });
-        var myLeavesF = Api.get('/leaves/my-leaves').then(function (l) { leaves = l || []; _cachedMyLeaves = leaves; });
-        var balanceF = Api.get('/leaves/balance').then(function (b) {
-            adjustments = (b && b.adjustments) ? b.adjustments : [];
-            _cachedLeaveAdjustments = adjustments;
+        var policiesUrl = isAdminView
+            ? '/leaves/user-policy-balances?user_id=' + encodeURIComponent(userId)
+            : '/leaves/user-policy-balances';
+        var leavesUrl = isAdminView
+            ? '/leaves/my-leaves?user_id=' + encodeURIComponent(userId)
+            : '/leaves/my-leaves';
+
+        var policiesF = Api.get(policiesUrl).then(function (p) {
+            policies = p || [];
+            if (!isAdminView) _cachedPoliciesForApply = policies;
         });
+        var myLeavesF = Api.get(leavesUrl).then(function (l) {
+            leaves = l || [];
+            if (!isAdminView) _cachedMyLeaves = leaves;
+        }).catch(function() { leaves = []; });
+        var balanceF = isAdminView
+            ? Api.get('/leaves/balance?user_id=' + encodeURIComponent(userId)).then(function (b) {
+                adjustments = (b && b.adjustments) ? b.adjustments : [];
+            }).catch(function() { adjustments = []; })
+            : Api.get('/leaves/balance').then(function (b) {
+                adjustments = (b && b.adjustments) ? b.adjustments : [];
+                _cachedLeaveAdjustments = adjustments;
+            });
         var adjListF = userId ? Api.get('/leaves/adjustments?user_id=' + encodeURIComponent(userId) + '&year=' + currentYear).then(function (list) { adjustmentsFull = list || []; }).catch(function () { adjustmentsFull = []; }) : Promise.resolve();
         await Promise.all([policiesF, myLeavesF, balanceF, adjListF]);
     } catch (e) {
@@ -1588,20 +1616,36 @@ async function deleteCustomPolicy(id) {
 }
 
 // ---- DIRECTOR: Pending leave approvals ----
+function resetApprovalsFilter() {
+    var m = document.getElementById('leaves-month-pending');
+    var y = document.getElementById('leaves-year-pending');
+    var s = document.getElementById('leaves-status-pending');
+    if (m) m.value = '';
+    if (y) y.value = '';
+    if (s) s.value = 'all';
+    loadPendingLeaves();
+}
+
 async function loadPendingLeaves() {
     var c = document.getElementById('pending-leaves-list');
     if (!c) return;
     try {
         var f = getLeavesFilterParams('pending');
         var q = buildLeavesFilterQuery(f);
+        // Append status filter
+        var statusEl = document.getElementById('leaves-status-pending');
+        var statusVal = statusEl ? statusEl.value : '';
+        if (statusVal) q += (q ? '&' : '?') + 'status=' + encodeURIComponent(statusVal);
         var bust = (q ? '&' : '?') + '_=' + Date.now();
         var leaves = await Api.get('/leaves/pending' + q + bust);
 
-        // Update badge in section header
+        // Update badge
         var badge = document.getElementById('pending-leaves-count-badge');
         if (badge) {
+            var statusEl2 = document.getElementById('leaves-status-pending');
+            var curStatus = statusEl2 ? (statusEl2.value || 'pending') : 'pending';
             if (leaves && leaves.length > 0) {
-                badge.textContent = leaves.length + ' pending';
+                badge.textContent = leaves.length + ' ' + (curStatus === 'all' ? 'total' : curStatus);
                 badge.classList.remove('hidden');
             } else {
                 badge.classList.add('hidden');
@@ -1609,11 +1653,13 @@ async function loadPendingLeaves() {
         }
 
         if (!leaves || leaves.length === 0) {
+            var statusEl3 = document.getElementById('leaves-status-pending');
+            var curStatus3 = statusEl3 ? (statusEl3.options[statusEl3.selectedIndex] && statusEl3.options[statusEl3.selectedIndex].text || 'pending') : 'pending';
             c.innerHTML = '<div class="flex flex-col items-center justify-center py-14 px-6">' +
                 '<div class="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center mb-3">' +
                 '<svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg></div>' +
-                '<p class="text-sm font-semibold text-gray-600">All caught up!</p>' +
-                '<p class="text-xs text-gray-400 mt-0.5">No pending leave requests for this period.</p></div>';
+                '<p class="text-sm font-semibold text-gray-600">No results</p>' +
+                '<p class="text-xs text-gray-400 mt-0.5">No ' + curStatus3.toLowerCase() + ' leave requests for this period.</p></div>';
             return;
         }
 
@@ -1654,18 +1700,37 @@ async function loadPendingLeaves() {
                 ? '<p class="text-xs text-gray-500 mt-2 line-clamp-2 italic">\u201c' + (l.reason || '') + '\u201d</p>'
                 : '';
 
+            // Accent colour + status badge based on leave status
+            var accentColor = 'bg-amber-400';
+            var statusBadge = '';
+            var st = (l.status || 'pending').toLowerCase();
+            if (st === 'approved') { accentColor = 'bg-emerald-400'; statusBadge = '<span class="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded ml-1">Approved</span>'; }
+            else if (st === 'rejected') { accentColor = 'bg-red-400'; statusBadge = '<span class="text-[10px] font-semibold text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded ml-1">Rejected</span>'; }
+            else if (st === 'cancelled') { accentColor = 'bg-gray-300'; statusBadge = '<span class="text-[10px] font-semibold text-gray-500 bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded ml-1">Cancelled</span>'; }
+
+            // Action buttons only for pending leaves
+            var actionsHtml = '';
+            if (st === 'pending') {
+                actionsHtml = '<div class="flex flex-col justify-center gap-2 px-4 py-4 shrink-0">' +
+                    '<button onclick="reviewLeave(' + l.id + ',\'approved\')" class="text-xs font-semibold text-white bg-emerald-500 hover:bg-emerald-600 px-4 py-2 rounded-lg transition-colors shadow-sm whitespace-nowrap">Approve</button>' +
+                    '<button onclick="reviewLeave(' + l.id + ',\'rejected\')" class="text-xs font-semibold text-red-500 bg-white hover:bg-red-50 border border-red-200 hover:border-red-300 px-4 py-2 rounded-lg transition-colors whitespace-nowrap">Deny</button>' +
+                    '</div>';
+            } else if (st === 'approved') {
+                actionsHtml = '<div class="flex flex-col justify-center gap-2 px-4 py-4 shrink-0">' +
+                    '<button onclick="revokeLeave(' + l.id + ')" class="text-xs font-semibold text-gray-500 bg-white hover:bg-gray-50 border border-gray-200 px-4 py-2 rounded-lg transition-colors whitespace-nowrap">Revoke</button>' +
+                    '</div>';
+            }
+
             return '<div class="flex items-stretch gap-0 hover:bg-gray-50/50 transition-colors">' +
-                // Left accent
-                '<div class="w-0.5 bg-amber-400 shrink-0 my-4 ml-4 rounded-full"></div>' +
-                // Avatar
+                '<div class="w-0.5 ' + accentColor + ' shrink-0 my-4 ml-4 rounded-full"></div>' +
                 '<div class="flex items-start pt-5 px-3.5 shrink-0">' +
                 '<div class="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold shrink-0">' + initials + '</div>' +
                 '</div>' +
-                // Main content
                 '<div class="flex-1 min-w-0 py-4 pr-2">' +
-                '<div class="flex items-center gap-2 mb-1">' +
+                '<div class="flex items-center gap-2 mb-1 flex-wrap">' +
                 '<p class="text-sm font-semibold text-gray-900">' + (l.user_name || 'Unknown') + '</p>' +
                 '<span class="text-[10px] font-medium text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded capitalize">' + roleLabel + '</span>' +
+                statusBadge +
                 '</div>' +
                 '<div class="flex items-center gap-1.5 flex-wrap">' +
                 '<span class="text-xs font-semibold text-gray-700">' + typeLabel + '</span>' +
@@ -1678,11 +1743,7 @@ async function loadPendingLeaves() {
                 balHtml +
                 reasonHtml +
                 '</div>' +
-                // Action buttons — right column
-                '<div class="flex flex-col justify-center gap-2 px-4 py-4 shrink-0">' +
-                '<button onclick="reviewLeave(' + l.id + ',\'approved\')" class="text-xs font-semibold text-white bg-emerald-500 hover:bg-emerald-600 px-4 py-2 rounded-lg transition-colors shadow-sm whitespace-nowrap">Approve</button>' +
-                '<button onclick="reviewLeave(' + l.id + ',\'rejected\')" class="text-xs font-semibold text-red-500 bg-white hover:bg-red-50 border border-red-200 hover:border-red-300 px-4 py-2 rounded-lg transition-colors whitespace-nowrap">Deny</button>' +
-                '</div>' +
+                actionsHtml +
                 '</div>';
         }).join('') + '</div>';
     } catch (e) { c.innerHTML = '<p class="text-red-500 text-sm p-4">Failed to load</p>'; }
@@ -1694,10 +1755,22 @@ async function reviewLeave(id, status) {
         if (typeof showToast === 'function') showToast('Leave ' + status + '!', 'success');
         loadPendingLeaves();
         if (typeof loadLeaveBalance === 'function') loadLeaveBalance();
-        // Refresh employee balance in tracker if one is currently selected
         if (typeof loadEmployeeLeaveBalance === 'function') loadEmployeeLeaveBalance();
     } catch (e) {
         if (typeof showToast === 'function') showToast(e.message || 'Failed', 'error');
+    }
+}
+
+async function revokeLeave(id) {
+    if (!confirm('Revoke this approved leave? The employee\'s balance will be restored.')) return;
+    try {
+        await Api.put('/leaves/' + id + '/revoke', {});
+        if (typeof showToast === 'function') showToast('Leave revoked.', 'success');
+        loadPendingLeaves();
+        if (typeof loadLeaveBalance === 'function') loadLeaveBalance();
+        if (typeof loadEmployeeLeaveBalance === 'function') loadEmployeeLeaveBalance();
+    } catch (e) {
+        if (typeof showToast === 'function') showToast(e.message || 'Failed to revoke', 'error');
     }
 }
 
@@ -1866,4 +1939,179 @@ function openLeaveReasonModalFromTitle(el) {
     var textEl = document.getElementById('leave-reason-modal-text');
     if (textEl) textEl.textContent = reason || '—';
     modal.classList.remove('hidden');
+}
+
+
+// ============================================
+// SENIOR: EMPLOYEE LEAVE DATA + LEAVE HISTORY GRID
+// ============================================
+
+var _trackerEmployeeLeaves = [];  // all leaves for selected employee (full year)
+var _trackerEmployeePolicies = []; // policies with balance for selected employee
+
+// Called when employee is selected from combobox (override _selectTeamLeaveBalanceUser callback)
+var _origSelectTeamLeaveBalanceUser = typeof _selectTeamLeaveBalanceUser === 'function' ? _selectTeamLeaveBalanceUser : null;
+
+function loadEmployeeLeaveData() {
+    var sel = document.getElementById('team-leave-balance-user');
+    var userId = sel ? sel.value : null;
+    var balContainer = document.getElementById('team-leave-balance-container');
+    var histSection = document.getElementById('leave-history-section');
+    var infoEl = document.getElementById('tracker-employee-info');
+
+    if (!userId) {
+        if (balContainer) balContainer.classList.add('hidden');
+        if (histSection) histSection.classList.add('hidden');
+        return;
+    }
+
+    if (balContainer) { balContainer.classList.remove('hidden'); balContainer.innerHTML = '<p class="text-sm text-gray-400">Loading balance…</p>'; }
+    if (histSection) histSection.classList.add('hidden');
+
+    var year = (document.getElementById('leave-history-year-select') && document.getElementById('leave-history-year-select').value)
+        ? parseInt(document.getElementById('leave-history-year-select').value)
+        : new Date().getFullYear();
+
+    Promise.all([
+        Api.get('/leaves/user-policy-balances?user_id=' + encodeURIComponent(userId) + '&_=' + Date.now()),
+        Api.get('/auth/users').catch(function() { return []; }),
+        Api.get('/leaves/my-leaves?user_id=' + encodeURIComponent(userId)).catch(function() { return []; })
+    ]).then(function(results) {
+        var policies = results[0] || [];
+        var allUsers = results[1] || [];
+        var leaves = results[2] || [];
+        _trackerEmployeePolicies = policies;
+        _trackerEmployeeLeaves = leaves;
+
+        // Show joining date info
+        var emp = allUsers.find(function(u) { return String(u.id) === String(userId); });
+        if (emp && infoEl) {
+            var joiningStr = emp.joining_date ? ('joining date is ' + _fmtDate(emp.joining_date)) : 'no joining date set';
+            infoEl.textContent = 'Leaves data (calculated from joining date) of the selected employee is displayed below. ' + (emp.full_name || 'Employee') + '\u2019s ' + joiningStr + '.';
+            infoEl.classList.remove('hidden');
+        }
+
+        renderLeaveCards(balContainer, policies, [], true, [], null, userId);
+
+        // Populate year selects
+        _populateTrackerYearSelects(emp);
+
+        // Render leave history grid
+        if (histSection) histSection.classList.remove('hidden');
+        renderLeaveHistoryGrid();
+    }).catch(function(e) {
+        if (balContainer) balContainer.innerHTML = '<p class="text-sm text-red-400">Failed to load data.</p>';
+    });
+}
+
+function _populateTrackerYearSelects(emp) {
+    var now = new Date();
+    var currentYear = now.getFullYear();
+    var startYear = emp && emp.joining_date ? parseInt(emp.joining_date.substring(0, 4)) : currentYear - 2;
+    if (startYear > currentYear) startYear = currentYear;
+
+    // Main tracker year/month
+    var monthSel = document.getElementById('tracker-month-select');
+    var yearSel = document.getElementById('tracker-year-select');
+    if (yearSel && !yearSel.dataset.populated) {
+        yearSel.innerHTML = '';
+        for (var y = currentYear + 1; y >= startYear; y--) {
+            yearSel.innerHTML += '<option value="' + y + '"' + (y === currentYear ? ' selected' : '') + '>' + y + '</option>';
+        }
+        yearSel.dataset.populated = '1';
+    }
+    if (monthSel && !monthSel.dataset.set) {
+        monthSel.value = String(now.getMonth() + 1);
+        monthSel.dataset.set = '1';
+    }
+
+    // Leave history year select
+    var histYearSel = document.getElementById('leave-history-year-select');
+    if (histYearSel) {
+        var prevVal = histYearSel.value;
+        histYearSel.innerHTML = '';
+        for (var hy = currentYear + 1; hy >= startYear; hy--) {
+            histYearSel.innerHTML += '<option value="' + hy + '"' + (hy === currentYear ? ' selected' : '') + '>' + hy + '</option>';
+        }
+        if (prevVal) histYearSel.value = prevVal;
+    }
+}
+
+function renderLeaveHistoryGrid() {
+    var grid = document.getElementById('leave-history-grid');
+    if (!grid) return;
+    var histYearSel = document.getElementById('leave-history-year-select');
+    var year = histYearSel ? parseInt(histYearSel.value) : new Date().getFullYear();
+    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    // Filter leaves for this year
+    var yearLeaves = (_trackerEmployeeLeaves || []).filter(function(l) {
+        var s = l.start_date || '';
+        var e = l.end_date || '';
+        return (s.startsWith(year) || e.startsWith(year)) && l.status === 'approved';
+    });
+
+    // Group by policy title
+    var policyMap = {};
+    (_trackerEmployeePolicies || []).forEach(function(p) {
+        policyMap[p.id] = p.title || ('Policy ' + p.id);
+    });
+
+    // Build leave name → month → days map
+    var leaveGrid = {}; // { title: { 1: days, 2: days, ... } }
+    yearLeaves.forEach(function(l) {
+        var title = l.custom_policy_title || policyMap[l.custom_policy_id] || _leavetypeLabel(l.leave_type) || 'Leave';
+        if (!leaveGrid[title]) leaveGrid[title] = {};
+        // Distribute days across months
+        var start = new Date(l.start_date);
+        var end = new Date(l.end_date);
+        for (var m = 1; m <= 12; m++) {
+            var mStart = new Date(year, m - 1, 1);
+            var mEnd = new Date(year, m, 0);
+            var s = start < mStart ? mStart : start;
+            var e = end > mEnd ? mEnd : end;
+            if (s <= e) {
+                var days = l.is_half_day ? 0.5 : l.num_days;
+                leaveGrid[title][m] = (leaveGrid[title][m] || 0) + days;
+            }
+        }
+    });
+
+    if (Object.keys(leaveGrid).length === 0) {
+        grid.innerHTML = '<p class="text-sm text-gray-400 py-4">No approved leaves for ' + year + '.</p>';
+        // Update year label on parent
+        var histLabel = document.querySelector('#leave-history-section h3');
+        if (histLabel) histLabel.nextElementSibling && (histLabel.nextElementSibling.textContent = 'Jan-' + year + ' to Dec-' + year);
+        return;
+    }
+
+    var h = '<table class="w-full text-sm border border-gray-100 rounded-xl overflow-hidden">';
+    h += '<thead><tr class="bg-gray-50">';
+    h += '<th class="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 w-40">Leave Name</th>';
+    months.forEach(function(m) {
+        h += '<th class="text-center px-2 py-2.5 text-xs font-semibold text-gray-500">' + m + '</th>';
+    });
+    h += '</tr></thead><tbody class="divide-y divide-gray-50">';
+
+    Object.keys(leaveGrid).forEach(function(title) {
+        h += '<tr class="hover:bg-gray-50/50">';
+        h += '<td class="px-4 py-3 text-gray-700 font-medium">' + title + '</td>';
+        for (var m = 1; m <= 12; m++) {
+            var val = leaveGrid[title][m];
+            if (val) {
+                h += '<td class="text-center px-2 py-3"><span class="inline-flex flex-col items-center"><span class="w-2 h-2 rounded-full bg-amber-400 mb-1"></span><span class="text-xs font-semibold text-gray-700">' + val + '</span></span></td>';
+            } else {
+                h += '<td class="text-center px-2 py-3 text-gray-200">—</td>';
+            }
+        }
+        h += '</tr>';
+    });
+
+    h += '</tbody></table>';
+    grid.innerHTML = h;
+}
+
+function _leavetypeLabel(lt) {
+    var map = { earned_leave: 'Earned Leave', casual_leave: 'Casual Leave', sick_leave: 'Sick Leave', casual_sick_leave: 'Casual/Sick Leave', unpaid_leave: 'Loss of Pay', custom: 'Custom Leave' };
+    return map[lt] || (lt || 'Leave');
 }
