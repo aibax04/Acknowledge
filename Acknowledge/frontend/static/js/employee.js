@@ -686,7 +686,7 @@ function openPolicyModal(policyId) {
     const imageContainer = document.getElementById('policy-modal-image-container');
     if (policy.image_url) {
         const imgSrc = policy.image_url.startsWith('/') ? '/api' + policy.image_url : policy.image_url;
-        imageContainer.innerHTML = `<img src="${imgSrc}" class="w-full h-64 object-cover rounded-xl shadow-md">`;
+        imageContainer.innerHTML = `<img src="${imgSrc}" class="w-full max-h-64 object-contain rounded-xl shadow-md" style="max-width:100%;display:block;">`;
         imageContainer.classList.remove('hidden');
     } else {
         imageContainer.innerHTML = '';
