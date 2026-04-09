@@ -143,7 +143,15 @@ function showNextPopup() {
 
     // Format content with proper line breaks and styling
     const contentEl = document.getElementById('popup-content');
-    contentEl.innerHTML = formatPopupContent(item.content);
+    const rawContent = item.content || '';
+    if (rawContent.trim().startsWith('<')) {
+        // Quill-saved HTML — render directly
+        contentEl.classList.add('policy-rich-content');
+        contentEl.innerHTML = rawContent;
+    } else {
+        contentEl.classList.remove('policy-rich-content');
+        contentEl.innerHTML = formatPopupContent(rawContent);
+    }
 
     document.getElementById('popup-sender').textContent = item.sender;
     document.getElementById('popup-date').textContent = new Date(item.date).toLocaleString();
@@ -254,6 +262,17 @@ function createPopupModal() {
     modal.style.display = 'none';
 
     modal.innerHTML = `
+        <style>
+            #popup-content.policy-rich-content ul { list-style: disc; padding-left: 1.25rem; margin: 0.5rem 0; }
+            #popup-content.policy-rich-content ol { list-style: decimal; padding-left: 1.25rem; margin: 0.5rem 0; }
+            #popup-content.policy-rich-content h1,
+            #popup-content.policy-rich-content h2,
+            #popup-content.policy-rich-content h3 { font-weight: 600; margin: 0.75rem 0 0.35rem; font-size: 1rem; }
+            #popup-content.policy-rich-content p { margin-bottom: 0.5rem; }
+            #popup-content.policy-rich-content strong, #popup-content.policy-rich-content b { font-weight: 600; }
+            #popup-content.policy-rich-content em, #popup-content.policy-rich-content i { font-style: italic; }
+            #popup-content.policy-rich-content img { max-width: 100%; height: auto; }
+        </style>
         <div class="bg-white rounded-2xl shadow-2xl overflow-hidden animate-fade-in transform scale-100 w-full max-w-2xl max-h-[90vh] flex flex-col">
             <!-- Header -->
             <div id="popup-header" class="bg-gradient-to-r from-primary to-primary-hover p-6 text-white flex-shrink-0">
