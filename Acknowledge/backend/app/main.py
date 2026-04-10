@@ -151,6 +151,43 @@ app.include_router(attendance.router)
 app.include_router(leaves.router)
 app.include_router(holidays.router)
 
+async def _auto_absent_scheduler():
+    """Background task: runs daily at 23:45 IST (18:15 UTC).
+    Anyone who has a clock_in but no clock_out for yesterday is marked absent."""
+    log = logging.getLogger(__name__)
+    while True:
+        now = datetime.now(timezone.utc)
+        # Target: 18:15 UTC = 23:45 IST
+        target = now.replace(hour=18, minute=15, second=0, microsecond=0)
+        if now >= target:
+            target += timedelta(days=1)
+        await asyncio.sleep((target - now).total_seconds())
+        try:
+            from app.database import SessionLocal as AsyncSessionLocal
+            from app.models.attendance import Attendance, AttendanceStatus
+            from sqlalchemy import select as sa_select
+            from datetime import date as date_cls
+            yesterday = (datetime.now(timezone.utc) - timedelta(days=1)).date()
+            async with AsyncSessionLocal() as db:
+                # Find records where clock_in exists but clock_out is NULL for yesterday
+                result = await db.execute(
+                    sa_select(Attendance).filter(
+                        Attendance.date == yesterday,
+                        Attendance.clock_in.isnot(None),
+                        Attendance.clock_out.is_(None),
+                    )
+                )
+                records = result.scalars().all()
+                for rec in records:
+                    rec.status = AttendanceStatus.ABSENT
+                    rec.clock_in = None  # clear the incomplete clock-in
+                if records:
+                    await db.commit()
+                    log.info("Auto-absent: marked %d records absent for %s (no clock-out)", len(records), yesterday)
+        except Exception as exc:
+            log.error("Auto-absent scheduler failed: %s", exc)
+
+
 async def _monthly_credit_scheduler():
     """Background task: run leave credits daily; on the 1st of the month it will insert new rows."""
     while True:
@@ -273,6 +310,8 @@ async def startup():
 
     # Start background scheduler (runs daily, credits on the 1st of each month)
     asyncio.create_task(_monthly_credit_scheduler())
+    # Start auto-absent scheduler (marks absent anyone who clocked in but never clocked out)
+    asyncio.create_task(_auto_absent_scheduler())
 
 
 @app.get("/")

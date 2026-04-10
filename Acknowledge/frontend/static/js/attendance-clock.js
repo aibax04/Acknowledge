@@ -158,7 +158,11 @@ async function openAttendanceUpdateModal(dateStr) {
     document.getElementById('update-att-date').value = dateStr;
     document.getElementById('update-att-reason').value = '';
     var ciE = document.getElementById('update-att-clock-in'), coE = document.getElementById('update-att-clock-out');
-    if (ciE) ciE.value = '09:00'; if (coE) coE.value = '18:00';
+    var ciCb = document.getElementById('update-att-clock-in-enable'), coCb = document.getElementById('update-att-clock-out-enable');
+    if (ciE) { ciE.value = '09:00'; ciE.disabled = false; }
+    if (coE) { coE.value = '18:00'; coE.disabled = false; }
+    if (ciCb) ciCb.checked = true;
+    if (coCb) coCb.checked = true;
     try {
         var mgrs = await Api.get('/attendance/managers');
         var sel = document.getElementById('update-att-manager');
@@ -174,7 +178,11 @@ async function openAttendanceUpdateModal(dateStr) {
 
 async function submitAttendanceUpdate() {
     var dv = document.getElementById('update-att-date').value, r = document.getElementById('update-att-reason').value.trim(), mi = document.getElementById('update-att-manager').value;
-    var ci = document.getElementById('update-att-clock-in').value, co = document.getElementById('update-att-clock-out').value;
+    var ciCb = document.getElementById('update-att-clock-in-enable'), coCb = document.getElementById('update-att-clock-out-enable');
+    var ciEnabled = !ciCb || ciCb.checked, coEnabled = !coCb || coCb.checked;
+    var ci = ciEnabled ? document.getElementById('update-att-clock-in').value : null;
+    var co = coEnabled ? document.getElementById('update-att-clock-out').value : null;
+    if (!ciEnabled && !coEnabled) { showToast('Please enable at least one field to update', 'error'); return; }
     if (!r) { showToast('Please provide a reason', 'error'); return; }
     if (!mi) { showToast('Please select a manager', 'error'); return; }
     var mid = parseInt(mi, 10);
