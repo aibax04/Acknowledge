@@ -154,7 +154,7 @@ function showNextPopup() {
     }
 
     document.getElementById('popup-sender').textContent = item.sender;
-    document.getElementById('popup-date').textContent = new Date(item.date).toLocaleString();
+    document.getElementById('popup-date').textContent = fmtDateTime(item.date);
     document.getElementById('popup-id').value = item.id;
     document.getElementById('popup-type').value = item.type;
 

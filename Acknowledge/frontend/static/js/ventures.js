@@ -374,7 +374,7 @@ function getInitials(name) {
 function formatDate(dateStr) {
     if (!dateStr) return '';
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return fmtDate(date);
 }
 
 function showToast(message, type = 'success') {

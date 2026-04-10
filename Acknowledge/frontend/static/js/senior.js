@@ -407,7 +407,7 @@ async function loadEscalatedConcerns() {
         }
 
         concerns.forEach(concern => {
-            const date = new Date(concern.created_at).toLocaleDateString();
+            const date = fmtDate(concern.created_at);
             const notifiedUsers = concern.notified_users || [];
             const acknowledgedUsers = concern.acknowledged_by || [];
             const notifiedCount = notifiedUsers.length;
@@ -482,7 +482,7 @@ async function loadPolicyAudit() {
                         </div>
                     </div>
                 </td>
-                <td class="px-6 py-4 text-sm text-gray-500">${new Date(item.date_issued).toLocaleDateString()}</td>
+                <td class="px-6 py-4 text-sm text-gray-500">${fmtDate(item.date_issued)}</td>
                 <td class="px-6 py-4 text-right text-sm space-x-2">
                     <button onclick="viewPolicyAcknowledgments(${item.policy_id}, '${item.policy_name.replace(/'/g, "\\'")}')" class="text-purple-600 hover:text-purple-800 font-bold text-xs uppercase hover:underline">View Details</button>
                     <button onclick="remindPolicy(${item.policy_id})" class="text-primary hover:text-primary-hover font-bold text-xs uppercase hover:underline">Remind</button>
@@ -535,7 +535,7 @@ async function viewPolicyAcknowledgments(policyId, policyName) {
             ackList.innerHTML = '<p class="text-gray-500 text-sm">No one has acknowledged yet</p>';
         } else {
             data.acknowledged.forEach(user => {
-                const date = new Date(user.acknowledged_at).toLocaleString();
+                const date = fmtDateTime(user.acknowledged_at);
                 ackList.innerHTML += `
                     <div class="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
                         <div class="flex items-center">
@@ -958,7 +958,7 @@ async function loadPendingManagers() {
         if (badge) { badge.textContent = managers.length; badge.classList.remove('hidden'); }
         container.innerHTML = '<div class="space-y-3">' + managers.map(m => {
             const initials = (m.full_name || '?').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
-            const joined = m.created_at ? new Date(m.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+            const joined = m.created_at ? fmtDate(m.created_at) : '—';
             return `<div class="flex items-center gap-4 p-4 rounded-xl border border-gray-100 bg-white">
                 <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-bold shrink-0">${initials}</div>
                 <div class="flex-1 min-w-0">
@@ -1083,7 +1083,7 @@ async function loadWorkforce() {
                         </span>
                     </td>
                     <td class="px-6 py-4 text-sm text-gray-500">${user.email}</td>
-                    <td class="px-6 py-4 text-sm text-gray-500">${new Date(user.created_at).toLocaleDateString()}</td>
+                    <td class="px-6 py-4 text-sm text-gray-500">${fmtDate(user.created_at)}</td>
                     <td class="px-6 py-4 text-right relative">
                         <div class="inline-block relative">
                             <button type="button" onclick="event.stopPropagation(); toggleActionMenu(${user.id})" class="text-gray-400 hover:text-gray-900 p-1 rounded-full hover:bg-gray-200 transition-all cursor-pointer">
@@ -1167,7 +1167,7 @@ async function exportWorkforceDirectory() {
         };
         const rows = [headers.join(',')];
         sorted.forEach(u => {
-            const joined = u.created_at ? new Date(u.created_at).toLocaleDateString() : '';
+            const joined = u.created_at ? fmtDate(u.created_at) : '';
             const probation = (u.is_on_probation ? 'Yes' : 'No');
             rows.push([u.full_name || '', u.role || '', u.email || '', joined, probation].map(escapeCsv).join(','));
         });
@@ -1403,7 +1403,7 @@ async function loadSentNotifications() {
                 <div>
                     <h4 class="text-sm font-semibold text-gray-900">${notif.title}</h4>
                     <div class="flex items-center gap-2">
-                        <p class="text-xs text-gray-500">${new Date(notif.created_at).toLocaleString()}</p>
+                        <p class="text-xs text-gray-500">${fmtDateTime(notif.created_at)}</p>
                         <button onclick="deleteNotification(${notif.id})" 
                             class="text-red-400 hover:text-red-600 transition-opacity"
                             title="Delete notification">
@@ -1629,7 +1629,7 @@ async function loadAssignmentsByMe() {
                 </div>
                 <div class="flex items-center gap-2">
                     <button onclick="openTaskCommentsModal(${t.id}, ${JSON.stringify(t.title || '')})" class="text-xs text-gray-600 hover:text-primary font-medium">Comment</button>
-                    <span class="text-xs text-gray-400">${new Date(t.created_at).toLocaleDateString()}</span>
+                    <span class="text-xs text-gray-400">${fmtDate(t.created_at)}</span>
                 </div>
             </div>
         `).join('');
@@ -1655,7 +1655,7 @@ function renderPersonalTodoList(tasks) {
                 <p class="text-sm font-medium text-gray-800">${t.title}</p>
                 <div class="flex items-center gap-2 mt-1">
                     <span class="text-[10px] px-2 py-0.5 rounded-full ${getPriorityColor(t.priority)} bg-opacity-10 text-opacity-80 uppercase font-bold tracking-wide">${t.priority}</span>
-                    <span class="text-xs text-gray-400">${t.deadline ? new Date(t.deadline).toLocaleDateString() : 'No deadline'}</span>
+                    <span class="text-xs text-gray-400">${t.deadline ? fmtDate(t.deadline) : 'No deadline'}</span>
                 </div>
             </div>
             <div class="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1837,7 +1837,7 @@ async function loadTaskComments(taskId) {
         }
         listEl.innerHTML = comments.map(c => {
             const name = c.user ? c.user.full_name : 'Someone';
-            const date = c.created_at ? new Date(c.created_at).toLocaleString() : '';
+            const date = c.created_at ? fmtDateTime(c.created_at) : '';
             const body = (c.body || '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
             return '<div class="border-l-2 border-primary/30 pl-3 py-1"><span class="font-medium text-gray-900">' + name + '</span> <span class="text-xs text-gray-400">' + date + '</span><p class="text-gray-700 mt-0.5">' + body + '</p></div>';
         }).join('');

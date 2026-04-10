@@ -49,7 +49,7 @@
         }
         listEl.innerHTML = todos.map(function (t) {
             const doneClass = t.done ? 'line-through text-gray-400' : 'text-gray-900';
-            const dateStr = t.date ? new Date(t.date + 'T12:00:00').toLocaleDateString() : '';
+            const dateStr = t.date ? fmtDate(t.date + 'T12:00:00') : '';
             const priority = (t.priority || 'medium').toLowerCase();
             return '<li class="flex items-center gap-2 py-2 px-3 rounded-lg hover:bg-gray-50 border border-gray-100" data-todo-id="' + t.id + '">' +
                 '<input type="checkbox" class="personal-todo-check rounded text-primary focus:ring-primary flex-shrink-0" ' + (t.done ? 'checked' : '') + ' aria-label="Mark done">' +

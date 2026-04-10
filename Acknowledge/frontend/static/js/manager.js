@@ -682,7 +682,7 @@ function renderAllTasks(tasks) {
                 ${task.created_by ? task.created_by.full_name : 'System'}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                ${task.deadline ? new Date(task.deadline).toLocaleDateString() : '-'}
+                ${task.deadline ? fmtDate(task.deadline) : '-'}
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[task.status] || 'bg-gray-100'} capitalize">
@@ -780,7 +780,7 @@ async function loadTaskComments(taskId) {
         let maxTs = 0;
         listEl.innerHTML = comments.map(c => {
             const name = c.user ? c.user.full_name : 'Someone';
-            const date = c.created_at ? new Date(c.created_at).toLocaleString() : '';
+            const date = c.created_at ? fmtDateTime(c.created_at) : '';
             if (c.created_at) {
                 const t = new Date(c.created_at).getTime();
                 if (t > maxTs) maxTs = t;
@@ -827,7 +827,7 @@ function viewTask(taskId) {
     document.getElementById('view-task-title').innerText = task.title;
     document.getElementById('view-task-description').innerText = task.description || 'No description provided.';
     document.getElementById('view-task-assignee').innerText = task.assigned_to ? task.assigned_to.full_name : 'Unassigned';
-    document.getElementById('view-task-deadline').innerText = task.deadline ? new Date(task.deadline).toLocaleDateString() : 'No deadline';
+    document.getElementById('view-task-deadline').innerText = task.deadline ? fmtDate(task.deadline) : 'No deadline';
 
     const statusEl = document.getElementById('view-task-status');
     statusEl.innerText = task.status.replace('_', ' ');
@@ -1047,7 +1047,7 @@ function renderResolvedConcerns(concerns) {
                 ${c.raised_by ? c.raised_by.full_name : 'Unknown'}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                ${c.resolved_at ? new Date(c.resolved_at).toLocaleDateString() : '-'}
+                ${c.resolved_at ? fmtDate(c.resolved_at) : '-'}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                 <button class="text-gray-400 cursor-not-allowed">Resolved</button>
@@ -1258,7 +1258,7 @@ async function loadSentNotifications() {
             <div class="px-6 py-4 hover:bg-gray-50 transition-colors flex items-center justify-between gap-4 group">
                 <div class="min-w-0 flex-1">
                     <h4 class="text-sm font-semibold text-gray-900">${notif.title}</h4>
-                    <p class="text-xs text-gray-500 mt-0.5">${new Date(notif.created_at).toLocaleString()}</p>
+                    <p class="text-xs text-gray-500 mt-0.5">${fmtDateTime(notif.created_at)}</p>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                     <button onclick="deleteNotification(${notif.id})" 
@@ -1336,7 +1336,7 @@ function renderNotifications(notifications) {
     }
 
     container.innerHTML = notifications.map(notif => {
-        const date = new Date(notif.created_at).toLocaleString();
+        const date = fmtDateTime(notif.created_at);
         const canDelete = currentUser && (notif.created_by_id === currentUser.id || currentUser.role === 'SENIOR');
 
         return `
@@ -1457,7 +1457,7 @@ function renderPolicies(policies) {
                     <p class="text-sm text-gray-600 mb-6 line-clamp-3 leading-relaxed">${(policy.content || '').replace(/<[^>]*>/g, '').substring(0, 120)}...</p>
                     <div class="flex justify-between items-center pt-4 border-t border-gray-50 mt-auto">
                         <span class="text-[11px] font-medium text-gray-400 capitalize">
-                             ${new Date(policy.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                             ${fmtDate(policy.created_at)}
                         </span>
                         <button onclick="openPolicyModal(${policy.id})" class="text-primary hover:text-primary-hover text-sm font-bold flex items-center transition-all group-hover:translate-x-1">
                             Read Policy <span class="ml-1">→</span>
@@ -1754,7 +1754,7 @@ function renderPersonalTodoList() {
             </div>
             <p class="text-xs text-gray-500 mt-1 line-clamp-2">${t.description || ''}</p>
             <div class="flex justify-between items-center mt-2">
-                <span class="text-[10px] text-red-500">${t.deadline ? 'Due ' + new Date(t.deadline).toLocaleDateString() : 'No deadline'}</span>
+                <span class="text-[10px] text-red-500">${t.deadline ? 'Due ' + fmtDate(t.deadline) : 'No deadline'}</span>
                 <button onclick="markTaskComplete(${t.id})" class="text-xs text-primary font-medium hover:underline">Complete</button>
             </div>
         </div>
@@ -1831,7 +1831,7 @@ function renderNudges(nudges) {
                 </span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                ${new Date(n.created_at).toLocaleDateString()}
+                ${fmtDate(n.created_at)}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                 <button onclick="viewNudge(${n.id})" class="text-primary hover:text-primary-hover">View</button>
@@ -1922,13 +1922,13 @@ function viewNudge(nudgeId) {
     statusEl.textContent = (nudge.status || '—').toLowerCase();
     statusEl.className = 'text-sm font-medium ' + (statusColors[nudge.status] || 'text-gray-600');
     document.getElementById('view-nudge-created').textContent = nudge.created_at
-        ? new Date(nudge.created_at).toLocaleString()
+        ? fmtDateTime(nudge.created_at)
         : '—';
     const resolvedWrap = document.getElementById('view-nudge-resolved-wrap');
     const resolvedEl = document.getElementById('view-nudge-resolved');
     if (nudge.resolved_at) {
         resolvedWrap.classList.remove('hidden');
-        resolvedEl.textContent = new Date(nudge.resolved_at).toLocaleString();
+        resolvedEl.textContent = fmtDateTime(nudge.resolved_at);
     } else {
         resolvedWrap.classList.add('hidden');
     }

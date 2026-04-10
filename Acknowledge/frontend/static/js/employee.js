@@ -251,7 +251,7 @@ function renderTasks(tasks) {
                 </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                ${task.deadline ? new Date(task.deadline).toLocaleDateString() : '-'}
+                ${task.deadline ? fmtDate(task.deadline) : '-'}
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
                 <span class="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-lg ${statusColors[task.status] || 'bg-gray-100'} capitalize">
@@ -310,7 +310,7 @@ async function loadTaskComments(taskId) {
         let maxTs = 0;
         listEl.innerHTML = comments.map(c => {
             const name = c.user ? c.user.full_name : 'Someone';
-            const date = c.created_at ? new Date(c.created_at).toLocaleString() : '';
+            const date = c.created_at ? fmtDateTime(c.created_at) : '';
             if (c.created_at) {
                 const t = new Date(c.created_at).getTime();
                 if (t > maxTs) maxTs = t;
@@ -474,8 +474,8 @@ function renderConcerns(concerns) {
                 </div>
             ` : ''}
             <div class="flex justify-between items-center text-xs text-slate-500">
-                <span>Raised on ${new Date(concern.created_at).toLocaleDateString()}</span>
-                ${concern.resolved_at ? `<span class="text-green-600">Resolved on ${new Date(concern.resolved_at).toLocaleDateString()}</span>` : ''}
+                <span>Raised on ${fmtDate(concern.created_at)}</span>
+                ${concern.resolved_at ? `<span class="text-green-600">Resolved on ${fmtDate(concern.resolved_at)}</span>` : ''}
             </div>
             ${needsAck ? `<div class="mt-3"><button onclick="acknowledgeConcern(${concern.id})" class="text-sm btn-primary text-white px-4 py-2 rounded-xl">Acknowledge</button></div>` : ''}
         </div>
@@ -651,7 +651,7 @@ function renderPolicies(policies) {
                     <p class="text-sm text-slate-600 mb-6 line-clamp-3 leading-relaxed">${(policy.content || '').replace(/<[^>]*>/g, '').substring(0, 120)}...</p>
                     <div class="flex justify-between items-center pt-4 border-t border-slate-100 mt-auto">
                         <span class="text-[11px] font-medium text-slate-400">
-                             ${new Date(policy.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                             ${fmtDate(policy.created_at)}
                         </span>
                         <button onclick="openPolicyModal(${policy.id})" class="text-primary hover:text-primary-hover text-sm font-bold flex items-center transition-all group-hover:translate-x-1">
                             Read Policy <span class="ml-1">→</span>
@@ -1089,7 +1089,7 @@ function renderNotifications(notifications) {
     }
 
     container.innerHTML = notifications.map(notif => {
-        const date = new Date(notif.created_at).toLocaleString();
+        const date = fmtDateTime(notif.created_at);
         return `
             <div class="p-4 ${notif.is_acknowledged ? 'bg-white opacity-80' : 'bg-primary/5'} hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0">
                 <div class="flex justify-between items-start mb-1">

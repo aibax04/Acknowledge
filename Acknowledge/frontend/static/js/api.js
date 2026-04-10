@@ -1,3 +1,27 @@
+/** Format a date value as DD/MM/YYYY */
+function fmtDate(val) {
+    if (!val) return '—';
+    var d = (val instanceof Date) ? val : new Date(val);
+    if (isNaN(d)) return String(val);
+    var dd = String(d.getDate()).padStart(2, '0');
+    var mm = String(d.getMonth() + 1).padStart(2, '0');
+    var yyyy = d.getFullYear();
+    return dd + '/' + mm + '/' + yyyy;
+}
+
+/** Format a datetime value as DD/MM/YYYY, HH:MM */
+function fmtDateTime(val) {
+    if (!val) return '—';
+    var d = (val instanceof Date) ? val : new Date(val);
+    if (isNaN(d)) return String(val);
+    var dd = String(d.getDate()).padStart(2, '0');
+    var mm = String(d.getMonth() + 1).padStart(2, '0');
+    var yyyy = d.getFullYear();
+    var hh = String(d.getHours()).padStart(2, '0');
+    var min = String(d.getMinutes()).padStart(2, '0');
+    return dd + '/' + mm + '/' + yyyy + ', ' + hh + ':' + min;
+}
+
 function getApiUrl() {
     if (typeof localStorage !== 'undefined') {
         var base = localStorage.getItem('API_BASE');

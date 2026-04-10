@@ -778,8 +778,8 @@ function openLeaveLogsModal(policyId, policyGroupKey) {
         t += '</tr></thead><tbody class="divide-y divide-gray-50">';
         leaves.forEach(function (l, i) {
             t += '<tr class="hover:bg-gray-50/80 transition-colors">';
-            t += '<td class="px-4 py-2.5 text-gray-700 whitespace-nowrap">' + (l.start_date || '-') + '</td>';
-            t += '<td class="px-4 py-2.5 text-gray-700 whitespace-nowrap">' + (l.end_date || '-') + '</td>';
+            t += '<td class="px-4 py-2.5 text-gray-700 whitespace-nowrap">' + fmtDate(l.start_date || null) + '</td>';
+            t += '<td class="px-4 py-2.5 text-gray-700 whitespace-nowrap">' + fmtDate(l.end_date || null) + '</td>';
             t += '<td class="px-4 py-2.5 font-semibold text-gray-900 whitespace-nowrap">' + (l.num_days || 0) + _halfDayLabel(l) + '</td>';
             t += '<td class="px-4 py-2.5 text-gray-500 max-w-[200px] truncate cursor-pointer hover:text-gray-700" title="' + (l.reason || '').replace(/"/g, '&quot;') + '" onclick="openLeaveReasonModalFromTitle(this)">' + (l.reason || '-') + '</td>';
             t += '<td class="px-4 py-2.5">' + _statusBadge(l.status) + '</td></tr>';
@@ -926,7 +926,7 @@ async function openLeaveLedgerModal(policyId, policyGroupKey, targetUserId) {
         html += '<th class="px-4 py-2.5 text-right text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Days</th>';
         html += '<th class="px-4 py-2.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Type</th></tr></thead><tbody class="divide-y divide-gray-50">';
         policyAdjustments.forEach(function (a) {
-            var dateStr = (a.created_at || '').toString().substring(0, 10);
+            var dateStr = fmtDate(a.created_at || null);
             var reason = (a.reason || 'Balance adjustment').length > 50 ? (a.reason || '').substring(0, 50) + '…' : (a.reason || 'Balance adjustment');
             var days = a.adjustment_days != null ? a.adjustment_days : 0;
             var daysStr = (days >= 0 ? '+' : '') + (days % 1 === 0 ? days : parseFloat(days.toFixed(2)));
@@ -956,7 +956,7 @@ async function openLeaveLedgerModal(policyId, policyGroupKey, targetUserId) {
             var desc = l.is_half_day ? (l.start_date || 'Leave') : ((l.start_date && l.end_date) ? l.start_date + ' – ' + l.end_date : 'Leave');
             if (l.reason) desc += ' · ' + (l.reason.length > 40 ? l.reason.substring(0, 40) + '…' : l.reason);
             html += '<tr class="hover:bg-gray-50/80 transition-colors">';
-            html += '<td class="px-4 py-2.5 text-gray-700 whitespace-nowrap">' + (l.start_date || '-') + '</td>';
+            html += '<td class="px-4 py-2.5 text-gray-700 whitespace-nowrap">' + fmtDate(l.start_date || null) + '</td>';
             html += '<td class="px-4 py-2.5 text-gray-600">' + desc + '</td>';
             html += '<td class="px-4 py-2.5 font-semibold text-gray-900 whitespace-nowrap">' + (l.num_days || 0) + _halfDayLabel(l) + '</td>';
             html += '<td class="px-4 py-2.5 capitalize text-gray-600">' + (l.status || '-') + '</td></tr>';
@@ -1003,8 +1003,8 @@ function _leaveRow(l, showStatus, showAction) {
     var daysLabel = l.num_days + (l.is_half_day ? '' : '');
     var h = '<tr class="hover:bg-gray-50/60 transition-colors">';
     h += '<td class="px-4 py-3 text-sm font-medium text-gray-900 whitespace-nowrap">' + type + '</td>';
-    h += '<td class="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">' + l.start_date + '</td>';
-    h += '<td class="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">' + l.end_date + '</td>';
+    h += '<td class="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">' + fmtDate(l.start_date) + '</td>';
+    h += '<td class="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">' + fmtDate(l.end_date) + '</td>';
     h += '<td class="px-4 py-3 text-sm font-semibold text-gray-900 text-center whitespace-nowrap">' + daysLabel + _halfDayLabel(l) + '</td>';
     h += '<td class="px-4 py-3 text-sm text-gray-500 max-w-[160px] truncate cursor-pointer hover:text-gray-700" title="' + reasonEsc + '" onclick="openLeaveReasonModalFromTitle(this)">' + (l.reason || '—') + '</td>';
     if (showStatus) h += '<td class="px-4 py-3">' + _statusBadge(l.status) + '</td>';
@@ -1669,7 +1669,7 @@ async function loadPendingLeaves() {
             var roleLabel = (l.user_role || 'employee').charAt(0).toUpperCase() + (l.user_role || 'employee').slice(1);
 
             // Date + days display
-            var dateStr = l.is_half_day ? l.start_date : (l.start_date + ' \u2192 ' + l.end_date);
+            var dateStr = l.is_half_day ? fmtDate(l.start_date) : (fmtDate(l.start_date) + ' \u2192 ' + fmtDate(l.end_date));
             var daysNum = l.is_half_day ? 0.5 : (l.num_days || 1);
             var daysLabel = daysNum + ' day' + (daysNum !== 1 ? 's' : '');
 

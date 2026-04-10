@@ -137,7 +137,7 @@ function renderAttendanceMonthly(data) {
         var co = a.clock_out ? new Date(a.clock_out).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' }) : '-';
         var isT = a.date === today, canReq = a.status === 'absent' && a.date < today;
         h += '<tr class="' + (isT ? 'bg-primary/5 font-medium' : '') + '">';
-        h += '<td class="px-4 py-2 whitespace-nowrap">' + a.date + (isT ? ' <span class="text-xs text-primary">(Today)</span>' : '') + '</td>';
+        h += '<td class="px-4 py-2 whitespace-nowrap">' + fmtDate(a.date) + (isT ? ' <span class="text-xs text-primary">(Today)</span>' : '') + '</td>';
         h += '<td class="px-4 py-2 whitespace-nowrap">' + dayN + '</td>';
         h += '<td class="px-4 py-2 whitespace-nowrap"><span class="px-2 py-0.5 rounded-full text-xs font-medium ' + cc + '">' + sLabel + '</span></td>';
         h += '<td class="px-4 py-2 whitespace-nowrap text-gray-600">' + ci + '</td>';
@@ -203,7 +203,7 @@ async function loadPendingAttendanceRequests() {
     var c = document.getElementById('pending-attendance-requests'); if (!c) return;
     try {
         var reqs = await Api.get('/attendance/update-requests/pending'); if (!reqs || reqs.length === 0) { c.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">No pending requests</p>'; return; }
-        c.innerHTML = reqs.map(function (r) { return '<div class="bg-white border border-gray-200 rounded-lg p-4 mb-3"><div class="flex justify-between items-start mb-2"><div><p class="font-medium text-gray-900">' + (r.user_name || 'User') + '</p><p class="text-xs text-gray-500">Date: ' + r.date + '</p></div><span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">Pending</span></div><p class="text-sm text-gray-600 mb-2"><strong>Reason:</strong> ' + r.reason + '</p><div class="flex gap-2 mt-3"><button onclick="reviewAttendanceRequest(' + r.id + ',\'approved\')" class="text-xs bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600">Approve</button><button onclick="reviewAttendanceRequest(' + r.id + ',\'rejected\')" class="text-xs bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">Reject</button></div></div>'; }).join('');
+        c.innerHTML = reqs.map(function (r) { return '<div class="bg-white border border-gray-200 rounded-lg p-4 mb-3"><div class="flex justify-between items-start mb-2"><div><p class="font-medium text-gray-900">' + (r.user_name || 'User') + '</p><p class="text-xs text-gray-500">Date: ' + fmtDate(r.date) + '</p></div><span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">Pending</span></div><p class="text-sm text-gray-600 mb-2"><strong>Reason:</strong> ' + r.reason + '</p><div class="flex gap-2 mt-3"><button onclick="reviewAttendanceRequest(' + r.id + ',\'approved\')" class="text-xs bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600">Approve</button><button onclick="reviewAttendanceRequest(' + r.id + ',\'rejected\')" class="text-xs bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">Reject</button></div></div>'; }).join('');
     }
     catch (e) { c.innerHTML = '<p class="text-sm text-red-500">Failed to load</p>'; }
 }
