@@ -218,13 +218,13 @@ function switchTab(tabId) {
     currentTab = tabId;
 
     // Hide all views
-    ['stats', 'compliance', 'workforce', 'projects', 'calendar', 'reports', 'track', ...LEAVE_SUB_TABS].forEach(id => {
+    ['stats', 'compliance', 'workforce', 'projects', 'calendar', 'holidays', 'reports', 'track', ...LEAVE_SUB_TABS].forEach(id => {
         const el = document.getElementById('view-' + id);
         if (el) el.classList.add('hidden');
     });
 
     // Reset nav styles for all top-level + sub-items
-    const allNavIds = ['nav-stats', 'nav-compliance', 'nav-workforce', 'nav-projects', 'nav-calendar', 'nav-reports', 'nav-track', 'nav-leave-approvals', 'nav-leave-tracker', 'nav-leave-policies'];
+    const allNavIds = ['nav-stats', 'nav-compliance', 'nav-workforce', 'nav-projects', 'nav-calendar', 'nav-holidays', 'nav-reports', 'nav-track', 'nav-leave-approvals', 'nav-leave-tracker', 'nav-leave-policies'];
     allNavIds.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -255,6 +255,9 @@ function switchTab(tabId) {
     // Load data
     if (tabId === 'calendar') {
         if (typeof loadPersonalCalendar === 'function') loadPersonalCalendar();
+    }
+    if (tabId === 'holidays') {
+        if (typeof loadHolidays === 'function') loadHolidays();
     }
     if (tabId === 'workforce') void loadWorkforceTabData();
     if (tabId === 'compliance') loadPolicyAudit();
