@@ -18,7 +18,7 @@ async function runLocSearch() {
     if (q.length < 3) { results.classList.add('hidden'); return; }
     spinner.classList.remove('hidden');
     try {
-        var url = 'https://nominatim.openstreetmap.org/search?format=json&limit=6&q=' + encodeURIComponent(q);
+        var url = 'https://nominatim.openstreetmap.org/search?format=json&limit=6&countrycodes=IN&q=' + encodeURIComponent(q);
         var res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
         var data = await res.json();
         spinner.classList.add('hidden');
