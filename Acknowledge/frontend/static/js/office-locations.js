@@ -5,6 +5,7 @@
 
 var _locSearchTimer = null;
 var _locSelected = null; // { lat, lng, address, displayName }
+var _locSearchResults = []; // cache raw Nominatim results for safe onclick reference
 
 function debounceLocSearch() {
     clearTimeout(_locSearchTimer);
@@ -27,12 +28,13 @@ async function runLocSearch() {
             results.classList.remove('hidden');
             return;
         }
-        results.innerHTML = data.map(function (r) {
+        _locSearchResults = data;
+        results.innerHTML = data.map(function (r, i) {
             var name = r.display_name || '';
             var short = name.length > 80 ? name.substring(0, 80) + '…' : name;
             return '<button type="button" class="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors"'
-                + ' onclick="selectLocResult(' + r.lat + ',' + r.lon + ',' + JSON.stringify(name) + ')">'
-                + '<span class="text-sm text-gray-800">' + short + '</span>'
+                + ' onclick="selectLocResult(' + i + ')">'
+                + '<span class="text-sm text-gray-800">' + esc(short) + '</span>'
                 + '<span class="block text-xs text-gray-400">' + parseFloat(r.lat).toFixed(5) + ', ' + parseFloat(r.lon).toFixed(5) + '</span>'
                 + '</button>';
         }).join('');
@@ -44,8 +46,11 @@ async function runLocSearch() {
     }
 }
 
-function selectLocResult(lat, lng, displayName) {
-    _locSelected = { lat: parseFloat(lat), lng: parseFloat(lng), address: displayName, displayName: displayName };
+function selectLocResult(index) {
+    var r = _locSearchResults[index];
+    if (!r) return;
+    var displayName = r.display_name || '';
+    _locSelected = { lat: parseFloat(r.lat), lng: parseFloat(r.lon), address: displayName, displayName: displayName };
     document.getElementById('loc-search-results').classList.add('hidden');
     document.getElementById('loc-search-input').value = '';
     showLocPreview(_locSelected);
@@ -136,7 +141,9 @@ async function loadOfficeLocations() {
                 + '<td class="px-4 py-3 text-gray-500 font-mono text-xs">' + parseFloat(l.latitude).toFixed(5) + ', ' + parseFloat(l.longitude).toFixed(5) + '</td>'
                 + '<td class="px-4 py-3 text-gray-600">' + l.radius_meters + 'm</td>'
                 + '<td class="px-4 py-3">' + statusBadge + '</td>'
-                + '<td class="px-4 py-3 flex items-center gap-2">'
+                + '<td class="px-4 py-3 flex items-center gap-2 flex-wrap">'
+                + '<button onclick="assignLocationToAll(' + l.id + ',' + JSON.stringify(l.name) + ')" class="text-xs text-emerald-600 hover:text-emerald-800 font-semibold whitespace-nowrap">Assign to all</button>'
+                + '<span class="text-gray-200">|</span>'
                 + '<button onclick="toggleOfficeLocation(' + l.id + ',' + l.is_active + ')" class="text-xs text-blue-600 hover:text-blue-800 font-medium">' + toggleLabel + '</button>'
                 + '<span class="text-gray-200">|</span>'
                 + '<button onclick="deleteOfficeLocation(' + l.id + ')" class="text-xs text-red-500 hover:text-red-700 font-medium">Delete</button>'
@@ -154,6 +161,14 @@ async function toggleOfficeLocation(id, isActive) {
         await Api.patch('/attendance/office-locations/' + id, { is_active: !isActive });
         loadOfficeLocations();
     } catch (e) { showToast(e.message || 'Failed', 'error'); }
+}
+
+async function assignLocationToAll(id, name) {
+    if (!confirm('Assign "' + name + '" as the clock-in location for ALL employees, managers, and interns? This will overwrite their current location setting.')) return;
+    try {
+        var res = await Api.post('/attendance/office-locations/' + id + '/assign-all', {});
+        showToast(res.message || 'Location assigned to all users!', 'success');
+    } catch (e) { showToast(e.message || 'Failed to assign', 'error'); }
 }
 
 async function deleteOfficeLocation(id) {

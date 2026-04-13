@@ -137,7 +137,97 @@ async function handleClockOut() {
     }
 }
 
-function openOfficeSetupModal() { var m = document.getElementById('office-setup-modal'); if (m) m.classList.remove('hidden'); }
+var _selectedOfficeType = null;
+
+function openOfficeSetupModal() {
+    _selectedOfficeType = null;
+    var m = document.getElementById('office-setup-modal'); if (!m) return;
+    // Reset UI
+    m.querySelectorAll('.office-type-btn').forEach(function(b) { b.classList.remove('border-primary', 'bg-primary/5'); });
+    var locSection = document.getElementById('office-location-section');
+    var confirmRow = document.getElementById('office-setup-confirm-row');
+    if (locSection) locSection.classList.add('hidden');
+    if (confirmRow) confirmRow.classList.add('hidden');
+    m.classList.remove('hidden');
+    // Load office locations into dropdown
+    _loadOfficeLocationDropdown();
+}
+
+var _officeLocations = []; // cached list of active office locations
+
+async function _loadOfficeLocationDropdown() {
+    var container = document.getElementById('office-location-cards');
+    if (!container) return;
+    container.innerHTML = '<p class="text-xs text-gray-400 py-2">Loading locations...</p>';
+    try {
+        var locs = await Api.get('/attendance/office-locations');
+        _officeLocations = (locs || []).filter(function(l) { return l.is_active; });
+        if (_officeLocations.length === 0) {
+            container.innerHTML = '<p class="text-xs text-gray-400 py-2">No office locations configured.</p>';
+            return;
+        }
+        container.innerHTML = _officeLocations.map(function(l) {
+            var addr = l.address ? l.address.split(',').slice(0,2).join(',') : '';
+            return '<button type="button" onclick="pickOfficeLocation(' + l.id + ', this)"'
+                + ' class="office-loc-card w-full text-left p-3 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-colors">'
+                + '<p class="font-medium text-sm text-gray-800">' + _escHtml(l.name) + '</p>'
+                + (addr ? '<p class="text-xs text-gray-400 mt-0.5 truncate">' + _escHtml(addr) + '</p>' : '')
+                + '</button>';
+        }).join('');
+    } catch(e) {
+        container.innerHTML = '<p class="text-xs text-red-400 py-2">Failed to load locations.</p>';
+    }
+}
+
+function _escHtml(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function selectOfficeType(office, btn) {
+    _selectedOfficeType = office;
+    document.querySelectorAll('.office-type-btn').forEach(function(b) {
+        b.classList.remove('border-primary', 'bg-primary/5');
+    });
+    btn.classList.add('border-primary', 'bg-primary/5');
+    var locSection = document.getElementById('office-location-section');
+    if (locSection) locSection.classList.remove('hidden');
+    // If there are no locations, show save button directly
+    var cards = document.getElementById('office-location-cards');
+    var hasLocations = cards && cards.querySelectorAll('.office-loc-card').length > 0;
+    var confirmRow = document.getElementById('office-setup-confirm-row');
+    if (confirmRow) confirmRow.classList.toggle('hidden', hasLocations);
+}
+
+async function pickOfficeLocation(locationId, btn) {
+    if (!_selectedOfficeType) { if (typeof showToast === 'function') showToast('Please select an office type first', 'error'); return; }
+    // Highlight selected card
+    document.querySelectorAll('.office-loc-card').forEach(function(b) {
+        b.classList.remove('border-primary', 'bg-primary/5');
+    });
+    btn.classList.add('border-primary', 'bg-primary/5');
+    // Auto-save immediately
+    await _doSaveOfficeSetup(_selectedOfficeType, locationId);
+}
+
+async function confirmOfficeSetup() {
+    if (!_selectedOfficeType) { if (typeof showToast === 'function') showToast('Please select an office type first', 'error'); return; }
+    await _doSaveOfficeSetup(_selectedOfficeType, null);
+}
+
+async function _doSaveOfficeSetup(office, locationId) {
+    try {
+        var payload = { office: office, office_location_id: locationId ? locationId : 0 };
+        await Api.post('/auth/me', payload);
+        if (typeof showToast === 'function') showToast('Office saved!', 'success');
+        var m = document.getElementById('office-setup-modal'); if (m) m.classList.add('hidden');
+        if (typeof currentUser !== 'undefined' && currentUser) {
+            currentUser.office = office;
+            currentUser.office_location_id = locationId || null;
+        }
+        _geoStatus = null;
+        await loadTodayAttendance();
+    } catch (e) { if (typeof showToast === 'function') showToast(e.message || 'Failed', 'error'); }
+}
 
 async function saveOffice(office) {
     try {

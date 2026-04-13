@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Enum, DateTime, Boolean, Date
+from sqlalchemy import Column, Integer, String, Enum, DateTime, Boolean, Date, ForeignKey
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
 import enum
@@ -23,3 +24,5 @@ class User(Base):
     office = Column(String, nullable=True)  # "panscience" or "eigen"
     joining_date = Column(Date, nullable=True)
     is_on_probation = Column(Boolean, default=False, nullable=True)
+    office_location_id = Column(Integer, ForeignKey("office_locations.id", ondelete="SET NULL"), nullable=True)
+    office_location = relationship("OfficeLocation", foreign_keys=[office_location_id], lazy="raise")

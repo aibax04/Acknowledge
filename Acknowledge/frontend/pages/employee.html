@@ -756,18 +756,27 @@
             <div
                 class="relative bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 animate-fade-in border border-slate-100">
                 <h3 class="text-lg font-semibold text-slate-800 mb-2">Select Your Office</h3>
-                <p class="text-sm text-slate-500 mb-4">This determines your weekly off schedule.</p>
-                <div class="space-y-3">
-                    <button onclick="saveOffice('panscience')"
-                        class="w-full text-left p-4 border border-slate-200 rounded-xl hover:border-primary hover:bg-primary/5 transition-colors">
+                <p class="text-sm text-slate-500 mb-4">This determines your weekly off schedule and clock-in location.</p>
+                <div class="space-y-3 mb-4">
+                    <button onclick="selectOfficeType('panscience', this)"
+                        class="office-type-btn w-full text-left p-4 border border-slate-200 rounded-xl hover:border-primary hover:bg-primary/5 transition-colors">
                         <p class="font-medium text-slate-800">Panscience</p>
                         <p class="text-xs text-slate-500 mt-0.5">Saturday & Sunday off</p>
                     </button>
-                    <button onclick="saveOffice('eigen')"
-                        class="w-full text-left p-4 border border-slate-200 rounded-xl hover:border-primary hover:bg-primary/5 transition-colors">
+                    <button onclick="selectOfficeType('eigen', this)"
+                        class="office-type-btn w-full text-left p-4 border border-slate-200 rounded-xl hover:border-primary hover:bg-primary/5 transition-colors">
                         <p class="font-medium text-slate-800">Eigen</p>
                         <p class="text-xs text-slate-500 mt-0.5">Sunday off</p>
                     </button>
+                </div>
+                <div id="office-location-section" class="hidden border-t border-slate-100 pt-4">
+                    <p class="text-sm font-medium text-slate-700 mb-1">Clock-in Location <span class="text-slate-400 font-normal text-xs">(click to select)</span></p>
+                    <p class="text-xs text-slate-400 mb-3">Clicking a location saves your office setup immediately.</p>
+                    <div id="office-location-cards" class="space-y-2 max-h-52 overflow-y-auto"></div>
+                </div>
+                <div id="office-setup-confirm-row" class="hidden mt-4 flex justify-end gap-2">
+                    <button onclick="document.getElementById('office-setup-modal').classList.add('hidden')" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-xl">Cancel</button>
+                    <button onclick="confirmOfficeSetup()" class="px-4 py-2 text-sm bg-primary text-white rounded-xl hover:bg-primary-hover">Save without location</button>
                 </div>
             </div>
         </div>

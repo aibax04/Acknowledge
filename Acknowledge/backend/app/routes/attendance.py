@@ -85,10 +85,11 @@ async def clock_in(
     if minutes_since_midnight < 9 * 60 or minutes_since_midnight > 23 * 60:
         raise HTTPException(status_code=400, detail="Clock-in is only allowed between 9:00 AM and 11:00 PM IST")
 
-    # Geofence check
-    geo = await _check_geofence(db, req.latitude, req.longitude)
-    if not geo["allowed"]:
-        raise HTTPException(status_code=403, detail=geo.get("detail", "You are outside the allowed clock-in area."))
+    # Geofence check (only for employees and managers)
+    if current_user.role in (UserRole.EMPLOYEE, UserRole.MANAGER):
+        geo = await _check_geofence(db, req.latitude, req.longitude, current_user)
+        if not geo["allowed"]:
+            raise HTTPException(status_code=403, detail=geo.get("detail", "You are outside the allowed clock-in area."))
 
     # Check if already clocked in today
     result = await db.execute(
@@ -152,10 +153,11 @@ async def clock_out(
     if minutes_since_midnight < 9 * 60 or minutes_since_midnight > 23 * 60:
         raise HTTPException(status_code=400, detail="Clock-out is only allowed between 9:00 AM and 11:00 PM IST")
 
-    # Geofence check
-    geo = await _check_geofence(db, req.latitude, req.longitude)
-    if not geo["allowed"]:
-        raise HTTPException(status_code=403, detail=geo.get("detail", "You are outside the allowed clock-out area."))
+    # Geofence check (only for employees and managers)
+    if current_user.role in (UserRole.EMPLOYEE, UserRole.MANAGER):
+        geo = await _check_geofence(db, req.latitude, req.longitude, current_user)
+        if not geo["allowed"]:
+            raise HTTPException(status_code=403, detail=geo.get("detail", "You are outside the allowed clock-out area."))
 
     result = await db.execute(
         select(Attendance).filter(
@@ -1097,22 +1099,45 @@ def _haversine_meters(lat1: float, lon1: float, lat2: float, lon2: float) -> flo
     return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
-async def _check_geofence(db: AsyncSession, lat: Optional[float], lng: Optional[float]) -> dict:
+async def _check_geofence(db: AsyncSession, lat: Optional[float], lng: Optional[float], user: Optional[User] = None) -> dict:
     """
-    Check whether (lat, lng) is within any active office location.
-    Returns {"allowed": True/False, "location_name": str|None, "distance": float|None}
-    If no office locations are configured, clock-in is always allowed.
+    Check whether (lat, lng) is within the allowed office location.
+    - If user has an assigned office_location_id, only that location is checked.
+    - Otherwise all active locations are checked (any one in range is sufficient).
+    - If no locations are configured at all, clock-in is always allowed.
     """
+    if lat is None or lng is None:
+        # Only block if there are actually locations configured
+        result = await db.execute(select(OfficeLocation).filter(OfficeLocation.is_active == True))
+        if result.scalars().first():
+            return {"allowed": False, "location_name": None, "distance": None,
+                    "detail": "Location access is required to clock in/out. Please enable GPS and try again."}
+        return {"allowed": True, "location_name": None, "distance": None}
+
+    # If user has a specific assigned location, check only that one
+    if user and user.office_location_id:
+        res = await db.execute(select(OfficeLocation).filter(
+            OfficeLocation.id == user.office_location_id,
+            OfficeLocation.is_active == True
+        ))
+        loc = res.scalars().first()
+        if loc:
+            d = _haversine_meters(lat, lng, loc.latitude, loc.longitude)
+            if d <= loc.radius_meters:
+                return {"allowed": True, "location_name": loc.name, "distance": round(d, 1)}
+            return {
+                "allowed": False,
+                "location_name": loc.name,
+                "distance": round(d, 1),
+                "detail": f"You are {round(d)}m away from {loc.name}. You must be within {int(loc.radius_meters)}m to clock in/out.",
+            }
+
+    # No assigned location — check all active locations
     result = await db.execute(select(OfficeLocation).filter(OfficeLocation.is_active == True))
     locations = result.scalars().all()
 
     if not locations:
-        # No locations configured — unrestricted
         return {"allowed": True, "location_name": None, "distance": None}
-
-    if lat is None or lng is None:
-        return {"allowed": False, "location_name": None, "distance": None,
-                "detail": "Location access is required to clock in/out. Please enable GPS and try again."}
 
     best_name = None
     best_dist = None
@@ -1128,7 +1153,7 @@ async def _check_geofence(db: AsyncSession, lat: Optional[float], lng: Optional[
         "allowed": False,
         "location_name": best_name,
         "distance": round(best_dist, 1),
-        "detail": f"You are {round(best_dist)}m away from the nearest office ({best_name}). You must be within 50m to clock in/out.",
+        "detail": f"You are {round(best_dist)}m away from the nearest office ({best_name}). You must be within range to clock in/out.",
     }
 
 
@@ -1184,7 +1209,9 @@ async def check_location(
     current_user: User = Depends(get_current_user),
 ):
     """Frontend can call this to check if user is within allowed radius before showing clock button."""
-    return await _check_geofence(db, lat, lng)
+    if current_user.role not in (UserRole.EMPLOYEE, UserRole.MANAGER):
+        return {"allowed": True, "location_name": None, "distance": None}
+    return await _check_geofence(db, lat, lng, current_user)
 
 
 @router.patch("/office-locations/{loc_id}")
@@ -1222,3 +1249,27 @@ async def delete_office_location(
     await db.delete(loc)
     await db.commit()
     return {"message": "Deleted"}
+
+
+@router.post("/office-locations/{loc_id}/assign-all")
+async def assign_location_to_all(
+    loc_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Assign this office location to all active employees, managers, and interns."""
+    if current_user.role != UserRole.SENIOR:
+        raise HTTPException(status_code=403, detail="Only directors can assign office locations")
+    result = await db.execute(select(OfficeLocation).filter(OfficeLocation.id == loc_id))
+    loc = result.scalars().first()
+    if not loc:
+        raise HTTPException(status_code=404, detail="Location not found")
+    from sqlalchemy import update
+    await db.execute(
+        update(User)
+        .where(User.role.in_([UserRole.EMPLOYEE, UserRole.MANAGER, UserRole.INTERN]))
+        .where(User.is_active == True)
+        .values(office_location_id=loc_id)
+    )
+    await db.commit()
+    return {"message": f"Location '{loc.name}' assigned to all employees, managers, and interns."}

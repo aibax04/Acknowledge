@@ -21,6 +21,7 @@ class UserUpdate(BaseModel):
     office: Optional[str] = None
     joining_date: Optional[date] = None
     is_on_probation: Optional[bool] = None
+    office_location_id: Optional[int] = None
 
 class UserPromote(BaseModel):
     new_role: UserRole
@@ -33,6 +34,7 @@ class UserResponse(UserBase):
     office: Optional[str] = None
     joining_date: Optional[date] = None
     is_on_probation: Optional[bool] = None
+    office_location_id: Optional[int] = None
 
     class Config:
         from_attributes = True

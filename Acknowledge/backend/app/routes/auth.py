@@ -335,6 +335,9 @@ async def _do_update_profile(update: UserUpdate, current_user: User, db: AsyncSe
             raise HTTPException(status_code=400, detail="Office must be 'panscience' or 'eigen'")
         current_user.office = office
         changed = True
+    if update.office_location_id is not None:
+        current_user.office_location_id = update.office_location_id if update.office_location_id > 0 else None
+        changed = True
     if update.joining_date is not None:
         current_user.joining_date = update.joining_date
         changed = True
@@ -424,15 +427,22 @@ async def delete_user(user_id: int, db: AsyncSession = Depends(get_db), current_
         await db.execute(update(Concern).where(Concern.raised_by_id == user_id).values(raised_by_id=None))
         await db.execute(update(Concern).where(Concern.resolved_by_id == user_id).values(resolved_by_id=None))
         
-        from app.models.attendance import Attendance, AttendanceUpdateRequest
+        from app.models.attendance import Attendance, AttendanceUpdateRequest, ClockLocation, OfficeLocation
+        await db.execute(delete(ClockLocation).where(ClockLocation.user_id == user_id))
         await db.execute(delete(Attendance).where(Attendance.user_id == user_id))
         await db.execute(delete(AttendanceUpdateRequest).where(AttendanceUpdateRequest.user_id == user_id))
         await db.execute(delete(AttendanceUpdateRequest).where(AttendanceUpdateRequest.manager_id == user_id))
-        
+        await db.execute(update(OfficeLocation).where(OfficeLocation.created_by_id == user_id).values(created_by_id=None))
+
         from app.models.leave import LeaveRequest
         await db.execute(update(LeaveRequest).where(LeaveRequest.approved_by_id == user_id).values(approved_by_id=None))
         await db.execute(delete(LeaveRequest).where(LeaveRequest.user_id == user_id))
-        
+        # Delete leave credits and balance adjustments
+        from sqlalchemy import text as _text
+        await db.execute(_text("DELETE FROM leave_monthly_credits WHERE user_id = :uid"), {"uid": user_id})
+        await db.execute(_text("DELETE FROM leave_balance_adjustments WHERE user_id = :uid"), {"uid": user_id})
+        await db.execute(_text("UPDATE leave_balance_adjustments SET created_by_id = NULL WHERE created_by_id = :uid"), {"uid": user_id})
+
         from app.models.custom_leave_policy import CustomLeavePolicy
         from app.models.holiday import Holiday
         from app.models.policy import Policy
@@ -441,6 +451,8 @@ async def delete_user(user_id: int, db: AsyncSession = Depends(get_db), current_
         await db.execute(update(Holiday).where(Holiday.created_by_id == user_id).values(created_by_id=current_user.id))
         await db.execute(update(Policy).where(Policy.created_by_id == user_id).values(created_by_id=None))
         await db.execute(update(Venture).where(Venture.created_by == user_id).values(created_by=current_user.id))
+        # Delete venture memberships
+        await db.execute(_text("DELETE FROM venture_members WHERE user_id = :uid"), {"uid": user_id})
         
         await db.delete(user)
         await db.commit()
