@@ -1,8 +1,25 @@
-from sqlalchemy import Column, Integer, String, Enum, DateTime, Date, Float, ForeignKey, Boolean, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Enum, DateTime, Date, Float, ForeignKey, Boolean, UniqueConstraint, Text
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.database import Base
 import enum
+
+
+class OfficeLocation(Base):
+    """Allowed clock-in locations set by the director."""
+    __tablename__ = "office_locations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(200), nullable=False)
+    address = Column(Text, nullable=True)
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
+    radius_meters = Column(Float, nullable=False, default=50.0)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    created_by = relationship("User", foreign_keys=[created_by_id])
 
 
 class ClockLocation(Base):

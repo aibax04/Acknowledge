@@ -7,7 +7,8 @@ from sqlalchemy.future import select
 from sqlalchemy import and_
 from app.database import get_db
 from app.models.user import User, UserRole
-from app.models.attendance import Attendance, AttendanceStatus, AttendanceUpdateRequest, ClockLocation
+from app.models.attendance import Attendance, AttendanceStatus, AttendanceUpdateRequest, ClockLocation, OfficeLocation
+import math
 from app.models.holiday import Holiday
 from app.models.leave import LeaveRequest, LeaveStatus
 from app.routes.auth import get_current_user
@@ -84,6 +85,11 @@ async def clock_in(
     if minutes_since_midnight < 9 * 60 or minutes_since_midnight > 23 * 60:
         raise HTTPException(status_code=400, detail="Clock-in is only allowed between 9:00 AM and 11:00 PM IST")
 
+    # Geofence check
+    geo = await _check_geofence(db, req.latitude, req.longitude)
+    if not geo["allowed"]:
+        raise HTTPException(status_code=403, detail=geo.get("detail", "You are outside the allowed clock-in area."))
+
     # Check if already clocked in today
     result = await db.execute(
         select(Attendance).filter(
@@ -145,6 +151,11 @@ async def clock_out(
     minutes_since_midnight = now_ist.hour * 60 + now_ist.minute
     if minutes_since_midnight < 9 * 60 or minutes_since_midnight > 23 * 60:
         raise HTTPException(status_code=400, detail="Clock-out is only allowed between 9:00 AM and 11:00 PM IST")
+
+    # Geofence check
+    geo = await _check_geofence(db, req.latitude, req.longitude)
+    if not geo["allowed"]:
+        raise HTTPException(status_code=403, detail=geo.get("detail", "You are outside the allowed clock-out area."))
 
     result = await db.execute(
         select(Attendance).filter(
@@ -1072,3 +1083,142 @@ async def get_managers_list(
     )
     managers = result.scalars().all()
     return [{"id": m.id, "full_name": m.full_name, "role": m.role.value} for m in managers]
+
+
+# ─── Haversine distance ───────────────────────────────────────────────────────
+
+def _haversine_meters(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Return distance in metres between two GPS coordinates."""
+    R = 6_371_000  # Earth radius in metres
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlam = math.radians(lon2 - lon1)
+    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlam / 2) ** 2
+    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+
+async def _check_geofence(db: AsyncSession, lat: Optional[float], lng: Optional[float]) -> dict:
+    """
+    Check whether (lat, lng) is within any active office location.
+    Returns {"allowed": True/False, "location_name": str|None, "distance": float|None}
+    If no office locations are configured, clock-in is always allowed.
+    """
+    result = await db.execute(select(OfficeLocation).filter(OfficeLocation.is_active == True))
+    locations = result.scalars().all()
+
+    if not locations:
+        # No locations configured — unrestricted
+        return {"allowed": True, "location_name": None, "distance": None}
+
+    if lat is None or lng is None:
+        return {"allowed": False, "location_name": None, "distance": None,
+                "detail": "Location access is required to clock in/out. Please enable GPS and try again."}
+
+    best_name = None
+    best_dist = None
+    for loc in locations:
+        d = _haversine_meters(lat, lng, loc.latitude, loc.longitude)
+        if best_dist is None or d < best_dist:
+            best_dist = d
+            best_name = loc.name
+        if d <= loc.radius_meters:
+            return {"allowed": True, "location_name": loc.name, "distance": round(d, 1)}
+
+    return {
+        "allowed": False,
+        "location_name": best_name,
+        "distance": round(best_dist, 1),
+        "detail": f"You are {round(best_dist)}m away from the nearest office ({best_name}). You must be within 50m to clock in/out.",
+    }
+
+
+# ─── Office Location CRUD (director only) ────────────────────────────────────
+
+@router.get("/office-locations")
+async def list_office_locations(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = await db.execute(select(OfficeLocation).order_by(OfficeLocation.created_at.desc()))
+    locs = result.scalars().all()
+    return [
+        {
+            "id": l.id, "name": l.name, "address": l.address,
+            "latitude": l.latitude, "longitude": l.longitude,
+            "radius_meters": l.radius_meters, "is_active": l.is_active,
+            "created_by": l.created_by.full_name if l.created_by else None,
+        }
+        for l in locs
+    ]
+
+
+@router.post("/office-locations")
+async def create_office_location(
+    body: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role != UserRole.SENIOR:
+        raise HTTPException(status_code=403, detail="Only directors can manage office locations")
+    loc = OfficeLocation(
+        name=body["name"],
+        address=body.get("address"),
+        latitude=float(body["latitude"]),
+        longitude=float(body["longitude"]),
+        radius_meters=float(body.get("radius_meters", 50)),
+        created_by_id=current_user.id,
+    )
+    db.add(loc)
+    await db.commit()
+    await db.refresh(loc)
+    return {"id": loc.id, "name": loc.name, "address": loc.address,
+            "latitude": loc.latitude, "longitude": loc.longitude,
+            "radius_meters": loc.radius_meters, "is_active": loc.is_active}
+
+
+@router.get("/office-locations/check")
+async def check_location(
+    lat: float,
+    lng: float,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Frontend can call this to check if user is within allowed radius before showing clock button."""
+    return await _check_geofence(db, lat, lng)
+
+
+@router.patch("/office-locations/{loc_id}")
+async def update_office_location(
+    loc_id: int,
+    body: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role != UserRole.SENIOR:
+        raise HTTPException(status_code=403, detail="Only directors can manage office locations")
+    result = await db.execute(select(OfficeLocation).filter(OfficeLocation.id == loc_id))
+    loc = result.scalars().first()
+    if not loc:
+        raise HTTPException(status_code=404, detail="Location not found")
+    for field in ("name", "address", "latitude", "longitude", "radius_meters", "is_active"):
+        if field in body:
+            setattr(loc, field, body[field])
+    await db.commit()
+    return {"message": "Updated"}
+
+
+@router.delete("/office-locations/{loc_id}")
+async def delete_office_location(
+    loc_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role != UserRole.SENIOR:
+        raise HTTPException(status_code=403, detail="Only directors can manage office locations")
+    result = await db.execute(select(OfficeLocation).filter(OfficeLocation.id == loc_id))
+    loc = result.scalars().first()
+    if not loc:
+        raise HTTPException(status_code=404, detail="Location not found")
+    await db.delete(loc)
+    await db.commit()
+    return {"message": "Deleted"}

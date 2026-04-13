@@ -206,7 +206,7 @@ async def _monthly_credit_scheduler():
 async def startup():
     # Ensure all models are registered (including custom_leave_policies)
     from app.models import leave, custom_leave_policy  # noqa: F401
-    from app.models.attendance import ClockLocation  # noqa: F401
+    from app.models.attendance import ClockLocation, OfficeLocation  # noqa: F401
     async with engine.begin() as conn:
         # Create tables — wrapped in try/except because multiple gunicorn workers can race here;
         # the unique constraint violation on pg_class is harmless (table already exists).

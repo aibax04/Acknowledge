@@ -4,6 +4,7 @@
 var attendanceTodayData = null;
 var clockIntervalId = null;
 var attendanceMonthDate = new Date();
+var _geoStatus = null; // { allowed, location_name, distance, detail } — cached per page load
 
 function startLiveClock() {
     var el = document.getElementById('live-clock');
@@ -22,14 +23,46 @@ function getUserLocation() {
         navigator.geolocation.getCurrentPosition(
             function (pos) { resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude, address: pos.coords.latitude.toFixed(4) + ', ' + pos.coords.longitude.toFixed(4) }); },
             function () { resolve({ latitude: null, longitude: null, address: 'Location denied' }); },
-            { timeout: 10000 }
+            { enableHighAccuracy: true, timeout: 10000 }
         );
     });
 }
 
+/** Check geofence and cache result. Returns { allowed, location_name, distance, detail } */
+async function checkGeoFence() {
+    var loc = await getUserLocation();
+    if (loc.latitude === null) {
+        _geoStatus = { allowed: false, detail: 'Location access denied. Please enable GPS/location permissions.' };
+        return _geoStatus;
+    }
+    try {
+        var res = await Api.get('/attendance/office-locations/check?lat=' + loc.latitude + '&lng=' + loc.longitude);
+        _geoStatus = Object.assign({ lat: loc.latitude, lng: loc.longitude }, res);
+        return _geoStatus;
+    } catch (e) {
+        // If endpoint fails (e.g. no locations configured), allow clock-in
+        _geoStatus = { allowed: true, location_name: null, distance: null };
+        return _geoStatus;
+    }
+}
+
+function _geoStatusBadge(geo) {
+    if (!geo) return '';
+    if (geo.allowed) {
+        var txt = geo.location_name ? '📍 ' + geo.location_name + (geo.distance != null ? ' (' + geo.distance + 'm)' : '') : '📍 Location OK';
+        return '<div class="text-[10px] text-green-600 bg-green-50 border border-green-100 rounded-lg px-2 py-1 mt-1">' + txt + '</div>';
+    } else {
+        var msg = geo.detail || 'You are outside the allowed area.';
+        return '<div class="text-[10px] text-red-600 bg-red-50 border border-red-100 rounded-lg px-2 py-1 mt-1">' + msg + '</div>';
+    }
+}
+
 async function loadTodayAttendance() {
-    try { attendanceTodayData = await Api.get('/attendance/today'); renderClockWidget(); }
+    try { attendanceTodayData = await Api.get('/attendance/today'); }
     catch (e) { console.error('Failed to load today attendance:', e); }
+    // Check geofence in parallel with rendering — update widget once done
+    renderClockWidget();
+    checkGeoFence().then(function() { renderClockWidget(); });
 }
 
 function renderClockWidget() {
@@ -40,7 +73,10 @@ function renderClockWidget() {
     if (d.status === 'no_office') { c.innerHTML = '<div class="text-center"><p class="text-xs text-amber-600 font-medium mb-1">Office not set</p><button onclick="openOfficeSetupModal()" class="text-xs bg-primary text-white px-3 py-1 rounded-lg hover:bg-primary-hover">Set Office</button></div>'; return; }
     if (d.status === 'weekly_off') { c.innerHTML = '<div class="text-center"><div class="text-xs font-bold text-blue-600 bg-blue-50 rounded-lg px-3 py-2">Weekly Off</div></div>'; return; }
     if (d.status === 'holiday') { c.innerHTML = '<div class="text-center"><div class="text-xs font-bold text-purple-600 bg-purple-50 rounded-lg px-3 py-2">' + (d.message || 'Holiday') + '</div></div>'; return; }
+
+    var geoOk = !_geoStatus || _geoStatus.allowed;
     var h = '<div class="text-center space-y-2"><div id="live-clock" class="text-lg font-bold text-gray-800 tabular-nums"></div>';
+
     if (d.clock_in && d.clock_out) {
         var ti = new Date(d.clock_in).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' });
         var to = new Date(d.clock_out).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' });
@@ -48,9 +84,19 @@ function renderClockWidget() {
     } else if (d.clock_in && !d.clock_out) {
         var ti2 = new Date(d.clock_in).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' });
         h += '<div class="text-[10px] text-green-600 font-medium">Clocked in: ' + ti2 + '</div>';
-        h += '<button onclick="handleClockOut()" id="btn-clock-out" class="w-full text-xs bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 font-medium transition-colors">Clock Out</button>';
+        if (geoOk) {
+            h += '<button onclick="handleClockOut()" id="btn-clock-out" class="w-full text-xs bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 font-medium transition-colors">Clock Out</button>';
+        } else {
+            h += '<button disabled class="w-full text-xs bg-gray-200 text-gray-400 px-3 py-1.5 rounded-lg font-medium cursor-not-allowed">Clock Out</button>';
+        }
+        h += _geoStatusBadge(_geoStatus);
     } else {
-        h += '<button onclick="handleClockIn()" id="btn-clock-in" class="w-full text-xs bg-primary text-white px-3 py-1.5 rounded-lg hover:bg-primary-hover font-medium transition-colors">Clock In</button>';
+        if (geoOk) {
+            h += '<button onclick="handleClockIn()" id="btn-clock-in" class="w-full text-xs bg-primary text-white px-3 py-1.5 rounded-lg hover:bg-primary-hover font-medium transition-colors">Clock In</button>';
+        } else {
+            h += '<button disabled class="w-full text-xs bg-gray-200 text-gray-400 px-3 py-1.5 rounded-lg font-medium cursor-not-allowed">Clock In</button>';
+        }
+        h += _geoStatusBadge(_geoStatus);
     }
     h += '</div>';
     c.innerHTML = h;
@@ -66,6 +112,7 @@ async function handleClockIn() {
         if (btn) btn.textContent = 'Clocking in...';
         await Api.post('/attendance/clock-in', { latitude: loc.latitude, longitude: loc.longitude, address: loc.address });
         if (typeof showToast === 'function') showToast('Clocked in successfully!', 'success');
+        _geoStatus = null;
         await loadTodayAttendance();
     } catch (e) {
         if (typeof showToast === 'function') showToast(e.message || 'Failed to clock in', 'error');
@@ -82,6 +129,7 @@ async function handleClockOut() {
         if (btn) btn.textContent = 'Clocking out...';
         await Api.post('/attendance/clock-out', { latitude: loc.latitude, longitude: loc.longitude, address: loc.address });
         if (typeof showToast === 'function') showToast('Clocked out successfully!', 'success');
+        _geoStatus = null;
         await loadTodayAttendance();
     } catch (e) {
         if (typeof showToast === 'function') showToast(e.message || 'Failed to clock out', 'error');
