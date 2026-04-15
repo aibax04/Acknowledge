@@ -75,7 +75,13 @@ function renderClockWidget() {
     if (d.status === 'holiday') { c.innerHTML = '<div class="text-center"><div class="text-xs font-bold text-purple-600 bg-purple-50 rounded-lg px-3 py-2">' + (d.message || 'Holiday') + '</div></div>'; return; }
 
     var geoOk = !_geoStatus || _geoStatus.allowed;
+    var isRemote = d.is_remote || false;
     var h = '<div class="text-center space-y-2"><div id="live-clock" class="text-lg font-bold text-gray-800 tabular-nums"></div>';
+
+    // Remote badge
+    if (isRemote) {
+        h += '<div class="text-[10px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-lg px-2 py-1">🏠 Working Remotely</div>';
+    }
 
     if (d.clock_in && d.clock_out) {
         var ti = new Date(d.clock_in).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' });
@@ -88,6 +94,7 @@ function renderClockWidget() {
             h += '<button onclick="handleClockOut()" id="btn-clock-out" class="w-full text-xs bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 font-medium transition-colors">Clock Out</button>';
         } else {
             h += '<button disabled class="w-full text-xs bg-gray-200 text-gray-400 px-3 py-1.5 rounded-lg font-medium cursor-not-allowed">Clock Out</button>';
+            h += '<button onclick="handleRemoteClockOut()" class="w-full text-xs bg-indigo-500 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-600 font-medium transition-colors mt-1">🏠 Clock Out Remotely</button>';
         }
         h += _geoStatusBadge(_geoStatus);
     } else {
@@ -95,6 +102,9 @@ function renderClockWidget() {
             h += '<button onclick="handleClockIn()" id="btn-clock-in" class="w-full text-xs bg-primary text-white px-3 py-1.5 rounded-lg hover:bg-primary-hover font-medium transition-colors">Clock In</button>';
         } else {
             h += '<button disabled class="w-full text-xs bg-gray-200 text-gray-400 px-3 py-1.5 rounded-lg font-medium cursor-not-allowed">Clock In</button>';
+            if (!isRemote) {
+                h += '<button onclick="handleMarkRemote()" class="w-full text-xs bg-indigo-500 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-600 font-medium transition-colors mt-1">🏠 Working Remotely</button>';
+            }
         }
         h += _geoStatusBadge(_geoStatus);
     }
@@ -134,6 +144,31 @@ async function handleClockOut() {
     } catch (e) {
         if (typeof showToast === 'function') showToast(e.message || 'Failed to clock out', 'error');
         if (btn) { btn.disabled = false; btn.textContent = 'Clock Out'; }
+    }
+}
+
+async function handleMarkRemote() {
+    if (!confirm('Mark yourself as working remotely today? This will clock you in and note that you are working from a remote location.')) return;
+    try {
+        await Api.post('/attendance/mark-remote', {});
+        if (typeof showToast === 'function') showToast('Marked as working remotely!', 'success');
+        _geoStatus = null;
+        await loadTodayAttendance();
+    } catch (e) {
+        if (typeof showToast === 'function') showToast(e.message || 'Failed to mark remote', 'error');
+    }
+}
+
+async function handleRemoteClockOut() {
+    if (!confirm('Clock out remotely? This will record your clock-out from a remote location.')) return;
+    try {
+        var loc = await getUserLocation();
+        await Api.post('/attendance/clock-out', { latitude: loc.latitude, longitude: loc.longitude, address: loc.address, remote: true });
+        if (typeof showToast === 'function') showToast('Clocked out remotely!', 'success');
+        _geoStatus = null;
+        await loadTodayAttendance();
+    } catch (e) {
+        if (typeof showToast === 'function') showToast(e.message || 'Failed to clock out', 'error');
     }
 }
 
@@ -258,31 +293,45 @@ function renderAttendanceMonthly(data) {
     if (label) { var dd = new Date(data.year, data.month - 1); label.textContent = dd.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }); }
     var sc = { present: 'bg-green-100 text-green-800', absent: 'bg-red-100 text-red-800', weekly_off: 'bg-gray-100 text-gray-500', holiday: 'bg-purple-100 text-purple-700', on_leave: 'bg-yellow-100 text-yellow-800', future: 'bg-gray-50 text-gray-300' };
     var sl = { present: 'Present', absent: 'Absent', weekly_off: 'Weekly Off', holiday: 'Holiday', on_leave: 'On Leave', future: '-' };
-    var pc = 0, ac = 0, wc = 0, hc = 0, lc = 0;
-    data.attendance.forEach(function (a) { if (a.status === 'present') pc++; else if (a.status === 'absent') ac++; else if (a.status === 'weekly_off') wc++; else if (a.status === 'holiday') hc++; else if (a.status === 'on_leave') lc++; });
-    var h = '<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-6">';
+    var pc = 0, ac = 0, wc = 0, hc = 0, lc = 0, rc = 0;
+    data.attendance.forEach(function (a) {
+        if (a.status === 'present') pc++;
+        else if (a.status === 'absent') ac++;
+        else if (a.status === 'weekly_off') wc++;
+        else if (a.status === 'holiday') hc++;
+        else if (a.status === 'on_leave') lc++;
+        if (a.is_remote) rc++;
+    });
+    var h = '<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 mb-6">';
     h += '<div class="text-center p-3 bg-green-50 rounded-lg border border-green-100"><p class="text-2xl font-bold text-green-700">' + pc + '</p><p class="text-[10px] text-green-600 font-medium">Present</p></div>';
     h += '<div class="text-center p-3 bg-red-50 rounded-lg border border-red-100"><p class="text-2xl font-bold text-red-700">' + ac + '</p><p class="text-[10px] text-red-600 font-medium">Absent</p></div>';
+    h += '<div class="text-center p-3 bg-indigo-50 rounded-lg border border-indigo-100"><p class="text-2xl font-bold text-indigo-700">' + rc + '</p><p class="text-[10px] text-indigo-600 font-medium">Remote</p></div>';
     h += '<div class="text-center p-3 bg-gray-50 rounded-lg border border-gray-200"><p class="text-2xl font-bold text-gray-500">' + wc + '</p><p class="text-[10px] text-gray-500 font-medium">Weekly Off</p></div>';
     h += '<div class="text-center p-3 bg-purple-50 rounded-lg border border-purple-100"><p class="text-2xl font-bold text-purple-700">' + hc + '</p><p class="text-[10px] text-purple-600 font-medium">Holidays</p></div>';
-    h += '<div class="text-center p-3 bg-yellow-50 rounded-lg border border-yellow-100 sm:col-span-3 md:col-span-1"><p class="text-2xl font-bold text-yellow-700">' + lc + '</p><p class="text-[10px] text-yellow-600 font-medium">On Leave</p></div></div>';
-    h += '<div class="overflow-x-auto w-full"><table class="min-w-full divide-y divide-gray-200 text-sm w-full"><thead class="bg-gray-50"><tr><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Day</th><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Clock In</th><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Clock Out</th><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Action</th></tr></thead><tbody class="bg-white divide-y divide-gray-100">';
+    h += '<div class="text-center p-3 bg-yellow-50 rounded-lg border border-yellow-100"><p class="text-2xl font-bold text-yellow-700">' + lc + '</p><p class="text-[10px] text-yellow-600 font-medium">On Leave</p></div></div>';
+    h += '<div class="overflow-x-auto w-full"><table class="min-w-full divide-y divide-gray-200 text-sm w-full"><thead class="bg-gray-50"><tr><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Day</th><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Clock In</th><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Clock Out</th></tr></thead><tbody class="bg-white divide-y divide-gray-100">';
     var dn = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     var today = new Date().toISOString().split('T')[0];
     data.attendance.forEach(function (a) {
         var dd2 = new Date(a.date + 'T00:00:00'), dayN = dn[dd2.getDay()], cc = sc[a.status] || 'bg-gray-100 text-gray-600', sLabel = a.holiday_name || sl[a.status] || a.status;
         var ci = a.clock_in ? new Date(a.clock_in).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' }) : '-';
         var co = a.clock_out ? new Date(a.clock_out).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' }) : '-';
-        var isT = a.date === today, canReq = a.status === 'absent' && a.date < today;
+        var isT = a.date === today;
+        // Today with clock_in but no clock_out is still in-progress, not fully present
+        var displayStatus = a.status, displayLabel = sLabel, displayCc = cc;
+        if (isT && a.status === 'present' && a.clock_in && !a.clock_out) {
+            displayStatus = 'in_progress';
+            displayLabel = 'In Progress';
+            displayCc = 'bg-blue-100 text-blue-700';
+        }
         h += '<tr class="' + (isT ? 'bg-primary/5 font-medium' : '') + '">';
         h += '<td class="px-4 py-2 whitespace-nowrap">' + fmtDate(a.date) + (isT ? ' <span class="text-xs text-primary">(Today)</span>' : '') + '</td>';
         h += '<td class="px-4 py-2 whitespace-nowrap">' + dayN + '</td>';
-        h += '<td class="px-4 py-2 whitespace-nowrap"><span class="px-2 py-0.5 rounded-full text-xs font-medium ' + cc + '">' + sLabel + '</span></td>';
+        var remoteBadge = a.is_remote ? ' <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-indigo-100 text-indigo-600">Remote</span>' : '';
+        h += '<td class="px-4 py-2 whitespace-nowrap"><span class="px-2 py-0.5 rounded-full text-xs font-medium ' + displayCc + '">' + displayLabel + '</span>' + remoteBadge + '</td>';
         h += '<td class="px-4 py-2 whitespace-nowrap text-gray-600">' + ci + '</td>';
         h += '<td class="px-4 py-2 whitespace-nowrap text-gray-600">' + co + '</td>';
-        h += '<td class="px-4 py-2 whitespace-nowrap">';
-        if (canReq) h += '<button onclick="openAttendanceUpdateModal(\'' + a.date + '\')" class="text-xs text-primary hover:text-primary-hover font-medium">Request Update</button>';
-        h += '</td></tr>';
+        h += '</tr>';
     });
     h += '</tbody></table></div>';
     container.innerHTML = h;
