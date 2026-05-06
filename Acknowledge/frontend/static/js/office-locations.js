@@ -112,6 +112,8 @@ async function saveOfficeLocation() {
     }
 }
 
+var _officeLocsCache = {}; // id -> location object
+
 async function loadOfficeLocations() {
     var c = document.getElementById('office-locations-list');
     if (!c) return;
@@ -121,6 +123,9 @@ async function loadOfficeLocations() {
             c.innerHTML = '<p class="text-sm text-gray-400 text-center py-8">No office locations added yet.<br>Add one above to restrict clock-in to specific areas.</p>';
             return;
         }
+        _officeLocsCache = {};
+        locs.forEach(function (l) { _officeLocsCache[l.id] = l; });
+
         var h = '<table class="min-w-full text-sm divide-y divide-gray-100"><thead class="bg-gray-50"><tr>'
             + '<th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Name</th>'
             + '<th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Address</th>'
@@ -142,7 +147,9 @@ async function loadOfficeLocations() {
                 + '<td class="px-4 py-3 text-gray-600">' + l.radius_meters + 'm</td>'
                 + '<td class="px-4 py-3">' + statusBadge + '</td>'
                 + '<td class="px-4 py-3 flex items-center gap-2 flex-wrap">'
-                + '<button onclick="assignLocationToAll(' + l.id + ',' + JSON.stringify(l.name) + ')" class="text-xs text-emerald-600 hover:text-emerald-800 font-semibold whitespace-nowrap">Assign to all</button>'
+                + '<button onclick="openAssignModal(' + l.id + ')" class="text-xs text-emerald-600 hover:text-emerald-800 font-semibold whitespace-nowrap">Assign</button>'
+                + '<span class="text-gray-200">|</span>'
+                + '<button onclick="openEditLocModal(' + l.id + ')" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">Edit</button>'
                 + '<span class="text-gray-200">|</span>'
                 + '<button onclick="toggleOfficeLocation(' + l.id + ',' + l.is_active + ')" class="text-xs text-blue-600 hover:text-blue-800 font-medium">' + toggleLabel + '</button>'
                 + '<span class="text-gray-200">|</span>'
@@ -178,6 +185,91 @@ async function deleteOfficeLocation(id) {
         showToast('Location deleted', 'success');
         loadOfficeLocations();
     } catch (e) { showToast(e.message || 'Failed', 'error'); }
+}
+
+// ── Assign Modal ────────────────────────────────────────────
+var _assignLocId = null;
+
+async function openAssignModal(locId) {
+    _assignLocId = locId;
+    var loc = _officeLocsCache[locId] || {};
+    var modal = document.getElementById('assign-loc-modal');
+    var title = document.getElementById('assign-loc-title');
+    var list = document.getElementById('assign-loc-list');
+    title.textContent = 'Assign "' + (loc.name || locId) + '" to People';
+    list.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">Loading…</p>';
+    modal.classList.remove('hidden');
+    try {
+        var users = await Api.get('/attendance/office-locations/' + locId + '/users');
+        if (!users || users.length === 0) {
+            list.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">No users found.</p>';
+            return;
+        }
+        var roleLabel = { employee: 'Employee', manager: 'Manager', intern: 'Intern' };
+        list.innerHTML = users.map(function (u) {
+            var checked = u.office_location_id === locId ? 'checked' : '';
+            return '<label class="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-50 cursor-pointer">'
+                + '<input type="checkbox" value="' + u.id + '" ' + checked + ' class="assign-loc-cb w-4 h-4 accent-emerald-600">'
+                + '<span class="flex-1 text-sm text-gray-800">' + esc(u.full_name) + '</span>'
+                + '<span class="text-xs text-gray-400">' + (roleLabel[u.role] || u.role) + '</span>'
+                + '</label>';
+        }).join('');
+    } catch (e) {
+        list.innerHTML = '<p class="text-xs text-red-400 text-center py-4">Failed to load users.</p>';
+    }
+}
+
+function closeAssignModal() {
+    document.getElementById('assign-loc-modal').classList.add('hidden');
+    _assignLocId = null;
+}
+
+function selectAllAssign() {
+    document.querySelectorAll('.assign-loc-cb').forEach(function (cb) { cb.checked = true; });
+}
+function clearAllAssign() {
+    document.querySelectorAll('.assign-loc-cb').forEach(function (cb) { cb.checked = false; });
+}
+
+async function saveAssignModal() {
+    if (!_assignLocId) return;
+    var ids = Array.from(document.querySelectorAll('.assign-loc-cb:checked')).map(function (cb) { return parseInt(cb.value); });
+    try {
+        var res = await Api.post('/attendance/office-locations/' + _assignLocId + '/assign', { user_ids: ids });
+        showToast(res.message || 'Assigned!', 'success');
+        closeAssignModal();
+    } catch (e) { showToast(e.message || 'Failed to assign', 'error'); }
+}
+
+// ── Edit Location Modal ──────────────────────────────────────
+var _editLocId = null;
+
+function openEditLocModal(locId) {
+    var loc = _officeLocsCache[locId] || {};
+    _editLocId = locId;
+    document.getElementById('edit-loc-name').value = loc.name || '';
+    document.getElementById('edit-loc-address').value = loc.address || '';
+    document.getElementById('edit-loc-radius').value = loc.radius_meters || 50;
+    document.getElementById('edit-loc-modal').classList.remove('hidden');
+}
+
+function closeEditLocModal() {
+    document.getElementById('edit-loc-modal').classList.add('hidden');
+    _editLocId = null;
+}
+
+async function saveEditLocModal() {
+    if (!_editLocId) return;
+    var name = (document.getElementById('edit-loc-name').value || '').trim();
+    var address = (document.getElementById('edit-loc-address').value || '').trim();
+    var radius = parseFloat(document.getElementById('edit-loc-radius').value) || 50;
+    if (!name) { showToast('Name is required', 'error'); return; }
+    try {
+        await Api.patch('/attendance/office-locations/' + _editLocId, { name: name, address: address, radius_meters: radius });
+        showToast('Location updated!', 'success');
+        closeEditLocModal();
+        loadOfficeLocations();
+    } catch (e) { showToast(e.message || 'Failed to update', 'error'); }
 }
 
 function esc(s) {

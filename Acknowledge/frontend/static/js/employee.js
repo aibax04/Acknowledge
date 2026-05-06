@@ -682,14 +682,15 @@ function openPolicyModal(policyId) {
         contentEl.innerHTML = `<p style="white-space: pre-wrap">${rawContent}</p>`;
     }
 
-    // Set image
+    // Set cover image
     const imageContainer = document.getElementById('policy-modal-image-container');
+    const coverImg = document.getElementById('policy-modal-cover-img');
     if (policy.image_url) {
         const imgSrc = policy.image_url.startsWith('/') ? '/api' + policy.image_url : policy.image_url;
-        imageContainer.innerHTML = `<img src="${imgSrc}" class="w-full max-h-64 object-contain rounded-xl shadow-md" style="max-width:100%;display:block;">`;
+        if (coverImg) { coverImg.src = imgSrc; coverImg.alt = policy.title || ''; }
         imageContainer.classList.remove('hidden');
     } else {
-        imageContainer.innerHTML = '';
+        if (coverImg) coverImg.src = '';
         imageContainer.classList.add('hidden');
     }
 

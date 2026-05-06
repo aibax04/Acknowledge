@@ -67,7 +67,7 @@ async def clock_in(
     today = now.date()
 
     if not current_user.office:
-        raise HTTPException(status_code=400, detail="Please set your office (Panscience/Eigen) in your profile first")
+        raise HTTPException(status_code=400, detail="Please set your office (PanScience/Igen) in your profile first")
 
     # Check if it's a weekly off
     if is_weekly_off(today, current_user.office):
@@ -153,8 +153,8 @@ async def clock_out(
     if minutes_since_midnight < 9 * 60 or minutes_since_midnight > 23 * 60:
         raise HTTPException(status_code=400, detail="Clock-out is only allowed between 9:00 AM and 11:00 PM IST")
 
-    # Geofence check (only for employees and managers)
-    if current_user.role in (UserRole.EMPLOYEE, UserRole.MANAGER):
+    # Geofence check (only for employees and managers, skip if remote clock-out)
+    if current_user.role in (UserRole.EMPLOYEE, UserRole.MANAGER) and not req.remote:
         geo = await _check_geofence(db, req.latitude, req.longitude, current_user)
         if not geo["allowed"]:
             raise HTTPException(status_code=403, detail=geo.get("detail", "You are outside the allowed clock-out area."))
@@ -175,6 +175,8 @@ async def clock_out(
     existing.clock_out_lat = req.latitude
     existing.clock_out_lng = req.longitude
     existing.clock_out_address = req.address
+    if req.remote:
+        existing.is_remote = True
 
     clock_loc = ClockLocation(
         user_id=current_user.id,
@@ -228,8 +230,41 @@ async def get_today_attendance(
         "clock_in": record.clock_in.isoformat() if record.clock_in else None,
         "clock_out": record.clock_out.isoformat() if record.clock_out else None,
         "clock_in_address": record.clock_in_address,
-        "clock_out_address": record.clock_out_address
+        "clock_out_address": record.clock_out_address,
+        "is_remote": record.is_remote or False,
     }
+
+
+@router.post("/mark-remote")
+async def mark_remote(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Mark today as remote work. Creates an attendance record if needed."""
+    today = date.today()
+    result = await db.execute(
+        select(Attendance).filter(Attendance.user_id == current_user.id, Attendance.date == today)
+    )
+    record = result.scalars().first()
+    if record:
+        record.is_remote = True
+        if not record.clock_in:
+            # Also clock them in now so they're marked present
+            now = datetime.now(timezone.utc)
+            record.clock_in = now
+            record.status = AttendanceStatus.PRESENT
+    else:
+        now = datetime.now(timezone.utc)
+        record = Attendance(
+            user_id=current_user.id,
+            date=today,
+            clock_in=now,
+            status=AttendanceStatus.PRESENT,
+            is_remote=True,
+        )
+        db.add(record)
+    await db.commit()
+    return {"message": "Marked as remote", "is_remote": True}
 
 
 @router.get("/monthly")
@@ -346,7 +381,8 @@ async def get_monthly_attendance(
                 "clock_in": rec.clock_in.isoformat() if rec.clock_in else None,
                 "clock_out": rec.clock_out.isoformat() if rec.clock_out else None,
                 "clock_in_address": rec.clock_in_address,
-                "clock_out_address": rec.clock_out_address
+                "clock_out_address": rec.clock_out_address,
+                "is_remote": rec.is_remote or False,
             })
         else:
             attendance_list.append({
@@ -1249,6 +1285,62 @@ async def delete_office_location(
     await db.delete(loc)
     await db.commit()
     return {"message": "Deleted"}
+
+
+@router.get("/office-locations/{loc_id}/users")
+async def list_users_for_location(
+    loc_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Return all active non-director users with their current office_location_id."""
+    if current_user.role != UserRole.SENIOR:
+        raise HTTPException(status_code=403, detail="Only directors can manage office locations")
+    result = await db.execute(
+        select(User)
+        .filter(User.is_active == True, User.role.in_([UserRole.EMPLOYEE, UserRole.MANAGER, UserRole.INTERN]))
+        .order_by(User.full_name)
+    )
+    users = result.scalars().all()
+    return [
+        {
+            "id": u.id,
+            "full_name": u.full_name,
+            "role": u.role,
+            "office_location_id": u.office_location_id,
+        }
+        for u in users
+    ]
+
+
+@router.post("/office-locations/{loc_id}/assign")
+async def assign_location_to_users(
+    loc_id: int,
+    body: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Assign this office location to specific users (by user_ids list)."""
+    if current_user.role != UserRole.SENIOR:
+        raise HTTPException(status_code=403, detail="Only directors can assign office locations")
+    result = await db.execute(select(OfficeLocation).filter(OfficeLocation.id == loc_id))
+    loc = result.scalars().first()
+    if not loc:
+        raise HTTPException(status_code=404, detail="Location not found")
+    user_ids = body.get("user_ids", [])
+    if not isinstance(user_ids, list):
+        raise HTTPException(status_code=400, detail="user_ids must be a list")
+    from sqlalchemy import update
+    # Assign selected users to this location
+    if user_ids:
+        await db.execute(
+            update(User)
+            .where(User.id.in_(user_ids))
+            .where(User.is_active == True)
+            .values(office_location_id=loc_id)
+        )
+    await db.commit()
+    return {"message": f"Location '{loc.name}' assigned to {len(user_ids)} user(s)."}
 
 
 @router.post("/office-locations/{loc_id}/assign-all")

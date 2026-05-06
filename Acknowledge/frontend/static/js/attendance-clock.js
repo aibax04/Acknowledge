@@ -275,6 +275,8 @@ async function saveOffice(office) {
 }
 
 // MONTHLY VIEW
+var _attendanceData = null; // cached for update modal
+
 async function loadAttendanceTab() {
     var container = document.getElementById('attendance-monthly-view');
     if (!container) return;
@@ -282,6 +284,7 @@ async function loadAttendanceTab() {
     container.innerHTML = '<div class="text-center py-8"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>';
     try {
         var data = await Api.get('/attendance/monthly?year=' + yr + '&month=' + mo);
+        _attendanceData = data;
         renderAttendanceMonthly(data);
     } catch (e) { container.innerHTML = '<div class="text-center py-8 text-red-500">' + (e.message || 'Failed') + '</div>'; }
 }
@@ -342,7 +345,6 @@ function attendanceNextMonth() { attendanceMonthDate.setMonth(attendanceMonthDat
 
 async function openAttendanceUpdateModal(dateStr) {
     var modal = document.getElementById('attendance-update-modal'); if (!modal) return;
-    document.getElementById('update-att-date').value = dateStr;
     document.getElementById('update-att-reason').value = '';
     var ciE = document.getElementById('update-att-clock-in'), coE = document.getElementById('update-att-clock-out');
     var ciCb = document.getElementById('update-att-clock-in-enable'), coCb = document.getElementById('update-att-clock-out-enable');
@@ -350,6 +352,48 @@ async function openAttendanceUpdateModal(dateStr) {
     if (coE) { coE.value = '18:00'; coE.disabled = false; }
     if (ciCb) ciCb.checked = true;
     if (coCb) coCb.checked = true;
+
+    // Set max on "other date" input to yesterday
+    var otherDateInput = document.getElementById('update-att-other-date');
+    if (otherDateInput) {
+        var yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+        otherDateInput.max = yesterday.toISOString().split('T')[0];
+        otherDateInput.value = '';
+    }
+
+    // Populate date dropdown with absent dates and dates missing clock-out
+    var dateSel = document.getElementById('update-att-date');
+    if (dateSel) {
+        var today = new Date().toISOString().split('T')[0];
+        var actionableDates = [];
+        if (_attendanceData && _attendanceData.attendance) {
+            _attendanceData.attendance.forEach(function (a) {
+                if (a.date >= today) return; // skip today and future
+                if (a.status === 'weekly_off' || a.status === 'holiday' || a.status === 'on_leave') return;
+                var needsUpdate = a.status === 'absent' || (a.clock_in && !a.clock_out);
+                if (needsUpdate) actionableDates.push(a);
+            });
+        }
+        dateSel.innerHTML = '<option value="">Select date...</option>';
+        actionableDates.forEach(function (a) {
+            var label = fmtDate(a.date) + (a.status === 'absent' ? ' — Absent' : ' — Missing Clock Out');
+            dateSel.innerHTML += '<option value="' + a.date + '">' + label + '</option>';
+        });
+        // Add a separator and "other date" option to allow any past date
+        if (actionableDates.length > 0) {
+            dateSel.innerHTML += '<option disabled>──────────</option>';
+        }
+        dateSel.innerHTML += '<option value="__other__">Other date...</option>';
+
+        // Pre-select the passed date if provided and actionable
+        if (dateStr) {
+            var found = actionableDates.find(function (a) { return a.date === dateStr; });
+            dateSel.value = found ? dateStr : (dateStr !== today ? '__other__' : '');
+        }
+        _handleOtherDateOption(dateSel.value);
+        dateSel.onchange = function () { _handleOtherDateOption(this.value); };
+    }
+
     try {
         var mgrs = await Api.get('/attendance/managers');
         var sel = document.getElementById('update-att-manager');
@@ -363,8 +407,19 @@ async function openAttendanceUpdateModal(dateStr) {
     modal.classList.remove('hidden');
 }
 
+function _handleOtherDateOption(val) {
+    var otherRow = document.getElementById('update-att-other-date-row');
+    if (!otherRow) return;
+    otherRow.classList.toggle('hidden', val !== '__other__');
+}
+
 async function submitAttendanceUpdate() {
-    var dv = document.getElementById('update-att-date').value, r = document.getElementById('update-att-reason').value.trim(), mi = document.getElementById('update-att-manager').value;
+    var dateSel = document.getElementById('update-att-date');
+    var dv = dateSel && dateSel.value === '__other__'
+        ? (document.getElementById('update-att-other-date') || {}).value || ''
+        : (dateSel ? dateSel.value : '');
+    if (!dv) { showToast('Please select a date', 'error'); return; }
+    var r = document.getElementById('update-att-reason').value.trim(), mi = document.getElementById('update-att-manager').value;
     var ciCb = document.getElementById('update-att-clock-in-enable'), coCb = document.getElementById('update-att-clock-out-enable');
     var ciEnabled = !ciCb || ciCb.checked, coEnabled = !coCb || coCb.checked;
     var ci = ciEnabled ? document.getElementById('update-att-clock-in').value : null;

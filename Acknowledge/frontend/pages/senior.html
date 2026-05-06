@@ -1896,6 +1896,54 @@
         </div>
     </div>
 
+    <!-- Assign Location Modal -->
+    <div id="assign-loc-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 flex flex-col max-h-[80vh]">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                <h3 id="assign-loc-title" class="text-base font-semibold text-gray-900">Assign Location</h3>
+                <button onclick="closeAssignModal()" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+            </div>
+            <div class="flex items-center gap-2 px-5 py-2 border-b border-gray-50">
+                <button onclick="selectAllAssign()" class="text-xs text-emerald-600 hover:underline">Select all</button>
+                <span class="text-gray-300">|</span>
+                <button onclick="clearAllAssign()" class="text-xs text-gray-500 hover:underline">Clear all</button>
+            </div>
+            <div id="assign-loc-list" class="flex-1 overflow-y-auto px-3 py-2"></div>
+            <div class="flex justify-end gap-2 px-5 py-4 border-t border-gray-100">
+                <button onclick="closeAssignModal()" class="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
+                <button onclick="saveAssignModal()" class="px-4 py-2 text-sm text-white bg-emerald-600 rounded-lg hover:bg-emerald-700">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Location Modal -->
+    <div id="edit-loc-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                <h3 class="text-base font-semibold text-gray-900">Edit Location</h3>
+                <button onclick="closeEditLocModal()" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+            </div>
+            <div class="px-5 py-4 space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Name</label>
+                    <input id="edit-loc-name" type="text" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" placeholder="Location name">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Address</label>
+                    <textarea id="edit-loc-address" rows="2" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" placeholder="Address"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Radius (meters)</label>
+                    <input id="edit-loc-radius" type="number" min="10" max="5000" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" placeholder="50">
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 px-5 py-4 border-t border-gray-100">
+                <button onclick="closeEditLocModal()" class="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
+                <button onclick="saveEditLocModal()" class="px-4 py-2 text-sm text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">Save</button>
+            </div>
+        </div>
+    </div>
+
     <script src="../static/js/directory-search.js"></script>
     <script src="../static/js/todo-list.js"></script>
     <script src="../static/js/projects.js"></script>
@@ -1949,8 +1997,8 @@
                     <div><label class="block text-sm font-medium text-gray-700 mb-1">Office</label>
                         <select id="holiday-office" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
                             <option value="both">Both Offices</option>
-                            <option value="panscience">Panscience</option>
-                            <option value="eigen">Eigen</option>
+                            <option value="panscience">PanScience</option>
+                            <option value="eigen">Igen</option>
                         </select></div>
                 </div>
                 <div class="flex justify-end gap-2 mt-4">

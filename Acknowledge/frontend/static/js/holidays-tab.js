@@ -26,7 +26,7 @@ function renderHolidaysList() {
         return;
     }
     var oc = { eigen: 'bg-blue-100 text-blue-700', igen: 'bg-blue-100 text-blue-700', panscience: 'bg-green-100 text-green-700', both: 'bg-purple-100 text-purple-700' };
-    var officeLabel = { eigen: 'Eigen', igen: 'Eigen', panscience: 'Panscience', both: 'Both' };
+    var officeLabel = { eigen: 'Igen', igen: 'Igen', panscience: 'PanScience', both: 'Both' };
     var canDelete = typeof currentUser !== 'undefined' && currentUser && (currentUser.role === 'manager' || currentUser.role === 'senior');
     var h = '<div class="overflow-x-auto w-full"><table class="min-w-full divide-y divide-gray-200 text-sm"><thead class="bg-gray-50"><tr>';
     h += '<th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>';

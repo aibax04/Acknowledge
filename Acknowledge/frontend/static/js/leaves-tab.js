@@ -69,11 +69,6 @@ async function loadLeavesTab() {
         await Promise.all([loadLeaveBalance(), loadMyLeaves()]);
     }
 
-    var teamTrackerSec = document.getElementById('team-leave-tracker-section');
-    if (teamTrackerSec && typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'manager') {
-        teamTrackerSec.classList.remove('hidden');
-        loadTeamLeaves();
-    }
 
     var sec = document.getElementById('custom-leave-policies-section');
     if (sec && typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'manager') {

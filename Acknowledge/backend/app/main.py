@@ -285,6 +285,10 @@ async def startup():
             await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS office_location_id INTEGER REFERENCES office_locations(id) ON DELETE SET NULL"))
         except Exception:
             pass
+        try:
+            await conn.execute(text("ALTER TABLE attendance ADD COLUMN IF NOT EXISTS is_remote BOOLEAN NOT NULL DEFAULT FALSE"))
+        except Exception:
+            pass
         # Add 'custom'/'CUSTOM' to leavetype enum if missing (required for custom leave policies)
         for _val in ("custom", "CUSTOM"):
             try:

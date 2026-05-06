@@ -55,6 +55,11 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
     user = await get_user_by_email(db, email=token_data.email)
     if user is None:
         raise credentials_exception
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is inactive. Please contact your administrator.",
+        )
     return user
 
 @router.post("/signup", response_model=UserResponse)
@@ -73,6 +78,11 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSessi
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
+        )
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is inactive. Please contact your administrator.",
         )
     # The role enum needs to be converted to string if it isn't already handled by Pydantic
     access_token = create_access_token(data={"sub": user.email, "role": user.role.value}) 
@@ -463,6 +473,25 @@ async def delete_user(user_id: int, db: AsyncSession = Depends(get_db), current_
             detail=f"Could not delete user credentials: {str(e)}"
         )
     return {"message": "User credentials deleted successfully"}
+
+
+@router.patch("/users/{user_id}/toggle-active")
+async def toggle_user_active(user_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from sqlalchemy.future import select
+    if current_user.role != UserRole.SENIOR:
+        raise HTTPException(status_code=403, detail="Only directors can change user status")
+    result = await db.execute(select(User).filter(User.id == user_id))
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot deactivate yourself")
+    if user.role == UserRole.SENIOR:
+        raise HTTPException(status_code=400, detail="Cannot deactivate another director")
+    user.is_active = not user.is_active
+    await db.commit()
+    await db.refresh(user)
+    return {"is_active": user.is_active, "message": f"User {'activated' if user.is_active else 'deactivated'} successfully"}
 
 
 @router.get("/pending-managers", response_model=list[UserResponse])

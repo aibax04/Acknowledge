@@ -1071,16 +1071,18 @@ async function loadWorkforce() {
             filteredUsers.forEach(user => {
                 const fullNameEsc = (user.full_name || '').replace(/'/g, '&#39;').replace(/"/g, '&quot;');
                 const onProbation = user.is_on_probation || false;
+                const isActive = user.is_active !== false;
                 const tr = document.createElement('tr');
-                tr.className = "hover:bg-gray-50 transition-colors group";
+                tr.className = "hover:bg-gray-50 transition-colors group" + (!isActive ? " opacity-60" : "");
                 tr.innerHTML = `
                     <td class="px-6 py-4">
                         <div class="flex items-center flex-wrap gap-2">
-                            <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-700 font-bold border border-gray-200 mr-1">
+                            <div class="w-8 h-8 rounded-full ${isActive ? 'bg-gray-100' : 'bg-red-100'} flex items-center justify-center ${isActive ? 'text-gray-700' : 'text-red-400'} font-bold border ${isActive ? 'border-gray-200' : 'border-red-200'} mr-1">
                                 ${user.full_name.charAt(0)}
                             </div>
-                            <span class="text-sm font-medium text-gray-900">${user.full_name}</span>
+                            <span class="text-sm font-medium ${isActive ? 'text-gray-900' : 'text-gray-400'}">${user.full_name}</span>
                             ${onProbation ? '<span class="text-[10px] font-bold bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded uppercase tracking-wide">Probation</span>' : ''}
+                            ${!isActive ? '<span class="text-[10px] font-bold bg-red-100 text-red-600 px-1.5 py-0.5 rounded uppercase tracking-wide">Inactive</span>' : ''}
                         </div>
                     </td>
                     <td class="px-6 py-4">
@@ -1115,6 +1117,12 @@ async function loadWorkforce() {
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                     </svg>
                                     ${onProbation ? 'Remove from Probation' : 'Place on Probation'}
+                                </button>
+                                <button type="button" onclick="toggleUserActive(${user.id}, ${isActive}, '${fullNameEsc}')" class="w-full text-left px-4 py-2 text-sm ${isActive ? 'text-amber-600 hover:bg-amber-50' : 'text-green-600 hover:bg-green-50'} flex items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${isActive ? 'M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636' : 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'}" />
+                                    </svg>
+                                    ${isActive ? 'Mark as Inactive' : 'Restore Account'}
                                 </button>
                                 <button type="button" onclick="deleteUser(${user.id}, '${fullNameEsc}')" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1196,6 +1204,18 @@ async function exportWorkforceDirectory() {
             btn.disabled = false;
             btn.classList.remove('opacity-70');
         }
+    }
+}
+
+async function toggleUserActive(userId, currentlyActive, name) {
+    const action = currentlyActive ? 'mark as inactive' : 'restore';
+    if (!confirm(`Are you sure you want to ${action} "${name}"?`)) return;
+    try {
+        const res = await Api.patch(`/auth/users/${userId}/toggle-active`, {});
+        if (typeof showToast === 'function') showToast(res.message || 'Status updated', 'success');
+        await loadWorkforce();
+    } catch (e) {
+        if (typeof showToast === 'function') showToast(e.message || 'Failed to update status', 'error');
     }
 }
 
@@ -2233,10 +2253,14 @@ async function loadEmployeeAttendance() {
             info.classList.remove('hidden');
         }
 
-        const records = data.records || data || [];
+        const allRecords = data.attendance || data.records || [];
+        // Only show days that have actually passed (exclude future dates)
+        const records = allRecords.filter(r => r.status !== 'future');
+
         const presentDays = records.filter(r => r.status === 'present').length;
         const absentDays = records.filter(r => r.status === 'absent').length;
         const leaveDays = records.filter(r => r.status === 'on_leave').length;
+        const halfDays = records.filter(r => r.status === 'half_day').length;
 
         if (summary) {
             summary.classList.remove('hidden');
@@ -2253,6 +2277,10 @@ async function loadEmployeeAttendance() {
                     <span class="text-xs text-amber-600 font-medium">On Leave</span>
                     <span class="text-lg font-bold text-amber-700">→ ${leaveDays}</span>
                 </div>` : ''}
+                ${halfDays > 0 ? `<div class="flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-lg border border-blue-100">
+                    <span class="text-xs text-blue-600 font-medium">Half Days</span>
+                    <span class="text-lg font-bold text-blue-700">→ ${halfDays}</span>
+                </div>` : ''}
             `;
         }
 
@@ -2261,10 +2289,10 @@ async function loadEmployeeAttendance() {
             return;
         }
 
-        // Build daily table
+        // Build daily table — exclude weekly_off and holiday to keep table focused on work days
         const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-        const statusColor = { present: 'text-gray-700', absent: 'text-red-500 font-semibold', on_leave: 'text-amber-600', weekly_off: 'text-gray-400', holiday: 'text-purple-500' };
-        const statusLabel = { present: 'Present', absent: 'Absent', on_leave: 'On Leave', weekly_off: 'Weekly Off', holiday: 'Holiday' };
+        const statusColor = { present: 'text-green-700', absent: 'text-red-500 font-semibold', on_leave: 'text-amber-600', weekly_off: 'text-gray-400', holiday: 'text-purple-500', half_day: 'text-blue-600' };
+        const statusLabel = { present: 'Present', absent: 'Absent', on_leave: 'On Leave', weekly_off: 'Weekly Off', holiday: 'Holiday', half_day: 'Half Day' };
 
         let rows = records.slice().sort((a,b) => b.date.localeCompare(a.date)).map(r => {
             const d = new Date(r.date);
