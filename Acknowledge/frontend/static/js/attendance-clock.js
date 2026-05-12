@@ -87,6 +87,13 @@ function renderClockWidget() {
         var ti = new Date(d.clock_in).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' });
         var to = new Date(d.clock_out).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' });
         h += '<div class="text-[10px] text-green-600 font-medium bg-green-50 rounded-lg px-2 py-1.5"><span class="block">In: ' + ti + '</span><span class="block">Out: ' + to + '</span></div>';
+        // Allow re-clock-in after accidental clock-out
+        if (geoOk) {
+            h += '<button onclick="handleClockIn()" id="btn-clock-in" class="w-full text-xs bg-primary text-white px-3 py-1.5 rounded-lg hover:bg-primary-hover font-medium transition-colors mt-1">Clock In Again</button>';
+        } else {
+            h += '<button disabled class="w-full text-xs bg-gray-200 text-gray-400 px-3 py-1.5 rounded-lg font-medium cursor-not-allowed mt-1">Clock In Again</button>';
+        }
+        h += _geoStatusBadge(_geoStatus);
     } else if (d.clock_in && !d.clock_out) {
         var ti2 = new Date(d.clock_in).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' });
         h += '<div class="text-[10px] text-green-600 font-medium">Clocked in: ' + ti2 + '</div>';

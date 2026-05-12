@@ -11,13 +11,22 @@ async def get_user_by_email(db: AsyncSession, email: str):
 async def create_user(db: AsyncSession, user: UserCreate):
     from app.models.user import UserRole
     hashed_password = get_password_hash(user.password)
-    is_pending = user.role == UserRole.MANAGER
+    # Default all new signups to pending approval
+    is_pending = True
     db_user = User(
         email=user.email,
         hashed_password=hashed_password,
         full_name=user.full_name,
         role=user.role,
         is_pending_approval=is_pending,
+        position=user.position,
+        department=user.department,
+        phone=user.phone,
+        emergency_contact_name=user.emergency_contact_name,
+        emergency_contact_number=user.emergency_contact_number,
+        address=user.address,
+        office=user.office,
+        joining_date=user.joining_date
     )
     db.add(db_user)
     await db.commit()

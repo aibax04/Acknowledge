@@ -872,14 +872,24 @@
                         </select>
                     </div>
 
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Leave Duration</label>
+                        <div class="flex gap-2">
+                            <button type="button" id="leave-single-day-btn" onclick="setLeaveMode('single')"
+                                class="flex-1 px-4 py-2.5 text-sm font-semibold rounded-xl border-2 border-primary bg-primary/10 text-primary transition-all">Single Day</button>
+                            <button type="button" id="leave-multi-day-btn" onclick="setLeaveMode('multiple')"
+                                class="flex-1 px-4 py-2.5 text-sm font-semibold rounded-xl border-2 border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300 transition-all">Multiple Days</button>
+                        </div>
+                    </div>
+
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label
-                                class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">From</label>
+                            <label id="leave-start-date-label"
+                                class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Date</label>
                             <input type="date" id="leave-start-date"
                                 class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none">
                         </div>
-                        <div id="leave-end-date-wrap">
+                        <div id="leave-end-date-wrap" class="hidden">
                             <label
                                 class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">To</label>
                             <input type="date" id="leave-end-date"
@@ -889,7 +899,7 @@
 
                     <!-- Half-day toggle -->
                     <div>
-                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Duration</label>
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Day Type</label>
                         <div class="flex gap-2">
                             <button type="button" id="leave-full-day-btn" onclick="setLeaveDuration('full')"
                                 class="flex-1 px-4 py-2.5 text-sm font-semibold rounded-xl border-2 border-primary bg-primary/10 text-primary transition-all">Full Day</button>

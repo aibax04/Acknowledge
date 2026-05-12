@@ -121,6 +121,12 @@ async function validateAuth() {
             return false;
         }
 
+        // Redirect if pending approval
+        if (currentUser.is_pending_approval) {
+            window.location.href = currentUser.phone ? 'pending.html' : 'onboarding.html';
+            return false;
+        }
+
         // Update UI with user info
         updateUserDisplay();
         setupEditName();

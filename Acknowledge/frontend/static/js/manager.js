@@ -934,6 +934,8 @@ function switchTab(tabName) {
         loadAllTasks();
     } else if (tabName === 'reports') {
         loadReports();
+    } else if (tabName === 'approvals') {
+        loadPendingApprovals();
     } else if (tabName === 'nudges') {
         loadManageNudges();
     } else if (tabName === 'projects') {
@@ -2036,5 +2038,76 @@ async function exportAttendanceExcel() {
         showToast('Attendance exported!', 'success');
     } catch (e) {
         showToast(e.message || 'Export failed', 'error');
+    }
+}
+
+// ============================================
+// APPROVALS TAB
+// ============================================
+
+async function loadPendingApprovals() {
+    showLoading('pending-approvals-body');
+    try {
+        const users = await Api.get('/auth/pending-users');
+        renderPendingApprovals(users);
+    } catch (error) {
+        console.error('Failed to load pending approvals:', error);
+        showEmptyState('pending-approvals-body', 'Failed to load pending approvals');
+    }
+}
+
+function renderPendingApprovals(users) {
+    const tbody = document.getElementById('pending-approvals-body');
+    if (!users || users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-12 text-center text-gray-500">No pending approvals</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = users.map(user => `
+        <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                    <div class="h-8 w-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-sm">
+                        ${(user.full_name || 'U').substring(0,2).toUpperCase()}
+                    </div>
+                    <div class="ml-3">
+                        <div class="text-sm font-medium text-gray-900">${user.full_name || 'Unknown'}</div>
+                        <div class="text-xs text-gray-500 capitalize">${user.role}</div>
+                    </div>
+                </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                ${user.email}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                ${user.phone || '-'}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <button onclick="approvePendingUser(${user.id})" class="text-green-600 hover:text-green-900 bg-green-50 hover:bg-green-100 px-3 py-1 rounded-md transition-colors mr-2">Approve</button>
+                <button onclick="rejectPendingUser(${user.id})" class="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 px-3 py-1 rounded-md transition-colors">Reject</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function approvePendingUser(userId) {
+    if (!confirm('Are you sure you want to approve this user? They will gain access immediately.')) return;
+    try {
+        await Api.post('/auth/users/' + userId + '/approve');
+        showToast('User approved successfully', 'success');
+        loadPendingApprovals();
+    } catch (e) {
+        showToast('Failed to approve user: ' + e.message, 'error');
+    }
+}
+
+async function rejectPendingUser(userId) {
+    if (!confirm('Are you sure you want to reject this user? They will be permanently deactivated.')) return;
+    try {
+        await Api.post('/auth/users/' + userId + '/reject');
+        showToast('User rejected successfully', 'success');
+        loadPendingApprovals();
+    } catch (e) {
+        showToast('Failed to reject user: ' + e.message, 'error');
     }
 }

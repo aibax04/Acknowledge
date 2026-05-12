@@ -39,10 +39,33 @@ _ADVISORY_LOCK_KEY = 987654321
 
 
 def _months_to_credit(joining: Optional[date], year: int, month: int) -> bool:
-    """Return True if the user joined on or before the 1st of this month."""
+    """Return True if the user joined during or before this month.
+
+    E.g. if someone joins May 8, they still get credit for May.
+    """
     if joining is None:
         return True
-    return joining <= date(year, month, 1)
+    # Credit if the user's joining year-month is <= the target year-month
+    return (joining.year, joining.month) <= (year, month)
+
+
+def _resolve_credit_date(user) -> Optional[date]:
+    """Resolve the effective date for leave credit eligibility.
+
+    Uses joining_date first, then created_at as fallback.
+    This ensures users without an explicit joining_date still get
+    pro-rated credits based on when their account was created.
+    """
+    j = getattr(user, "joining_date", None)
+    if j is not None and isinstance(j, date):
+        return j
+    try:
+        ca = getattr(user, "created_at", None)
+        if ca is not None:
+            return ca.date() if hasattr(ca, "date") else None
+    except (AttributeError, TypeError):
+        pass
+    return None
 
 
 async def credit_month(db: AsyncSession, year: int, month: int) -> dict:
@@ -69,11 +92,11 @@ async def credit_month(db: AsyncSession, year: int, month: int) -> dict:
     el_credited = csl_credited = custom_credited = 0
 
     for user in users:
-        joining = getattr(user, "joining_date", None)
+        effective_date = _resolve_credit_date(user)
         role = getattr(user, "role", None)
         is_probation = bool(getattr(user, "is_on_probation", False))
 
-        if not _months_to_credit(joining, year, month):
+        if not _months_to_credit(effective_date, year, month):
             continue
 
         # Standard EL (non-probation employees/managers/interns)

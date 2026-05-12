@@ -11,6 +11,14 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
     senior_signup_key: Optional[str] = None  # required when role is senior
+    position: Optional[str] = None
+    department: Optional[str] = None
+    phone: Optional[str] = None
+    emergency_contact_name: Optional[str] = None
+    emergency_contact_number: Optional[str] = None
+    address: Optional[str] = None
+    office: Optional[str] = None
+    joining_date: Optional[date] = None
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -22,6 +30,12 @@ class UserUpdate(BaseModel):
     joining_date: Optional[date] = None
     is_on_probation: Optional[bool] = None
     office_location_id: Optional[int] = None
+    position: Optional[str] = None
+    department: Optional[str] = None
+    phone: Optional[str] = None
+    emergency_contact_name: Optional[str] = None
+    emergency_contact_number: Optional[str] = None
+    address: Optional[str] = None
 
 class UserPromote(BaseModel):
     new_role: UserRole
@@ -35,6 +49,12 @@ class UserResponse(UserBase):
     joining_date: Optional[date] = None
     is_on_probation: Optional[bool] = None
     office_location_id: Optional[int] = None
+    position: Optional[str] = None
+    department: Optional[str] = None
+    phone: Optional[str] = None
+    emergency_contact_name: Optional[str] = None
+    emergency_contact_number: Optional[str] = None
+    address: Optional[str] = None
 
     class Config:
         from_attributes = True

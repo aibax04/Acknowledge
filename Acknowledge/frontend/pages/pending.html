@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pending Approval - Acknowledge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="../static/js/api.js"></script>
+    <style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10B981', // Emerald 500
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 h-screen flex flex-col justify-center items-center">
+
+    <!-- Navbar -->
+    <nav class="fixed top-0 w-full glass-panel z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-teal-400">Acknowledge</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="Api.logout()" class="text-sm text-gray-500 hover:text-gray-700 transition-colors">Logout</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="glass-panel p-10 rounded-2xl max-w-md text-center">
+        <div class="text-6xl mb-6">⏳</div>
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">Pending Approval</h2>
+        <p class="text-gray-600 mb-6">
+            Your account has been successfully created and is currently waiting for manager approval. You will gain access to the dashboard once your request is approved.
+        </p>
+        <button onclick="checkStatus()" class="bg-primary text-white px-6 py-2 rounded-lg font-medium hover:bg-emerald-600 transition-colors w-full">
+            Refresh Status
+        </button>
+    </div>
+
+    <script>
+        async function checkStatus() {
+            try {
+                const user = await Api.getProfile();
+                if (!user.is_pending_approval && user.is_active) {
+                    if (user.role === 'employee') window.location.href = 'employee.html';
+                    else if (user.role === 'manager') window.location.href = 'manager.html';
+                    else if (user.role === 'senior') window.location.href = 'senior.html';
+                    else if (user.role === 'intern') window.location.href = 'intern.html';
+                } else if (!user.is_active && !user.is_pending_approval) {
+                    alert("Your account has been deactivated or rejected.");
+                    Api.logout();
+                } else {
+                    alert("Still pending approval.");
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // On load, verify we should be here
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const user = await Api.getProfile();
+                if (!user.is_pending_approval) {
+                    checkStatus(); // Redirect if already approved
+                }
+            } catch (err) {
+                Api.logout();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -274,8 +274,8 @@ async function handleOAuthCallback() {
             // Clear OAuth state
             sessionStorage.removeItem('oauth_state');
 
-            // Redirect based on role
-            redirectByRole(data.user.role);
+            // Redirect based on user state
+            redirectByUser(data.user);
 
         } catch (error) {
             hideLoadingOverlay();
@@ -288,15 +288,26 @@ async function handleOAuthCallback() {
     }
 }
 
-// Redirect based on user role
-function redirectByRole(role) {
-    if (role === 'employee') window.location.href = 'employee.html';
-    else if (role === 'manager') window.location.href = 'manager.html';
-    else if (role === 'senior') window.location.href = 'senior.html';
-    else if (role === 'intern') window.location.href = 'intern.html';
+// Redirect based on user state
+function redirectByUser(user) {
+    if (!user) return;
+    
+    if (user.is_pending_approval) {
+        if (!user.phone) {
+            window.location.href = 'onboarding.html';
+        } else {
+            window.location.href = 'pending.html';
+        }
+        return;
+    }
+
+    if (user.role === 'employee') window.location.href = 'employee.html';
+    else if (user.role === 'manager') window.location.href = 'manager.html';
+    else if (user.role === 'senior') window.location.href = 'senior.html';
+    else if (user.role === 'intern') window.location.href = 'intern.html';
     else {
         hideLoadingOverlay();
-        alert('Unknown role: ' + role);
+        alert('Unknown role: ' + user.role);
     }
 }
 
@@ -410,7 +421,7 @@ document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
         localStorage.setItem('user_name', user.full_name);
         localStorage.setItem('user_role', user.role);
 
-        return loginData;
+        return user;
     });
 });
 
@@ -462,7 +473,7 @@ document.getElementById('signupForm')?.addEventListener('submit', async (e) => {
         localStorage.setItem('user_name', user.full_name);
         localStorage.setItem('user_role', user.role);
 
-        return loginData;
+        return user;
     });
 });
 
@@ -476,17 +487,24 @@ async function handleAuthAction(btn, actionCallback) {
     try {
         const data = await actionCallback();
 
-        // Robust JWT Decode
-        const base64Url = data.access_token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
+        // If actionCallback returns a user object, use it directly
+        if (data && data.email && data.role) {
+            redirectByUser(data);
+        } else {
+            // Robust JWT Decode
+            const base64Url = data.access_token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
 
-        const payload = JSON.parse(jsonPayload);
-        const role = payload.role;
-
-        redirectByRole(role);
+            const payload = JSON.parse(jsonPayload);
+            // Fallback if we don't have the full user object (e.g. just a token)
+            redirectByUser({
+                role: payload.role,
+                is_pending_approval: false // We don't know from token alone
+            });
+        }
 
     } catch (error) {
         console.error('Auth error:', error);

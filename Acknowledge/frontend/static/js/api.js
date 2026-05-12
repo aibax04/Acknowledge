@@ -28,7 +28,9 @@ function getApiUrl() {
         if (base && base.trim()) return base.trim().replace(/\/$/, '');
         if (localStorage.getItem('USE_LOCAL_BACKEND') === '1') return 'http://localhost:8000';
     }
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    // Only use hardcoded localhost:8000 if we are actually visiting that port.
+    // Otherwise, use /api to let the relative path work (e.g. through Nginx on 8001).
+    if ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port === '8000') {
         return 'http://localhost:8000';
     }
     return '/api';

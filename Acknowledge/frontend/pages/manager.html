@@ -153,6 +153,15 @@
                     </svg>
                     Reports
                 </a>
+                <a href="#" data-tab="approvals"
+                    class="nav-link flex items-center px-4 py-3 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-lg font-medium transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                    </svg>
+                    Pending Approvals
+                </a>
                 <a href="#" data-tab="nudges"
                     class="nav-link flex items-center px-4 py-3 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-lg font-medium transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
@@ -426,6 +435,34 @@
                     </div>
                     <div id="sent-notifications-list" class="divide-y divide-gray-50">
                         <div class="p-6 text-center text-gray-500 text-sm">No notifications sent yet</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- APPROVALS TAB -->
+            <div id="approvals-tab" class="tab-content">
+                <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                        <h3 class="text-lg font-medium text-gray-900">Pending Approvals</h3>
+                    </div>
+                    <div class="overflow-x-auto w-full">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee Name</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200" id="pending-approvals-body">
+                                <tr>
+                                    <td colspan="4" class="px-6 py-8 text-center text-sm text-gray-500">
+                                        Loading pending approvals...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -1419,14 +1456,24 @@
                         </select>
                     </div>
 
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Leave Duration</label>
+                        <div class="flex gap-2">
+                            <button type="button" id="leave-single-day-btn" onclick="setLeaveMode('single')"
+                                class="flex-1 px-4 py-2.5 text-sm font-semibold rounded-xl border-2 border-primary bg-primary/10 text-primary transition-all">Single Day</button>
+                            <button type="button" id="leave-multi-day-btn" onclick="setLeaveMode('multiple')"
+                                class="flex-1 px-4 py-2.5 text-sm font-semibold rounded-xl border-2 border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300 transition-all">Multiple Days</button>
+                        </div>
+                    </div>
+
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label
-                                class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">From</label>
+                            <label id="leave-start-date-label"
+                                class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Date</label>
                             <input type="date" id="leave-start-date"
                                 class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none">
                         </div>
-                        <div id="leave-end-date-wrap">
+                        <div id="leave-end-date-wrap" class="hidden">
                             <label
                                 class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">To</label>
                             <input type="date" id="leave-end-date"
@@ -1436,7 +1483,7 @@
 
                     <!-- Half-day toggle -->
                     <div>
-                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Duration</label>
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Day Type</label>
                         <div class="flex gap-2">
                             <button type="button" id="leave-full-day-btn" onclick="setLeaveDuration('full')"
                                 class="flex-1 px-4 py-2.5 text-sm font-semibold rounded-xl border-2 border-primary bg-primary/10 text-primary transition-all">Full Day</button>

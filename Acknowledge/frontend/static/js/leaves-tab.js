@@ -1096,6 +1096,40 @@ async function cancelLeave(id) {
     catch (e) { showToast(e.message || 'Failed', 'error'); }
 }
 
+// ---- SINGLE / MULTIPLE DAY LEAVE MODE ----
+var _leaveMode = 'single'; // 'single' or 'multiple'
+
+function setLeaveMode(mode) {
+    _leaveMode = mode;
+    var singleBtn = document.getElementById('leave-single-day-btn');
+    var multiBtn = document.getElementById('leave-multi-day-btn');
+    var startLabel = document.getElementById('leave-start-date-label');
+    var endDateWrap = document.getElementById('leave-end-date-wrap');
+    if (!singleBtn || !multiBtn) return;
+    var ACTIVE = ['border-primary', 'bg-primary/10', 'text-primary'];
+    var INACTIVE = ['border-gray-200', 'bg-gray-50', 'text-gray-500'];
+    if (mode === 'single') {
+        singleBtn.classList.remove.apply(singleBtn.classList, INACTIVE);
+        singleBtn.classList.add.apply(singleBtn.classList, ACTIVE);
+        multiBtn.classList.remove.apply(multiBtn.classList, ACTIVE);
+        multiBtn.classList.add.apply(multiBtn.classList, INACTIVE);
+        if (startLabel) startLabel.textContent = 'Date';
+        if (endDateWrap) endDateWrap.classList.add('hidden');
+        // Sync end date with start date
+        var startEl = document.getElementById('leave-start-date');
+        var endEl = document.getElementById('leave-end-date');
+        if (startEl && endEl) endEl.value = startEl.value;
+    } else {
+        multiBtn.classList.remove.apply(multiBtn.classList, INACTIVE);
+        multiBtn.classList.add.apply(multiBtn.classList, ACTIVE);
+        singleBtn.classList.remove.apply(singleBtn.classList, ACTIVE);
+        singleBtn.classList.add.apply(singleBtn.classList, INACTIVE);
+        if (startLabel) startLabel.textContent = 'From';
+        // Only show end date wrap if NOT in half-day mode
+        if (endDateWrap && _leaveDuration !== 'half') endDateWrap.classList.remove('hidden');
+    }
+}
+
 // ---- HALF-DAY LEAVE HELPERS ----
 var _leaveDuration = 'full';
 var _halfDayPeriod = null;
@@ -1118,9 +1152,10 @@ function setLeaveDuration(mode) {
         halfBtn.classList.add.apply(halfBtn.classList, INACTIVE);
         if (periodWrap) periodWrap.classList.add('hidden');
         _halfDayPeriod = null;
-        // Re-enable and show the end date field
+        // Re-enable and show the end date field (only if multiple-day mode)
         if (endDateInput) { endDateInput.disabled = false; endDateInput.style.opacity = ''; }
-        if (endDateWrap) endDateWrap.classList.remove('hidden');
+        if (endDateWrap && _leaveMode === 'multiple') endDateWrap.classList.remove('hidden');
+        else if (endDateWrap && _leaveMode === 'single') endDateWrap.classList.add('hidden');
     } else {
         halfBtn.classList.remove.apply(halfBtn.classList, INACTIVE);
         halfBtn.classList.add.apply(halfBtn.classList, ACTIVE);
@@ -1154,7 +1189,9 @@ function setHalfDayPeriod(period) {
 function _resetHalfDayUI() {
     _leaveDuration = 'full';
     _halfDayPeriod = null;
+    _leaveMode = 'single';
     setLeaveDuration('full');
+    setLeaveMode('single');
 }
 
 // ---- APPLY LEAVE MODAL ----
@@ -1166,12 +1203,12 @@ async function openApplyLeaveModal(preselectPolicyId) {
     document.getElementById('leave-end-date').value = '';
     document.getElementById('leave-reason').value = '';
     _resetHalfDayUI();
-    // Bind start-date → end-date auto-sync for half-day mode (once per element lifetime)
+    // Bind start-date → end-date auto-sync for half-day and single-day mode (once per element lifetime)
     var startDateEl = document.getElementById('leave-start-date');
     if (startDateEl && !startDateEl.dataset.halfDaySyncBound) {
         startDateEl.dataset.halfDaySyncBound = '1';
         startDateEl.addEventListener('change', function () {
-            if (_leaveDuration === 'half') {
+            if (_leaveDuration === 'half' || _leaveMode === 'single') {
                 var endEl = document.getElementById('leave-end-date');
                 if (endEl) endEl.value = this.value;
             }
@@ -1183,10 +1220,7 @@ async function openApplyLeaveModal(preselectPolicyId) {
         var customPolicies = await fetchCustomPoliciesForApply();
         if (customPolicies && customPolicies.length) {
             customPolicies.forEach(function (p) {
-                var prior = (p.prior_days === 0 ? 'anytime' : p.prior_days + 'd prior');
-                var perMonth = (p.max_days_per_month != null && p.max_days_per_month > 0) ? ' · max ' + p.max_days_per_month + '/mo' : '';
-                var annual = (p.shared_annual_limit != null && p.shared_annual_limit > 0) ? ' · ' + p.shared_annual_limit + '/yr' : '';
-                typeSelect.innerHTML += '<option value="custom:' + p.id + '">' + (p.title || 'Custom') + ' — ' + prior + perMonth + annual + '</option>';
+                typeSelect.innerHTML += '<option value="custom:' + p.id + '">' + (p.title || 'Custom') + '</option>';
             });
             if (preselectPolicyId) typeSelect.value = 'custom:' + preselectPolicyId;
         } else {
@@ -1225,8 +1259,8 @@ async function submitLeaveApplication() {
     var reason = (document.getElementById('leave-reason').value || '').trim();
     if (!typeRaw) { showToast('Select leave type', 'error'); return; }
     var isHalf = _leaveDuration === 'half';
-    // For half-day, end date is always the same as start date
-    if (isHalf && start) end = start;
+    // For half-day or single-day mode, end date is always the same as start date
+    if ((isHalf || _leaveMode === 'single') && start) end = start;
     if (!start || !end) { showToast('Select a date', 'error'); return; }
     if (!reason) { showToast('Provide a reason', 'error'); return; }
     start = toISODate(start);

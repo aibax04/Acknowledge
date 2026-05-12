@@ -99,10 +99,23 @@ async def clock_in(
         )
     )
     existing = result.scalars().first()
-    if existing and existing.clock_in:
+
+    if existing and existing.clock_in and not existing.clock_out:
+        # Currently clocked in (no clock-out yet) — block duplicate clock-in
         raise HTTPException(status_code=400, detail="Already clocked in today")
 
-    if existing:
+    if existing and existing.clock_in and existing.clock_out:
+        # Previously clocked out — allow re-clock-in by clearing old clock-out
+        existing.clock_out = None
+        existing.clock_out_lat = None
+        existing.clock_out_lng = None
+        existing.clock_out_address = None
+        existing.clock_in = now
+        existing.clock_in_lat = req.latitude
+        existing.clock_in_lng = req.longitude
+        existing.clock_in_address = req.address
+        existing.status = AttendanceStatus.PRESENT
+    elif existing:
         existing.clock_in = now
         existing.clock_in_lat = req.latitude
         existing.clock_in_lng = req.longitude
@@ -168,8 +181,6 @@ async def clock_out(
     existing = result.scalars().first()
     if not existing or not existing.clock_in:
         raise HTTPException(status_code=400, detail="You haven't clocked in today")
-    if existing.clock_out:
-        raise HTTPException(status_code=400, detail="Already clocked out today")
 
     existing.clock_out = now
     existing.clock_out_lat = req.latitude

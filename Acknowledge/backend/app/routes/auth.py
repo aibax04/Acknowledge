@@ -168,7 +168,7 @@ async def microsoft_callback(
                 hashed_password=hashed_password,
                 role=role,
                 is_active=True,
-                is_pending_approval=(role == UserRole.MANAGER),
+                is_pending_approval=True,
             )
             db.add(user)
             await db.commit()
@@ -292,7 +292,7 @@ async def google_callback(
                 hashed_password=hashed_password,
                 role=role,
                 is_active=True,
-                is_pending_approval=(role == UserRole.MANAGER),
+                is_pending_approval=True,
             )
              db.add(user)
              await db.commit()
@@ -354,6 +354,25 @@ async def _do_update_profile(update: UserUpdate, current_user: User, db: AsyncSe
     if update.is_on_probation is not None:
         current_user.is_on_probation = update.is_on_probation
         changed = True
+    if update.position is not None:
+        current_user.position = update.position
+        changed = True
+    if update.department is not None:
+        current_user.department = update.department
+        changed = True
+    if update.phone is not None:
+        current_user.phone = update.phone
+        changed = True
+    if update.emergency_contact_name is not None:
+        current_user.emergency_contact_name = update.emergency_contact_name
+        changed = True
+    if update.emergency_contact_number is not None:
+        current_user.emergency_contact_number = update.emergency_contact_number
+        changed = True
+    if update.address is not None:
+        current_user.address = update.address
+        changed = True
+
     if changed:
         db.add(current_user)
         await db.commit()
@@ -383,9 +402,47 @@ async def get_users(db: AsyncSession = Depends(get_db), current_user: User = Dep
     # This includes Employees, Interns, and other Managers/Seniors
     allowed_roles = [UserRole.EMPLOYEE, UserRole.INTERN, UserRole.MANAGER, UserRole.SENIOR]
     
-    result = await db.execute(select(User).filter(User.role.in_(allowed_roles)))
+    result = await db.execute(select(User).filter(User.role.in_(allowed_roles), User.is_pending_approval == False, User.is_active == True))
     users = result.scalars().all()
     return users
+
+@router.get("/pending-users", response_model=list[UserResponse])
+async def get_pending_users(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from sqlalchemy.future import select
+    if current_user.role not in (UserRole.MANAGER, UserRole.SENIOR):
+        raise HTTPException(status_code=403, detail="Access denied")
+    result = await db.execute(select(User).filter(User.is_pending_approval == True))
+    return result.scalars().all()
+
+@router.post("/users/{user_id}/approve")
+async def approve_user(user_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from sqlalchemy.future import select
+    if current_user.role not in (UserRole.MANAGER, UserRole.SENIOR):
+        raise HTTPException(status_code=403, detail="Access denied")
+    result = await db.execute(select(User).filter(User.id == user_id))
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.is_pending_approval = False
+    user.is_active = True
+    db.add(user)
+    await db.commit()
+    return {"message": "User approved successfully"}
+
+@router.post("/users/{user_id}/reject")
+async def reject_user(user_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from sqlalchemy.future import select
+    if current_user.role not in (UserRole.MANAGER, UserRole.SENIOR):
+        raise HTTPException(status_code=403, detail="Access denied")
+    result = await db.execute(select(User).filter(User.id == user_id))
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.is_pending_approval = False
+    user.is_active = False
+    db.add(user)
+    await db.commit()
+    return {"message": "User rejected successfully"}
 
 @router.get("/all-users", response_model=list[UserResponse])
 async def get_all_users(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -402,9 +459,9 @@ async def delete_user(user_id: int, db: AsyncSession = Depends(get_db), current_
     from sqlalchemy.future import select
     from sqlalchemy import update, delete
     
-    # Only seniors can delete users
-    if current_user.role != UserRole.SENIOR:
-        raise HTTPException(status_code=403, detail="Only seniors can delete credentials")
+    # Only managers and seniors can delete users
+    if current_user.role not in (UserRole.MANAGER, UserRole.SENIOR):
+        raise HTTPException(status_code=403, detail="Only managers and seniors can delete credentials")
     
     result = await db.execute(select(User).filter(User.id == user_id))
     user = result.scalars().first()
