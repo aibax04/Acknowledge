@@ -22,6 +22,58 @@ function buildLeavesFilterQuery(f) {
     return '?year=' + f.year;
 }
 
+function fmtDateRange(start, end) {
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var s = new Date(start + 'T00:00:00');
+    var e = new Date(end + 'T00:00:00');
+    if (start === end) return months[s.getMonth()] + ' ' + s.getDate();
+    if (s.getMonth() === e.getMonth() && s.getFullYear() === e.getFullYear()) {
+        return months[s.getMonth()] + ' ' + s.getDate() + ' – ' + e.getDate();
+    }
+    return months[s.getMonth()] + ' ' + s.getDate() + ' – ' + months[e.getMonth()] + ' ' + e.getDate();
+}
+
+function fmtAppliedAt(isoStr) {
+    if (!isoStr) return '';
+    var d = new Date(isoStr);
+    if (isNaN(d)) return '';
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var datePart = months[d.getMonth()] + ' ' + d.getDate();
+    var today = new Date();
+    var isToday = d.getDate() === today.getDate() &&
+                  d.getMonth() === today.getMonth() &&
+                  d.getFullYear() === today.getFullYear();
+    if (!isToday) return datePart;
+    var h = d.getHours(), m = d.getMinutes();
+    var ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    return datePart + ' · ' + h + ':' + (m < 10 ? '0' : '') + m + ' ' + ampm;
+}
+
+function toggleReason(btn) {
+    var cell = btn.parentElement;
+    var shortEl = cell.querySelector('.reason-short');
+    var fullEl = cell.querySelector('.reason-full');
+    var chevron = btn.querySelector('svg');
+    if (fullEl.classList.contains('hidden')) {
+        shortEl.classList.add('hidden');
+        fullEl.classList.remove('hidden');
+        chevron.style.transform = 'rotate(180deg)';
+    } else {
+        fullEl.classList.add('hidden');
+        shortEl.classList.remove('hidden');
+        chevron.style.transform = '';
+    }
+}
+
+function filterLeavesTable(query) {
+    var q = (query || '').toLowerCase().trim();
+    var rows = document.querySelectorAll('#pending-leaves-list tbody tr');
+    rows.forEach(function(row) {
+        row.style.display = (!q || row.textContent.toLowerCase().includes(q)) ? '' : 'none';
+    });
+}
+
 function ensureLeavesFilter(prefix, label) {
     var listId = prefix === 'my' ? 'my-leaves-list' : 'pending-leaves-list';
     var list = document.getElementById(listId);
@@ -1692,89 +1744,75 @@ async function loadPendingLeaves() {
             return;
         }
 
-        c.innerHTML = '<div class="divide-y divide-gray-50">' + leaves.map(function (l) {
-            var typeLabel = l.custom_policy_title || l.leave_type;
-            var initials = (l.user_name || '?').split(' ').map(function (w) { return w[0]; }).join('').substring(0, 2).toUpperCase();
+        var rows = leaves.map(function(l) {
+            var typeLabel = l.custom_policy_title || ((l.leave_type || '').replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); }));
             var roleLabel = (l.user_role || 'employee').charAt(0).toUpperCase() + (l.user_role || 'employee').slice(1);
+            var st = (l.status || 'pending').toLowerCase();
 
-            // Date + days display
-            var dateStr = l.is_half_day ? fmtDate(l.start_date) : (fmtDate(l.start_date) + ' \u2192 ' + fmtDate(l.end_date));
-            var daysNum = l.is_half_day ? 0.5 : (l.num_days || 1);
-            var daysLabel = daysNum + ' day' + (daysNum !== 1 ? 's' : '');
-
-            // Half-day badge
-            var halfBadge = l.is_half_day
-                ? ' <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-50 text-violet-600 border border-violet-100 ml-1">' + (l.half_day_period === 'first_half' ? '1st half' : '2nd half') + '</span>'
-                : '';
-
-            // Balance row
-            var balHtml = '';
-            if (l.balance_available != null) {
-                var avail = l.balance_available % 1 === 0 ? l.balance_available : parseFloat(l.balance_available.toFixed(2));
-                var usedVal = l.balance_used != null ? (l.balance_used % 1 === 0 ? l.balance_used : parseFloat(l.balance_used.toFixed(2))) : '?';
-                var limitVal = l.balance_limit != null ? (l.balance_limit % 1 === 0 ? l.balance_limit : parseFloat(l.balance_limit.toFixed(2))) : '?';
-                var balColor = avail > 0 ? 'emerald' : 'red';
-                balHtml = '<div class="flex items-center gap-2 mt-2 flex-wrap">' +
-                    '<span class="inline-flex items-center gap-1 bg-' + balColor + '-50 text-' + balColor + '-700 px-2 py-0.5 rounded-md border border-' + balColor + '-100 text-[11px] font-semibold">' +
-                    (avail > 0
-                        ? '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>'
-                        : '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>') +
-                    avail + ' day' + (avail !== 1 ? 's' : '') + ' available</span>' +
-                    '<span class="text-[10px] text-gray-400">used ' + usedVal + ' of ' + limitVal + ' incl. pending</span>' +
-                    '</div>';
+            // Date format: "May 14 \u2013 18" or "May 14"
+            var dateStr;
+            if (l.is_half_day) {
+                var period = l.half_day_period === 'first_half' ? '1st half' : '2nd half';
+                dateStr = fmtDateRange(l.start_date, l.start_date) + ' <span class="text-[10px] font-medium text-violet-600">' + period + '</span>';
+            } else {
+                dateStr = fmtDateRange(l.start_date, l.end_date);
             }
 
-            // Reason
-            var reasonHtml = l.reason
-                ? '<p class="text-xs text-gray-500 mt-2 line-clamp-2 italic">\u201c' + (l.reason || '') + '\u201d</p>'
-                : '';
-
-            // Accent colour + status badge based on leave status
-            var accentColor = 'bg-amber-400';
+            // Status badge for non-pending rows
             var statusBadge = '';
-            var st = (l.status || 'pending').toLowerCase();
-            if (st === 'approved') { accentColor = 'bg-emerald-400'; statusBadge = '<span class="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded ml-1">Approved</span>'; }
-            else if (st === 'rejected') { accentColor = 'bg-red-400'; statusBadge = '<span class="text-[10px] font-semibold text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded ml-1">Rejected</span>'; }
-            else if (st === 'cancelled') { accentColor = 'bg-gray-300'; statusBadge = '<span class="text-[10px] font-semibold text-gray-500 bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded ml-1">Cancelled</span>'; }
+            if (st === 'approved') statusBadge = ' <span class="inline-block text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">Approved</span>';
+            else if (st === 'rejected') statusBadge = ' <span class="inline-block text-[10px] font-semibold text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded">Rejected</span>';
+            else if (st === 'cancelled') statusBadge = ' <span class="inline-block text-[10px] font-semibold text-gray-500 bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded">Cancelled</span>';
 
-            // Action buttons only for pending leaves
+            // Reason cell: truncate long reasons with an expand toggle
+            var reasonHtml;
+            if (l.reason && l.reason.length > 55) {
+                var safeShort = escapeHtml(l.reason.substring(0, 55));
+                var safeFull = escapeHtml(l.reason);
+                reasonHtml = '<span class="reason-short">' + safeShort + '\u2026</span>' +
+                    '<span class="reason-full hidden">' + safeFull + '</span>' +
+                    '<button class="ml-1 inline-flex items-center text-gray-400 hover:text-gray-600 align-middle" onclick="toggleReason(this)">' +
+                    '<svg class="w-3.5 h-3.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>' +
+                    '</button>';
+            } else {
+                reasonHtml = escapeHtml(l.reason || '\u2014');
+            }
+
+            // Actions
             var actionsHtml = '';
             if (st === 'pending') {
-                actionsHtml = '<div class="flex flex-col justify-center gap-2 px-4 py-4 shrink-0">' +
-                    '<button onclick="reviewLeave(' + l.id + ',\'approved\')" class="text-xs font-semibold text-white bg-emerald-500 hover:bg-emerald-600 px-4 py-2 rounded-lg transition-colors shadow-sm whitespace-nowrap">Approve</button>' +
-                    '<button onclick="reviewLeave(' + l.id + ',\'rejected\')" class="text-xs font-semibold text-red-500 bg-white hover:bg-red-50 border border-red-200 hover:border-red-300 px-4 py-2 rounded-lg transition-colors whitespace-nowrap">Deny</button>' +
-                    '</div>';
+                actionsHtml =
+                    '<button onclick="reviewLeave(' + l.id + ',\'approved\')" class="px-4 py-1.5 rounded-md text-sm font-semibold text-white bg-[#2d6a4f] hover:bg-[#1b4332] transition-colors mr-2">Approve</button>' +
+                    '<button onclick="reviewLeave(' + l.id + ',\'rejected\')" class="px-4 py-1.5 rounded-md text-sm font-semibold text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 transition-colors">Deny</button>';
             } else if (st === 'approved') {
-                actionsHtml = '<div class="flex flex-col justify-center gap-2 px-4 py-4 shrink-0">' +
-                    '<button onclick="revokeLeave(' + l.id + ')" class="text-xs font-semibold text-gray-500 bg-white hover:bg-gray-50 border border-gray-200 px-4 py-2 rounded-lg transition-colors whitespace-nowrap">Revoke</button>' +
-                    '</div>';
+                actionsHtml = '<button onclick="revokeLeave(' + l.id + ')" class="px-4 py-1.5 rounded-md text-sm font-semibold text-gray-500 bg-white border border-gray-200 hover:bg-gray-50 transition-colors">Revoke</button>';
             }
 
-            return '<div class="flex items-stretch gap-0 hover:bg-gray-50/50 transition-colors">' +
-                '<div class="w-0.5 ' + accentColor + ' shrink-0 my-4 ml-4 rounded-full"></div>' +
-                '<div class="flex items-start pt-5 px-3.5 shrink-0">' +
-                '<div class="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold shrink-0">' + initials + '</div>' +
-                '</div>' +
-                '<div class="flex-1 min-w-0 py-4 pr-2">' +
-                '<div class="flex items-center gap-2 mb-1 flex-wrap">' +
-                '<p class="text-sm font-semibold text-gray-900">' + (l.user_name || 'Unknown') + '</p>' +
-                '<span class="text-[10px] font-medium text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded capitalize">' + roleLabel + '</span>' +
-                statusBadge +
-                '</div>' +
-                '<div class="flex items-center gap-1.5 flex-wrap">' +
-                '<span class="text-xs font-semibold text-gray-700">' + typeLabel + '</span>' +
-                '<span class="text-gray-300 text-sm">&middot;</span>' +
-                '<span class="text-xs text-gray-500">' + dateStr + '</span>' +
-                '<span class="text-gray-300 text-sm">&middot;</span>' +
-                '<span class="text-xs font-semibold text-gray-800">' + daysLabel + '</span>' +
-                halfBadge +
-                '</div>' +
-                balHtml +
-                reasonHtml +
-                '</div>' +
-                actionsHtml +
-                '</div>';
-        }).join('') + '</div>';
+            return '<tr class="border-b border-gray-100 hover:bg-gray-50/60 transition-colors">' +
+                '<td class="px-5 py-3.5 align-middle">' +
+                    '<p class="text-sm font-semibold text-gray-900">' + escapeHtml(l.user_name || 'Unknown') + '</p>' +
+                    '<p class="text-xs text-gray-400 mt-0.5">' + roleLabel + '</p>' +
+                '</td>' +
+                '<td class="px-5 py-3.5 align-middle text-sm text-gray-700">' + typeLabel + statusBadge + '</td>' +
+                '<td class="px-5 py-3.5 align-middle text-sm text-gray-700 whitespace-nowrap">' + dateStr + '</td>' +
+                '<td class="px-5 py-3.5 align-middle text-sm text-gray-600 max-w-xs">' + reasonHtml + '</td>' +
+                '<td class="px-5 py-3.5 align-middle text-sm text-gray-500 whitespace-nowrap">' + (l.applied_at ? fmtAppliedAt(l.applied_at) : '—') + '</td>' +
+                '<td class="px-5 py-3.5 align-middle whitespace-nowrap">' + actionsHtml + '</td>' +
+                '</tr>';
+        });
+
+        c.innerHTML = '<div class="overflow-x-auto">' +
+            '<table class="w-full">' +
+            '<thead><tr class="border-b border-gray-200 bg-gray-50/60">' +
+            '<th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Employee</th>' +
+            '<th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Leave Type</th>' +
+            '<th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Dates</th>' +
+            '<th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Reason</th>' +
+            '<th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Applied On</th>' +
+            '<th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>' +
+            '</tr></thead>' +
+            '<tbody>' + rows.join('') + '</tbody>' +
+            '</table></div>';
     } catch (e) { c.innerHTML = '<p class="text-red-500 text-sm p-4">Failed to load</p>'; }
 }
 
