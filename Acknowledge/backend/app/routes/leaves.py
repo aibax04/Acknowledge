@@ -116,7 +116,8 @@ def _monthly_wallet_accrual_months(joining: date, wallet_year: int, as_of: date)
         month_start = date(wallet_year, m, 1)
         if month_start > as_of_cap:
             break
-        if joining <= month_start:
+        # Use month-level comparison (matches credit service: joined any time in the month counts)
+        if (joining.year, joining.month) <= (wallet_year, m):
             n += 1
     return n
 
