@@ -1080,7 +1080,7 @@ async function loadWorkforce() {
                 const onProbation = user.is_on_probation || false;
                 const isActive = user.is_active !== false;
                 const tr = document.createElement('tr');
-                tr.className = "hover:bg-gray-50 transition-colors group" + (!isActive ? " opacity-60" : "");
+                tr.className = "transition-colors group" + (!isActive ? " bg-red-50/30 hover:bg-red-50/50" : " hover:bg-gray-50");
                 tr.innerHTML = `
                     <td class="px-6 py-4">
                         <div class="flex items-center flex-wrap gap-2">

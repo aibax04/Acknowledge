@@ -9,8 +9,8 @@ logger = logging.getLogger(__name__)
 resend.api_key = os.getenv("RESEND_API_KEY")
 
 _EMAIL_FROM = os.getenv("EMAIL_FROM", "Acknowledge <notifications@resend.dev>")
-# Optional single company-wide address that always gets notified (e.g. hr@company.com)
-_COMPANY_NOTIFY_EMAIL = os.getenv("COMPANY_NOTIFY_EMAIL", "")
+# Comma-separated list of addresses that receive leave notifications
+_NOTIFY_EMAILS = [e.strip() for e in os.getenv("COMPANY_NOTIFY_EMAIL", "").split(",") if e.strip()]
 
 
 def _leave_labels(leave_request, custom_policy_title: str | None) -> tuple[str, str]:
@@ -130,11 +130,11 @@ async def send_leave_notification(
         logger.warning("RESEND_API_KEY not set — email notification skipped")
         return
 
-    if not _COMPANY_NOTIFY_EMAIL:
+    if not _NOTIFY_EMAILS:
         logger.warning("COMPANY_NOTIFY_EMAIL not set — leave notification skipped")
         return
 
-    recipients = [_COMPANY_NOTIFY_EMAIL]
+    recipients = _NOTIFY_EMAILS
 
     leave_label, days_label = _leave_labels(leave_request, custom_policy_title)
 
