@@ -34,9 +34,22 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
     <style>
         /* Quill editor styling */
-        #policy-quill-editor .ql-editor { min-height: 280px; font-size: 14px; font-family: 'Inter', sans-serif; }
-        #policy-quill-editor .ql-toolbar { border-radius: 0.75rem 0.75rem 0 0; border-color: #d1d5db; }
-        #policy-quill-editor .ql-container { border-radius: 0 0 0.75rem 0.75rem; border-color: #d1d5db; }
+        #policy-quill-editor .ql-editor {
+            min-height: 280px;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+        }
+
+        #policy-quill-editor .ql-toolbar {
+            border-radius: 0.75rem 0.75rem 0 0;
+            border-color: #d1d5db;
+        }
+
+        #policy-quill-editor .ql-container {
+            border-radius: 0 0 0.75rem 0.75rem;
+            border-color: #d1d5db;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
             background: #f9fafb;
@@ -99,7 +112,8 @@
                             d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                     </svg>
                     Pending Approvals
-                    <span id="pending-approvals-badge" class="hidden ml-auto bg-amber-500 text-white text-xs font-bold rounded-full px-2 py-0.5"></span>
+                    <span id="pending-approvals-badge"
+                        class="hidden ml-auto bg-amber-500 text-white text-xs font-bold rounded-full px-2 py-0.5"></span>
                 </button>
                 <button onclick="switchTab('compliance')" id="nav-compliance"
                     class="w-full flex items-center px-4 py-3 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-lg font-medium transition-colors text-left">
@@ -151,34 +165,40 @@
                     <button onclick="toggleLeavesMenu()"
                         class="w-full flex items-center justify-between px-4 py-3 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-lg font-medium transition-colors text-left">
                         <span class="flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
                             Leave Approvals
                         </span>
-                        <svg id="nav-leaves-chevron" class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        <svg id="nav-leaves-chevron" class="w-4 h-4 transition-transform duration-200" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                         </svg>
                     </button>
                     <div id="nav-leaves-submenu" class="hidden mt-1 ml-3 pl-3 border-l-2 border-gray-100 space-y-0.5">
                         <button onclick="switchTab('leave-approvals')" id="nav-leave-approvals"
                             class="w-full flex items-center gap-2.5 px-3 py-2 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-lg text-sm font-medium transition-colors text-left">
                             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                             </svg>
                             Requests
                         </button>
                         <button onclick="switchTab('leave-tracker')" id="nav-leave-tracker"
                             class="w-full flex items-center gap-2.5 px-3 py-2 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-lg text-sm font-medium transition-colors text-left">
                             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
                             Team Tracker
                         </button>
                         <button onclick="switchTab('leave-policies')" id="nav-leave-policies"
                             class="w-full flex items-center gap-2.5 px-3 py-2 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-lg text-sm font-medium transition-colors text-left">
                             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
                             Leave Policies
                         </button>
@@ -196,8 +216,9 @@
                     class="w-full flex items-center px-4 py-3 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-lg font-medium transition-colors text-left">
                     <svg class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                     Office Locations
                 </button>
@@ -405,17 +426,54 @@
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    User</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Email</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Phone</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Role</th>
+                                <th
+                                    class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Actions</th>
                             </tr>
                         </thead>
                         <tbody id="pending-approvals-body" class="bg-white divide-y divide-gray-200">
-                            <tr><td colspan="5" class="px-6 py-12 text-center text-gray-400">Loading...</td></tr>
+                            <tr>
+                                <td colspan="5" class="px-6 py-12 text-center text-gray-400">Loading...</td>
+                            </tr>
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Approved Users History -->
+                <div class="mt-8">
+                    <div class="flex justify-between items-center mb-3">
+                        <h2 class="text-lg font-medium text-gray-900">Approved Users</h2>
+                        <span id="approved-users-count" class="text-sm text-gray-500"></span>
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="approved-users-body" class="bg-white divide-y divide-gray-200">
+                                <tr><td colspan="6" class="px-6 py-12 text-center text-gray-400">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -500,13 +558,16 @@
                 </div>
 
                 <!-- Pending Manager Approvals -->
-                <div id="pending-managers-section" class="bg-white border border-amber-100 rounded-xl shadow-sm overflow-hidden">
+                <div id="pending-managers-section"
+                    class="bg-white border border-amber-100 rounded-xl shadow-sm overflow-hidden">
                     <div class="px-6 py-4 border-b border-amber-50 bg-amber-50/50 flex items-center justify-between">
                         <div>
                             <h3 class="text-base font-semibold text-gray-900">Pending Manager Approvals</h3>
-                            <p class="text-xs text-gray-400 mt-0.5">New managers awaiting your approval to access the platform.</p>
+                            <p class="text-xs text-gray-400 mt-0.5">New managers awaiting your approval to access the
+                                platform.</p>
                         </div>
-                        <span id="pending-managers-badge" class="hidden bg-amber-500 text-white text-xs font-bold rounded-full px-2 py-0.5"></span>
+                        <span id="pending-managers-badge"
+                            class="hidden bg-amber-500 text-white text-xs font-bold rounded-full px-2 py-0.5"></span>
                     </div>
                     <div id="pending-managers-list" class="p-5">
                         <p class="text-gray-300 text-sm text-center py-6">Loading…</p>
@@ -539,8 +600,10 @@
                             </select>
                             <button type="button" id="btn-export-directory" title="Export full directory to Excel"
                                 class="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-700 font-medium inline-flex items-center gap-1.5 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
                                 Export to Excel
                             </button>
@@ -608,10 +671,18 @@
                         <div class="flex items-center gap-2">
                             <select id="att-view-month" onchange="loadEmployeeAttendance()"
                                 class="text-sm border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white">
-                                <option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option>
-                                <option value="4">Apr</option><option value="5">May</option><option value="6">Jun</option>
-                                <option value="7">Jul</option><option value="8">Aug</option><option value="9">Sep</option>
-                                <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
+                                <option value="1">Jan</option>
+                                <option value="2">Feb</option>
+                                <option value="3">Mar</option>
+                                <option value="4">Apr</option>
+                                <option value="5">May</option>
+                                <option value="6">Jun</option>
+                                <option value="7">Jul</option>
+                                <option value="8">Aug</option>
+                                <option value="9">Sep</option>
+                                <option value="10">Oct</option>
+                                <option value="11">Nov</option>
+                                <option value="12">Dec</option>
                             </select>
                             <select id="att-view-year" onchange="loadEmployeeAttendance()"
                                 class="text-sm border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white">
@@ -621,9 +692,12 @@
                     <!-- Employee combobox -->
                     <div class="px-6 py-4 border-b border-gray-100">
                         <div class="relative" id="att-view-employee-combobox">
-                            <div class="flex items-center border border-gray-200 rounded-xl bg-white focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all overflow-hidden shadow-sm">
-                                <svg class="w-4 h-4 text-gray-400 ml-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            <div
+                                class="flex items-center border border-gray-200 rounded-xl bg-white focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all overflow-hidden shadow-sm">
+                                <svg class="w-4 h-4 text-gray-400 ml-3.5 shrink-0" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                 </svg>
                                 <input type="text" id="att-view-employee-search" placeholder="Search employee by name…"
                                     autocomplete="off"
@@ -637,10 +711,13 @@
                                 class="hidden absolute top-full left-0 right-0 mt-1.5 bg-white border border-gray-200 rounded-xl shadow-xl z-30 max-h-64 overflow-y-auto divide-y divide-gray-50">
                             </div>
                         </div>
-                        <div id="att-view-employee-info" class="hidden mt-2 text-xs text-blue-600 bg-blue-50 rounded-lg px-3 py-2"></div>
+                        <div id="att-view-employee-info"
+                            class="hidden mt-2 text-xs text-blue-600 bg-blue-50 rounded-lg px-3 py-2"></div>
                     </div>
                     <!-- Summary stats -->
-                    <div id="att-view-summary" class="hidden px-6 py-4 border-b border-gray-100 flex flex-wrap gap-6 text-sm text-gray-700"></div>
+                    <div id="att-view-summary"
+                        class="hidden px-6 py-4 border-b border-gray-100 flex flex-wrap gap-6 text-sm text-gray-700">
+                    </div>
                     <!-- Daily table -->
                     <div id="att-view-table" class="hidden"></div>
                 </div>
@@ -650,7 +727,8 @@
                     <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                         <div>
                             <h2 class="text-base font-semibold text-gray-900">Download Attendance</h2>
-                            <p class="text-xs text-gray-400 mt-0.5">Export everyone's attendance for a selected month as a clean Excel file.</p>
+                            <p class="text-xs text-gray-400 mt-0.5">Export everyone's attendance for a selected month as
+                                a clean Excel file.</p>
                         </div>
                         <div class="flex items-center gap-3">
                             <select id="att-export-month"
@@ -674,19 +752,28 @@
                             <button onclick="downloadAllAttendance()" id="att-export-btn"
                                 class="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-primary-hover transition-colors shadow-sm whitespace-nowrap">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                                 </svg>
                                 Download Excel
                             </button>
                         </div>
                     </div>
                     <div class="px-6 py-3 bg-gray-50/50 flex flex-wrap gap-6 text-xs text-gray-500">
-                        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-green-100 border border-green-200 inline-block"></span>Present</span>
-                        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-red-100 border border-red-200 inline-block"></span>Absent</span>
-                        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-amber-100 border border-amber-200 inline-block"></span>On Leave</span>
-                        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-purple-100 border border-purple-200 inline-block"></span>Holiday</span>
-                        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-gray-100 border border-gray-200 inline-block"></span>Weekly Off</span>
-                        <span class="ml-auto text-gray-400 italic">Includes Summary sheet + Detailed daily records for all employees</span>
+                        <span class="flex items-center gap-1.5"><span
+                                class="w-3 h-3 rounded-sm bg-green-100 border border-green-200 inline-block"></span>Present</span>
+                        <span class="flex items-center gap-1.5"><span
+                                class="w-3 h-3 rounded-sm bg-red-100 border border-red-200 inline-block"></span>Absent</span>
+                        <span class="flex items-center gap-1.5"><span
+                                class="w-3 h-3 rounded-sm bg-amber-100 border border-amber-200 inline-block"></span>On
+                            Leave</span>
+                        <span class="flex items-center gap-1.5"><span
+                                class="w-3 h-3 rounded-sm bg-purple-100 border border-purple-200 inline-block"></span>Holiday</span>
+                        <span class="flex items-center gap-1.5"><span
+                                class="w-3 h-3 rounded-sm bg-gray-100 border border-gray-200 inline-block"></span>Weekly
+                            Off</span>
+                        <span class="ml-auto text-gray-400 italic">Includes Summary sheet + Detailed daily records for
+                            all employees</span>
                     </div>
                 </div>
 
@@ -757,20 +844,31 @@
                     <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
                         <div>
                             <h2 class="text-base font-semibold text-gray-900">Leave Approvals</h2>
-                            <p class="text-xs text-gray-400 mt-0.5">Review and approve or deny pending leave requests.</p>
+                            <p class="text-xs text-gray-400 mt-0.5">Review and approve or deny pending leave requests.
+                            </p>
                         </div>
-                        <span id="pending-leaves-count-badge" class="hidden text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full"></span>
+                        <span id="pending-leaves-count-badge"
+                            class="hidden text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full"></span>
                     </div>
                     <!-- Filters -->
                     <div class="px-5 py-3 border-b border-gray-100 bg-gray-50/40 flex flex-wrap items-center gap-3">
-                        <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Filter by month:</span>
+                        <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Filter by
+                            month:</span>
                         <select id="leaves-month-pending"
                             class="text-sm border border-gray-200 rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white">
                             <option value="">All months</option>
-                            <option value="1">January</option><option value="2">February</option><option value="3">March</option>
-                            <option value="4">April</option><option value="5">May</option><option value="6">June</option>
-                            <option value="7">July</option><option value="8">August</option><option value="9">September</option>
-                            <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+                            <option value="1">January</option>
+                            <option value="2">February</option>
+                            <option value="3">March</option>
+                            <option value="4">April</option>
+                            <option value="5">May</option>
+                            <option value="6">June</option>
+                            <option value="7">July</option>
+                            <option value="8">August</option>
+                            <option value="9">September</option>
+                            <option value="10">October</option>
+                            <option value="11">November</option>
+                            <option value="12">December</option>
                         </select>
                         <select id="leaves-year-pending"
                             class="text-sm border border-gray-200 rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white">
@@ -787,7 +885,8 @@
                         <button onclick="loadPendingLeaves()"
                             class="bg-primary text-white text-sm font-semibold px-4 py-1.5 rounded-lg hover:bg-primary-hover transition-colors">Apply</button>
                         <button onclick="resetApprovalsFilter()"
-                            class="text-sm text-gray-500 hover:text-gray-700 px-2 py-1.5 transition-colors">Show all</button>
+                            class="text-sm text-gray-500 hover:text-gray-700 px-2 py-1.5 transition-colors">Show
+                            all</button>
                     </div>
                     <div id="pending-leaves-list">
                         <p class="text-center text-gray-300 py-8 text-sm">Loading…</p>
@@ -806,10 +905,18 @@
                         <div class="flex items-center gap-2">
                             <select id="tracker-month-select" onchange="loadEmployeeLeaveData()"
                                 class="text-sm border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white">
-                                <option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option>
-                                <option value="4">Apr</option><option value="5">May</option><option value="6">Jun</option>
-                                <option value="7">Jul</option><option value="8">Aug</option><option value="9">Sep</option>
-                                <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
+                                <option value="1">Jan</option>
+                                <option value="2">Feb</option>
+                                <option value="3">Mar</option>
+                                <option value="4">Apr</option>
+                                <option value="5">May</option>
+                                <option value="6">Jun</option>
+                                <option value="7">Jul</option>
+                                <option value="8">Aug</option>
+                                <option value="9">Sep</option>
+                                <option value="10">Oct</option>
+                                <option value="11">Nov</option>
+                                <option value="12">Dec</option>
                             </select>
                             <select id="tracker-year-select" onchange="loadEmployeeLeaveData()"
                                 class="text-sm border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white">
@@ -820,12 +927,15 @@
                     <!-- Employee search combobox -->
                     <div class="px-6 py-4 border-b border-gray-100">
                         <div class="relative" id="team-leave-balance-combobox">
-                            <div class="flex items-center border border-gray-200 rounded-xl bg-white focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all overflow-hidden shadow-sm">
-                                <svg class="w-4 h-4 text-gray-400 ml-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            <div
+                                class="flex items-center border border-gray-200 rounded-xl bg-white focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all overflow-hidden shadow-sm">
+                                <svg class="w-4 h-4 text-gray-400 ml-3.5 shrink-0" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                 </svg>
-                                <input type="text" id="team-leave-balance-search" placeholder="Search employee by name or role…"
-                                    autocomplete="off"
+                                <input type="text" id="team-leave-balance-search"
+                                    placeholder="Search employee by name or role…" autocomplete="off"
                                     class="flex-1 px-3 py-2.5 text-sm outline-none bg-transparent placeholder-gray-400">
                                 <button type="button" id="team-leave-balance-clear"
                                     class="hidden p-2 mr-1 text-gray-400 hover:text-gray-600 rounded-lg transition-colors text-lg leading-none"
@@ -836,7 +946,8 @@
                                 class="hidden absolute top-full left-0 right-0 mt-1.5 bg-white border border-gray-200 rounded-xl shadow-xl z-30 max-h-64 overflow-y-auto divide-y divide-gray-50">
                             </div>
                         </div>
-                        <div id="tracker-employee-info" class="hidden mt-2 text-xs text-blue-600 bg-blue-50 rounded-lg px-3 py-2"></div>
+                        <div id="tracker-employee-info"
+                            class="hidden mt-2 text-xs text-blue-600 bg-blue-50 rounded-lg px-3 py-2"></div>
                     </div>
 
                     <!-- Balance cards -->
@@ -855,11 +966,14 @@
                 </div>
 
                 <!-- Team leave tracker (all employees list) -->
-                <div class="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden" id="team-leave-tracker-section">
-                    <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/30 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                <div class="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden"
+                    id="team-leave-tracker-section">
+                    <div
+                        class="px-6 py-4 border-b border-gray-100 bg-gray-50/30 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                         <div>
                             <h3 class="text-base font-semibold text-gray-900">Team Leave Tracker</h3>
-                            <p class="text-xs text-gray-500 mt-0.5">View and search through everyone's recorded leaves.</p>
+                            <p class="text-xs text-gray-500 mt-0.5">View and search through everyone's recorded leaves.
+                            </p>
                         </div>
                         <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                             <select id="team-leave-status-filter" onchange="applyTeamLeaveFilter()"
@@ -880,24 +994,28 @@
 
             <!-- TAB: LEAVE POLICIES -->
             <div id="view-leave-policies" class="hidden animate-fade-in">
-                <div id="custom-leave-policies-section" class="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
+                <div id="custom-leave-policies-section"
+                    class="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
                     <div class="px-5 py-4 border-b border-gray-100 flex justify-between items-center">
                         <div>
                             <h3 class="text-base font-semibold text-gray-900">Leave Policies</h3>
-                            <p class="text-xs text-gray-400 mt-0.5">Create and manage custom leave types. You approve all applications under these policies.</p>
+                            <p class="text-xs text-gray-400 mt-0.5">Create and manage custom leave types. You approve
+                                all applications under these policies.</p>
                         </div>
                         <div class="flex items-center gap-2">
                             <button type="button" onclick="openAdjustLeaveModal()"
                                 class="bg-amber-500 text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-amber-600 transition-colors shadow-sm flex items-center gap-1.5">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                                 </svg>
                                 Adjust Leave
                             </button>
                             <button type="button" onclick="openCreateCustomPolicyModal()"
                                 class="bg-primary text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-primary-hover transition-colors shadow-sm flex items-center gap-1.5">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 4v16m8-8H4" />
                                 </svg>
                                 New Policy
                             </button>
@@ -1001,7 +1119,8 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <h2 class="text-lg font-semibold text-gray-900">Office Locations</h2>
-                        <p class="text-sm text-gray-500 mt-0.5">Employees & managers can only clock in/out within 50m of these locations.</p>
+                        <p class="text-sm text-gray-500 mt-0.5">Employees & managers can only clock in/out within 50m of
+                            these locations.</p>
                     </div>
                 </div>
 
@@ -1015,19 +1134,25 @@
                                 oninput="debounceLocSearch()" autocomplete="off">
                             <div id="loc-search-spinner" class="hidden absolute right-2 top-2.5">
                                 <svg class="w-4 h-4 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                        stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
                                 </svg>
                             </div>
                         </div>
                         <button onclick="useCurrentLocation()"
                             class="flex items-center gap-1.5 px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 whitespace-nowrap">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
                             Use my location
                         </button>
                     </div>
                     <!-- Dropdown results -->
-                    <div id="loc-search-results" class="hidden mt-1 border border-gray-200 rounded-lg shadow-lg bg-white max-h-48 overflow-y-auto divide-y divide-gray-50 text-sm z-20 relative"></div>
+                    <div id="loc-search-results"
+                        class="hidden mt-1 border border-gray-200 rounded-lg shadow-lg bg-white max-h-48 overflow-y-auto divide-y divide-gray-50 text-sm z-20 relative">
+                    </div>
 
                     <!-- Selected location preview -->
                     <div id="loc-selected-preview" class="hidden mt-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
@@ -1037,7 +1162,8 @@
                                 <p class="text-xs text-gray-500 mt-0.5" id="loc-preview-addr"></p>
                                 <p class="text-xs text-gray-400 mt-0.5" id="loc-preview-coords"></p>
                             </div>
-                            <button onclick="clearLocSelection()" class="text-gray-400 hover:text-gray-600 text-lg leading-none flex-shrink-0">&times;</button>
+                            <button onclick="clearLocSelection()"
+                                class="text-gray-400 hover:text-gray-600 text-lg leading-none flex-shrink-0">&times;</button>
                         </div>
                         <div class="flex items-center gap-3 mt-3">
                             <div class="flex-1">
@@ -1071,7 +1197,8 @@
                 <div class="flex items-center justify-between">
                     <h2 class="text-lg font-semibold text-gray-900">Company Holidays</h2>
                     <button onclick="openAddHolidayModal()"
-                        class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors shadow-sm">+ Add Holiday</button>
+                        class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors shadow-sm">+
+                        Add Holiday</button>
                 </div>
                 <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
                     <div id="holidays-list"></div>
@@ -1427,13 +1554,23 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Assign To</label>
                     <div class="relative" id="task-assignee-combobox">
-                        <div class="flex items-center border border-gray-300 rounded-xl bg-white focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all overflow-hidden">
-                            <svg class="w-4 h-4 text-gray-400 ml-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                            <input type="text" id="task-assignee-search" placeholder="Search person…" autocomplete="off" class="flex-1 px-3 py-2.5 text-sm outline-none bg-transparent placeholder-gray-400">
-                            <button type="button" id="task-assignee-clear" class="hidden p-1.5 mr-1 text-gray-400 hover:text-gray-600 rounded-lg text-lg leading-none" onclick="if(window._taskAssigneeCfg)_resetCombobox(window._taskAssigneeCfg)">&times;</button>
+                        <div
+                            class="flex items-center border border-gray-300 rounded-xl bg-white focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all overflow-hidden">
+                            <svg class="w-4 h-4 text-gray-400 ml-3 shrink-0" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            <input type="text" id="task-assignee-search" placeholder="Search person…" autocomplete="off"
+                                class="flex-1 px-3 py-2.5 text-sm outline-none bg-transparent placeholder-gray-400">
+                            <button type="button" id="task-assignee-clear"
+                                class="hidden p-1.5 mr-1 text-gray-400 hover:text-gray-600 rounded-lg text-lg leading-none"
+                                onclick="if(window._taskAssigneeCfg)_resetCombobox(window._taskAssigneeCfg)">&times;</button>
                         </div>
                         <input type="hidden" id="task-assignee">
-                        <div id="task-assignee-dropdown" class="hidden absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-56 overflow-y-auto divide-y divide-gray-50"></div>
+                        <div id="task-assignee-dropdown"
+                            class="hidden absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-56 overflow-y-auto divide-y divide-gray-50">
+                        </div>
                     </div>
                 </div>
                 <div>
@@ -1600,7 +1737,8 @@
                 <!-- Header -->
                 <div class="bg-gradient-to-r from-primary to-primary-hover px-6 py-4 flex items-center justify-between">
                     <div>
-                        <h3 class="text-base font-bold text-white" id="create-custom-policy-modal-title">Create Custom Leave Policy</h3>
+                        <h3 class="text-base font-bold text-white" id="create-custom-policy-modal-title">Create Custom
+                            Leave Policy</h3>
                         <p class="text-xs text-white/70 mt-0.5">Applications under this policy will be approved by you
                         </p>
                     </div>
@@ -1660,16 +1798,19 @@
                                 <input type="number" id="custom-policy-max-days-per-month" min="0.01" step="0.01"
                                     class="w-28 border border-gray-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
                                     placeholder="Optional">
-                                <span class="text-xs text-gray-500">optional; empty = no monthly cap · up to 2 decimals</span>
+                                <span class="text-xs text-gray-500">optional; empty = no monthly cap · up to 2
+                                    decimals</span>
                             </div>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Monthly allowance (wallet)</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Monthly allowance
+                                (wallet)</label>
                             <div class="flex items-center gap-2">
                                 <input type="number" id="custom-policy-monthly-allowance" min="0.01" step="0.01"
                                     class="w-28 border border-gray-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
                                     placeholder="e.g. 1 or 1.5">
-                                <span class="text-xs text-gray-500">days per month; unused carries over · up to 2 decimals</span>
+                                <span class="text-xs text-gray-500">days per month; unused carries over · up to 2
+                                    decimals</span>
                             </div>
                         </div>
 
@@ -1776,7 +1917,8 @@
                         class="px-5 py-2 text-sm font-medium text-gray-600 hover:bg-gray-200 rounded-lg transition-colors">
                         Cancel
                     </button>
-                    <button type="button" id="create-custom-policy-submit-btn" onclick="submitCreateOrUpdateCustomPolicy()"
+                    <button type="button" id="create-custom-policy-submit-btn"
+                        onclick="submitCreateOrUpdateCustomPolicy()"
                         class="px-5 py-2 text-sm font-semibold bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors shadow-sm">
                         Create Policy
                     </button>
@@ -1796,52 +1938,78 @@
                 <p class="text-xs text-gray-500 mb-4">Add or deduct days for a team member.</p>
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Team member <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Team member <span
+                                class="text-red-500">*</span></label>
                         <div class="relative" id="adjust-leave-user-combobox">
-                            <div class="flex items-center border border-gray-200 rounded-xl bg-white focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all overflow-hidden shadow-sm">
-                                <svg class="w-4 h-4 text-gray-400 ml-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                                <input type="text" id="adjust-leave-user-search" placeholder="Search team member…" autocomplete="off" class="flex-1 px-3 py-2 text-sm outline-none bg-transparent placeholder-gray-400">
-                                <button type="button" id="adjust-leave-user-clear" class="hidden p-1.5 mr-1 text-gray-400 hover:text-gray-600 rounded-lg text-lg leading-none" onclick="if(window._adjustLeaveComboboxCfg)_resetCombobox(window._adjustLeaveComboboxCfg)">&times;</button>
+                            <div
+                                class="flex items-center border border-gray-200 rounded-xl bg-white focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all overflow-hidden shadow-sm">
+                                <svg class="w-4 h-4 text-gray-400 ml-3 shrink-0" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                                <input type="text" id="adjust-leave-user-search" placeholder="Search team member…"
+                                    autocomplete="off"
+                                    class="flex-1 px-3 py-2 text-sm outline-none bg-transparent placeholder-gray-400">
+                                <button type="button" id="adjust-leave-user-clear"
+                                    class="hidden p-1.5 mr-1 text-gray-400 hover:text-gray-600 rounded-lg text-lg leading-none"
+                                    onclick="if(window._adjustLeaveComboboxCfg)_resetCombobox(window._adjustLeaveComboboxCfg)">&times;</button>
                             </div>
                             <input type="hidden" id="adjust-leave-user">
-                            <div id="adjust-leave-user-dropdown" class="hidden absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-56 overflow-y-auto divide-y divide-gray-50"></div>
+                            <div id="adjust-leave-user-dropdown"
+                                class="hidden absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-56 overflow-y-auto divide-y divide-gray-50">
+                            </div>
                         </div>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Year</label>
-                        <input type="number" id="adjust-leave-year" min="2020" max="2030" value="" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" placeholder="e.g. 2025">
+                        <input type="number" id="adjust-leave-year" min="2020" max="2030" value=""
+                            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                            placeholder="e.g. 2025">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Leave type <span class="text-red-500">*</span></label>
-                        <select id="adjust-leave-type" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Leave type <span
+                                class="text-red-500">*</span></label>
+                        <select id="adjust-leave-type"
+                            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary">
                             <option value="">Select...</option>
                         </select>
                     </div>
                     <!-- Live balance preview -->
-                    <div id="adjust-leave-balance-preview" class="hidden rounded-xl bg-gray-50 border border-gray-100 p-3.5 space-y-1.5">
+                    <div id="adjust-leave-balance-preview"
+                        class="hidden rounded-xl bg-gray-50 border border-gray-100 p-3.5 space-y-1.5">
                         <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Current balance</p>
                         <div id="adjust-current-balance" class="text-sm text-gray-700">—</div>
                         <p id="adjust-balance-detail" class="text-[10px] text-gray-400"></p>
                         <div class="border-t border-gray-100 pt-1.5 mt-1.5">
-                            <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">After adjustment</p>
+                            <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">After adjustment
+                            </p>
                             <div id="adjust-after-balance" class="text-sm text-gray-700">—</div>
                         </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Adjustment (days) <span class="text-red-500">*</span></label>
-                        <input type="number" id="adjust-leave-days" step="0.01" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" placeholder="e.g. 2 or -1 or 1.25">
-                        <p class="text-xs text-gray-500 mt-0.5">Positive = add days, negative = deduct. Supports up to 2 decimal places.</p>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Adjustment (days) <span
+                                class="text-red-500">*</span></label>
+                        <input type="number" id="adjust-leave-days" step="0.01"
+                            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                            placeholder="e.g. 2 or -1 or 1.25">
+                        <p class="text-xs text-gray-500 mt-0.5">Positive = add days, negative = deduct. Supports up to 2
+                            decimal places.</p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Reason</label>
-                        <input type="text" id="adjust-leave-reason" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" placeholder="e.g. One-time grant">
+                        <input type="text" id="adjust-leave-reason"
+                            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                            placeholder="e.g. One-time grant">
                     </div>
                 </div>
                 <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
-                    <button type="button" onclick="document.getElementById('adjust-leave-modal').classList.add('hidden')"
+                    <button type="button"
+                        onclick="document.getElementById('adjust-leave-modal').classList.add('hidden')"
                         class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
                     <button type="button" onclick="submitLeaveAdjustment()"
-                        class="px-4 py-2 text-sm font-semibold bg-amber-500 text-white rounded-lg hover:bg-amber-600 shadow-sm">Apply adjustment</button>
+                        class="px-4 py-2 text-sm font-semibold bg-amber-500 text-white rounded-lg hover:bg-amber-600 shadow-sm">Apply
+                        adjustment</button>
                 </div>
             </div>
         </div>
@@ -1934,7 +2102,8 @@
         <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 flex flex-col max-h-[80vh]">
             <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
                 <h3 id="assign-loc-title" class="text-base font-semibold text-gray-900">Assign Location</h3>
-                <button onclick="closeAssignModal()" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+                <button onclick="closeAssignModal()"
+                    class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
             </div>
             <div class="flex items-center gap-2 px-5 py-2 border-b border-gray-50">
                 <button onclick="selectAllAssign()" class="text-xs text-emerald-600 hover:underline">Select all</button>
@@ -1943,8 +2112,10 @@
             </div>
             <div id="assign-loc-list" class="flex-1 overflow-y-auto px-3 py-2"></div>
             <div class="flex justify-end gap-2 px-5 py-4 border-t border-gray-100">
-                <button onclick="closeAssignModal()" class="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
-                <button onclick="saveAssignModal()" class="px-4 py-2 text-sm text-white bg-emerald-600 rounded-lg hover:bg-emerald-700">Save</button>
+                <button onclick="closeAssignModal()"
+                    class="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
+                <button onclick="saveAssignModal()"
+                    class="px-4 py-2 text-sm text-white bg-emerald-600 rounded-lg hover:bg-emerald-700">Save</button>
             </div>
         </div>
     </div>
@@ -1954,25 +2125,34 @@
         <div class="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4">
             <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
                 <h3 class="text-base font-semibold text-gray-900">Edit Location</h3>
-                <button onclick="closeEditLocModal()" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+                <button onclick="closeEditLocModal()"
+                    class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
             </div>
             <div class="px-5 py-4 space-y-4">
                 <div>
                     <label class="block text-xs font-medium text-gray-600 mb-1">Name</label>
-                    <input id="edit-loc-name" type="text" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" placeholder="Location name">
+                    <input id="edit-loc-name" type="text"
+                        class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                        placeholder="Location name">
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-600 mb-1">Address</label>
-                    <textarea id="edit-loc-address" rows="2" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" placeholder="Address"></textarea>
+                    <textarea id="edit-loc-address" rows="2"
+                        class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                        placeholder="Address"></textarea>
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-600 mb-1">Radius (meters)</label>
-                    <input id="edit-loc-radius" type="number" min="10" max="5000" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" placeholder="50">
+                    <input id="edit-loc-radius" type="number" min="10" max="5000"
+                        class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                        placeholder="50">
                 </div>
             </div>
             <div class="flex justify-end gap-2 px-5 py-4 border-t border-gray-100">
-                <button onclick="closeEditLocModal()" class="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
-                <button onclick="saveEditLocModal()" class="px-4 py-2 text-sm text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">Save</button>
+                <button onclick="closeEditLocModal()"
+                    class="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
+                <button onclick="saveEditLocModal()"
+                    class="px-4 py-2 text-sm text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">Save</button>
             </div>
         </div>
     </div>
@@ -2019,26 +2199,34 @@
     <!-- Add Holiday Modal -->
     <div id="add-holiday-modal" class="hidden fixed inset-0 z-[100] overflow-y-auto" aria-modal="true">
         <div class="flex min-h-full items-center justify-center p-4">
-            <div class="fixed inset-0 bg-black/40" onclick="document.getElementById('add-holiday-modal').classList.add('hidden')"></div>
+            <div class="fixed inset-0 bg-black/40"
+                onclick="document.getElementById('add-holiday-modal').classList.add('hidden')"></div>
             <div class="relative bg-white rounded-xl shadow-lg max-w-md w-full p-6">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4">Add Holiday</h3>
                 <div class="space-y-4">
                     <div><label class="block text-sm font-medium text-gray-700 mb-1">Holiday Name</label>
-                        <input type="text" id="holiday-title" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="e.g. Diwali"></div>
+                        <input type="text" id="holiday-title"
+                            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                            placeholder="e.g. Diwali">
+                    </div>
                     <div><label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                        <input type="date" id="holiday-date" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+                        <input type="date" id="holiday-date"
+                            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                    </div>
                     <div><label class="block text-sm font-medium text-gray-700 mb-1">Office</label>
                         <select id="holiday-office" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
                             <option value="both">Both Offices</option>
                             <option value="panscience">PanScience</option>
                             <option value="eigen">Igen</option>
-                        </select></div>
+                        </select>
+                    </div>
                 </div>
                 <div class="flex justify-end gap-2 mt-4">
                     <button onclick="document.getElementById('add-holiday-modal').classList.add('hidden')"
                         class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
                     <button onclick="submitHoliday()"
-                        class="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary-hover">Add Holiday</button>
+                        class="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary-hover">Add
+                        Holiday</button>
                 </div>
             </div>
         </div>
@@ -2048,12 +2236,14 @@
         <div class="flex min-h-full items-center justify-center p-4">
             <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity"
                 onclick="document.getElementById('leave-ledger-modal').classList.add('hidden')"></div>
-            <div class="relative bg-white rounded-[2rem] shadow-2xl max-w-2xl w-full p-8 max-h-[85vh] overflow-hidden flex flex-col animate-fade-in border border-gray-100/50">
+            <div
+                class="relative bg-white rounded-[2rem] shadow-2xl max-w-2xl w-full p-8 max-h-[85vh] overflow-hidden flex flex-col animate-fade-in border border-gray-100/50">
                 <div class="flex items-center justify-between mb-6">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-2xl bg-gray-100 flex items-center justify-center">
                             <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                             </svg>
                         </div>
                         <h3 class="text-xl font-bold text-gray-900 tracking-tight">Leave Balance Ledger</h3>
@@ -2061,7 +2251,8 @@
                     <button onclick="document.getElementById('leave-ledger-modal').classList.add('hidden')"
                         class="text-gray-400 hover:text-gray-600 transition-colors">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                 </div>

@@ -444,6 +444,33 @@ async def reject_user(user_id: int, db: AsyncSession = Depends(get_db), current_
     await db.commit()
     return {"message": "User rejected successfully"}
 
+@router.get("/approved-users", response_model=list[UserResponse])
+async def get_approved_users(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from sqlalchemy.future import select
+    if current_user.role not in (UserRole.MANAGER, UserRole.SENIOR):
+        raise HTTPException(status_code=403, detail="Access denied")
+    result = await db.execute(select(User).filter(
+        User.is_pending_approval == False,
+        User.is_active == True,
+        User.id != current_user.id,
+        User.role != UserRole.SENIOR
+    ))
+    return result.scalars().all()
+
+@router.post("/users/{user_id}/revoke")
+async def revoke_user(user_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from sqlalchemy.future import select
+    if current_user.role not in (UserRole.MANAGER, UserRole.SENIOR):
+        raise HTTPException(status_code=403, detail="Access denied")
+    result = await db.execute(select(User).filter(User.id == user_id))
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.is_pending_approval = True
+    db.add(user)
+    await db.commit()
+    return {"message": "User approval revoked successfully"}
+
 @router.get("/all-users", response_model=list[UserResponse])
 async def get_all_users(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     from sqlalchemy.future import select

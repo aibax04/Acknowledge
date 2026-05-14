@@ -2353,24 +2353,34 @@ async function loadEmployeeAttendance() {
 
 async function loadSeniorPendingApprovals() {
     const tbody = document.getElementById('pending-approvals-body');
+    const approvedTbody = document.getElementById('approved-users-body');
     if (!tbody) return;
+    
     tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400">Loading...</td></tr>';
+    if (approvedTbody) approvedTbody.innerHTML = '<tr><td colspan="6" class="px-6 py-12 text-center text-gray-400">Loading...</td></tr>';
+    
     try {
-        const users = await Api.get('/auth/pending-users');
-        renderSeniorPendingApprovals(users);
+        const [pendingUsers, approvedUsers] = await Promise.all([
+            Api.get('/auth/pending-users'),
+            Api.get('/auth/approved-users')
+        ]);
+        
+        renderSeniorPendingApprovals(pendingUsers);
+        renderApprovedUsers(approvedUsers);
+        
         // Update badge
         const badge = document.getElementById('pending-approvals-badge');
         if (badge) {
-            if (users.length > 0) {
-                badge.textContent = users.length;
+            if (pendingUsers.length > 0) {
+                badge.textContent = pendingUsers.length;
                 badge.classList.remove('hidden');
             } else {
                 badge.classList.add('hidden');
             }
         }
     } catch (e) {
-        console.error('Failed to load pending users:', e);
-        tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-red-400">Failed to load pending users</td></tr>';
+        console.error('Failed to load users:', e);
+        tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-red-400">Failed to load users</td></tr>';
     }
 }
 
@@ -2448,3 +2458,79 @@ async function rejectSeniorPendingUser(userId) {
         alert('Reject error: ' + e.message);
     }
 }
+
+function renderApprovedUsers(users) {
+    const tbody = document.getElementById('approved-users-body');
+    const countEl = document.getElementById('approved-users-count');
+    if (!tbody) return;
+    
+    if (countEl) countEl.textContent = users.length + ' users approved';
+    
+    if (!users || users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-12 text-center text-gray-400">No approved users found</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = users.map(u => {
+        const initials = (u.full_name || '').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || '??';
+        const roleName = u.role === 'employee' ? 'Employee' : u.role === 'manager' ? 'Manager' : u.role === 'intern' ? 'Intern' : u.role === 'senior' ? 'Senior' : u.role;
+        return `<tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-6 py-4">
+                <div class="flex items-center">
+                    <div class="w-9 h-9 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs mr-3 flex-shrink-0">${initials}</div>
+                    <span class="text-sm font-medium text-gray-900">${escapeHtml(u.full_name)}</span>
+                </div>
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-600">${escapeHtml(u.email)}</td>
+            <td class="px-6 py-4 text-sm text-gray-600">${escapeHtml(u.phone || '—')}</td>
+            <td class="px-6 py-4"><span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-gray-100 text-gray-700 capitalize">${roleName}</span></td>
+            <td class="px-6 py-4"><span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-700">Approved</span></td>
+            <td class="px-6 py-4 text-right">
+                <button data-userid="${u.id}" data-username="${escapeHtml(u.full_name).replace(/"/g, '&quot;')}" onclick="handleRevokeClick(this)" class="text-xs font-bold text-red-500 hover:text-red-700 uppercase hover:underline">Revoke Access</button>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+async function handleRevokeClick(btn) {
+    const userId = btn.getAttribute('data-userid');
+    const userName = btn.getAttribute('data-username');
+    
+    // Prevent double clicks and show loading state
+    const originalText = btn.innerHTML;
+    btn.innerHTML = 'Revoking...';
+    btn.disabled = true;
+    btn.classList.add('opacity-50', 'cursor-not-allowed');
+    
+    await revokeSeniorUser(userId, userName);
+    
+    // The table will re-render if successful, so we only need to restore if it fails
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+}
+
+async function revokeSeniorUser(userId, userName) {
+    try {
+        const url = getApiUrl() + '/auth/users/' + userId + '/revoke';
+        const token = localStorage.getItem('access_token');
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': token ? 'Bearer ' + token : ''
+            },
+            body: JSON.stringify({})
+        });
+        if (!response.ok) {
+            const errBody = await response.text();
+            alert('Revoke failed (HTTP ' + response.status + '): ' + errBody);
+            return;
+        }
+        alert('Access revoked successfully. User is now back in the pending list.');
+        await loadSeniorPendingApprovals();
+    } catch (e) {
+        alert('Revoke error: ' + e.message);
+    }
+}
+
