@@ -15,6 +15,9 @@ from app.schemas.leave_schema import (
 )
 from datetime import datetime, date, timezone, timedelta
 from typing import List, Optional
+import asyncio
+
+from app.services.email_service import send_leave_notification, send_leave_confirmation
 
 router = APIRouter(prefix="/leaves", tags=["leaves"])
 
@@ -604,6 +607,8 @@ async def _apply_leave_impl(req: LeaveApplyRequest, db: AsyncSession, current_us
 
     leave_type = LeaveType(req.leave_type)
 
+    custom_policy_title = None
+
     if leave_type != LeaveType.CUSTOM:
         raise HTTPException(
             status_code=400,
@@ -624,6 +629,7 @@ async def _apply_leave_impl(req: LeaveApplyRequest, db: AsyncSession, current_us
         creator = await db.get(User, policy.created_by_id)
         if not creator or creator.role != UserRole.SENIOR:
             raise HTTPException(status_code=400, detail="Only leaves under policies created by a director are allowed")
+        custom_policy_title = policy.title
         allowed_roles_str = getattr(policy, "allowed_roles", None) or ""
         allowed = [r.strip().lower() for r in allowed_roles_str.split(",") if r.strip()]
         role_obj = getattr(current_user, "role", None)
@@ -873,6 +879,10 @@ async def _apply_leave_impl(req: LeaveApplyRequest, db: AsyncSession, current_us
             status_code=500,
             detail="Failed to save leave request. Please try again or contact support."
         )
+
+    # Fire and forget — notify company inbox and confirm to the employee
+    asyncio.create_task(send_leave_notification(current_user, leave, custom_policy_title))
+    asyncio.create_task(send_leave_confirmation(current_user, leave, custom_policy_title))
 
     return {"message": "Leave request submitted successfully", "id": leave.id, "num_days": num_days_val}
 

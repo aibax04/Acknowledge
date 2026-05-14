@@ -289,6 +289,19 @@ async def startup():
             await conn.execute(text("ALTER TABLE attendance ADD COLUMN IF NOT EXISTS is_remote BOOLEAN NOT NULL DEFAULT FALSE"))
         except Exception:
             pass
+        # User profile extension columns (position, department, contact info)
+        for _col_def in (
+            "position VARCHAR",
+            "department VARCHAR",
+            "phone VARCHAR",
+            "emergency_contact_name VARCHAR",
+            "emergency_contact_number VARCHAR",
+            "address VARCHAR",
+        ):
+            try:
+                await conn.execute(text(f"ALTER TABLE users ADD COLUMN IF NOT EXISTS {_col_def}"))
+            except Exception:
+                pass
         # Add 'custom'/'CUSTOM' to leavetype enum if missing (required for custom leave policies)
         for _val in ("custom", "CUSTOM"):
             try:
