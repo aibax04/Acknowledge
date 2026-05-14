@@ -1,20 +1,45 @@
 import os
-import asyncio
-import resend
 import logging
 from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
-resend.api_key = os.getenv("RESEND_API_KEY")
-
-_EMAIL_FROM = os.getenv("EMAIL_FROM", "Acknowledge <notifications@resend.dev>")
-# Comma-separated list of addresses that receive leave notifications
 _NOTIFY_EMAILS = [e.strip() for e in os.getenv("COMPANY_NOTIFY_EMAIL", "").split(",") if e.strip()]
+
+_fm = None
+
+
+def _get_mailer():
+    global _fm
+    if _fm is not None:
+        return _fm
+    username = os.getenv("MAIL_USERNAME", "")
+    password = os.getenv("MAIL_PASSWORD", "")
+    server = os.getenv("MAIL_SERVER", "")
+    from_addr = os.getenv("MAIL_FROM", username)
+    if not (username and password and server and from_addr):
+        return None
+    try:
+        from fastapi_mail import FastMail, ConnectionConfig
+        conf = ConnectionConfig(
+            MAIL_USERNAME=username,
+            MAIL_PASSWORD=password,
+            MAIL_FROM=from_addr,
+            MAIL_PORT=int(os.getenv("MAIL_PORT", "587")),
+            MAIL_SERVER=server,
+            MAIL_FROM_NAME=os.getenv("MAIL_FROM_NAME", "Acknowledge"),
+            MAIL_STARTTLS=os.getenv("MAIL_STARTTLS", "True").lower() == "true",
+            MAIL_SSL_TLS=os.getenv("MAIL_SSL_TLS", "False").lower() == "true",
+            USE_CREDENTIALS=True,
+            VALIDATE_CERTS=True,
+        )
+        _fm = FastMail(conf)
+    except Exception as e:
+        logger.error("Failed to initialise FastMail: %s", e)
+    return _fm
 
 
 def _leave_labels(leave_request, custom_policy_title: str | None) -> tuple[str, str]:
-    """Return (leave_label, days_label) for use in email templates."""
     if custom_policy_title:
         leave_label = custom_policy_title
     else:
@@ -36,13 +61,14 @@ async def send_leave_confirmation(
     leave_request,
     custom_policy_title: str | None = None,
 ):
-    """Send a submission confirmation email to the employee."""
-    if not resend.api_key:
-        logger.warning("RESEND_API_KEY not set — confirmation email skipped")
+    fm = _get_mailer()
+    if not fm:
+        logger.warning("MAIL_* env vars not configured — confirmation email skipped")
         return
 
-    leave_label, days_label = _leave_labels(leave_request, custom_policy_title)
+    from fastapi_mail import MessageSchema, MessageType
 
+    leave_label, days_label = _leave_labels(leave_request, custom_policy_title)
     subject = f"Leave Request Submitted — {leave_request.start_date} to {leave_request.end_date}"
 
     html_content = f"""
@@ -107,16 +133,15 @@ async def send_leave_confirmation(
 </html>
 """
 
-    params: resend.Emails.SendParams = {
-        "from": _EMAIL_FROM,
-        "to": [applicant.email],
-        "subject": subject,
-        "html": html_content,
-    }
-
+    message = MessageSchema(
+        subject=subject,
+        recipients=[applicant.email],
+        body=html_content,
+        subtype=MessageType.html,
+    )
     try:
-        response = await asyncio.to_thread(resend.Emails.send, params)
-        logger.info("Leave confirmation sent to %s: %s", applicant.email, response)
+        await fm.send_message(message)
+        logger.info("Leave confirmation sent to %s", applicant.email)
     except Exception as e:
         logger.error("Failed to send leave confirmation to %s: %s", applicant.email, e)
 
@@ -126,18 +151,18 @@ async def send_leave_notification(
     leave_request,
     custom_policy_title: str | None = None,
 ):
-    if not resend.api_key:
-        logger.warning("RESEND_API_KEY not set — email notification skipped")
+    fm = _get_mailer()
+    if not fm:
+        logger.warning("MAIL_* env vars not configured — leave notification skipped")
         return
 
     if not _NOTIFY_EMAILS:
         logger.warning("COMPANY_NOTIFY_EMAIL not set — leave notification skipped")
         return
 
-    recipients = _NOTIFY_EMAILS
+    from fastapi_mail import MessageSchema, MessageType
 
     leave_label, days_label = _leave_labels(leave_request, custom_policy_title)
-
     subject = (
         f"Leave Request: {applicant.full_name} "
         f"({leave_request.start_date} → {leave_request.end_date})"
@@ -206,16 +231,14 @@ async def send_leave_notification(
 </html>
 """
 
-    params: resend.Emails.SendParams = {
-        "from": _EMAIL_FROM,
-        "to": recipients,
-        "subject": subject,
-        "html": html_content,
-    }
-
+    message = MessageSchema(
+        subject=subject,
+        recipients=_NOTIFY_EMAILS,
+        body=html_content,
+        subtype=MessageType.html,
+    )
     try:
-        # resend SDK is synchronous — run in thread to avoid blocking the event loop
-        response = await asyncio.to_thread(resend.Emails.send, params)
-        logger.info("Leave notification sent to %d recipient(s): %s", len(recipients), response)
+        await fm.send_message(message)
+        logger.info("Leave notification sent to %d recipient(s)", len(_NOTIFY_EMAILS))
     except Exception as e:
-        logger.error("Failed to send leave notification via Resend: %s", e)
+        logger.error("Failed to send leave notification: %s", e)
