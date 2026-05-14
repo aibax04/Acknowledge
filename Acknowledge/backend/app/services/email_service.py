@@ -4,8 +4,6 @@ from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
-_NOTIFY_EMAILS = [e.strip() for e in os.getenv("COMPANY_NOTIFY_EMAIL", "").split(",") if e.strip()]
-
 _fm = None
 
 
@@ -18,6 +16,7 @@ def _get_mailer():
     server = os.getenv("MAIL_SERVER", "")
     from_addr = os.getenv("MAIL_FROM", username)
     if not (username and password and server and from_addr):
+        print("[email] MAIL_USERNAME / MAIL_PASSWORD / MAIL_SERVER / MAIL_FROM not set — email disabled")
         return None
     try:
         from fastapi_mail import FastMail, ConnectionConfig
@@ -34,8 +33,9 @@ def _get_mailer():
             VALIDATE_CERTS=True,
         )
         _fm = FastMail(conf)
+        print("[email] FastMail initialised OK")
     except Exception as e:
-        logger.error("Failed to initialise FastMail: %s", e)
+        print(f"[email] Failed to initialise FastMail: {e}")
     return _fm
 
 
@@ -61,9 +61,10 @@ async def send_leave_confirmation(
     leave_request,
     custom_policy_title: str | None = None,
 ):
+    print(f"[email] send_leave_confirmation called for {applicant.email}")
     fm = _get_mailer()
     if not fm:
-        logger.warning("MAIL_* env vars not configured — confirmation email skipped")
+        print("[email] No mailer — confirmation email skipped")
         return
 
     from fastapi_mail import MessageSchema, MessageType
@@ -141,9 +142,9 @@ async def send_leave_confirmation(
     )
     try:
         await fm.send_message(message)
-        logger.info("Leave confirmation sent to %s", applicant.email)
+        print(f"[email] Leave confirmation sent to {applicant.email}")
     except Exception as e:
-        logger.error("Failed to send leave confirmation to %s: %s", applicant.email, e)
+        print(f"[email] Failed to send leave confirmation to {applicant.email}: {e}")
 
 
 async def send_leave_notification(
@@ -151,13 +152,15 @@ async def send_leave_notification(
     leave_request,
     custom_policy_title: str | None = None,
 ):
+    print(f"[email] send_leave_notification called for {applicant.email}")
     fm = _get_mailer()
     if not fm:
-        logger.warning("MAIL_* env vars not configured — leave notification skipped")
+        print("[email] No mailer — leave notification skipped")
         return
 
-    if not _NOTIFY_EMAILS:
-        logger.warning("COMPANY_NOTIFY_EMAIL not set — leave notification skipped")
+    notify_emails = [e.strip() for e in os.getenv("COMPANY_NOTIFY_EMAIL", "").split(",") if e.strip()]
+    if not notify_emails:
+        print("[email] COMPANY_NOTIFY_EMAIL not set — leave notification skipped")
         return
 
     from fastapi_mail import MessageSchema, MessageType
@@ -233,12 +236,12 @@ async def send_leave_notification(
 
     message = MessageSchema(
         subject=subject,
-        recipients=_NOTIFY_EMAILS,
+        recipients=notify_emails,
         body=html_content,
         subtype=MessageType.html,
     )
     try:
         await fm.send_message(message)
-        logger.info("Leave notification sent to %d recipient(s)", len(_NOTIFY_EMAILS))
+        print(f"[email] Leave notification sent to {notify_emails}")
     except Exception as e:
-        logger.error("Failed to send leave notification: %s", e)
+        print(f"[email] Failed to send leave notification: {e}")

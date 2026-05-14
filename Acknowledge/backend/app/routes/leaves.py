@@ -1,5 +1,5 @@
 import logging
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import and_, func, extract
@@ -15,7 +15,6 @@ from app.schemas.leave_schema import (
 )
 from datetime import datetime, date, timezone, timedelta
 from typing import List, Optional
-import asyncio
 
 from app.services.email_service import send_leave_notification, send_leave_confirmation
 
@@ -570,6 +569,7 @@ async def get_policy_balance(
 @router.post("/apply")
 async def apply_leave(
     req: LeaveApplyRequest,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -581,7 +581,7 @@ async def apply_leave(
     - Unpaid Leave: Available to all; interns are eligible for unpaid leave only.
     """
     try:
-        return await _apply_leave_impl(req, db, current_user)
+        return await _apply_leave_impl(req, db, current_user, background_tasks)
     except HTTPException:
         raise
     except Exception as e:
@@ -589,7 +589,7 @@ async def apply_leave(
         raise HTTPException(status_code=500, detail="Failed to submit leave. Please try again or contact support.")
 
 
-async def _apply_leave_impl(req: LeaveApplyRequest, db: AsyncSession, current_user: User):
+async def _apply_leave_impl(req: LeaveApplyRequest, db: AsyncSession, current_user: User, background_tasks: BackgroundTasks = None):
     today = date.today()
 
     # Validate dates
@@ -881,8 +881,8 @@ async def _apply_leave_impl(req: LeaveApplyRequest, db: AsyncSession, current_us
         )
 
     # Fire and forget — notify company inbox and confirm to the employee
-    asyncio.create_task(send_leave_notification(current_user, leave, custom_policy_title))
-    asyncio.create_task(send_leave_confirmation(current_user, leave, custom_policy_title))
+    background_tasks.add_task(send_leave_notification, current_user, leave, custom_policy_title)
+    background_tasks.add_task(send_leave_confirmation, current_user, leave, custom_policy_title)
 
     return {"message": "Leave request submitted successfully", "id": leave.id, "num_days": num_days_val}
 
