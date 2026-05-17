@@ -49,6 +49,24 @@ def _months_to_credit(joining: Optional[date], year: int, month: int) -> bool:
     return (joining.year, joining.month) <= (year, month)
 
 
+def _role_str(role) -> str:
+    return str(role.value if hasattr(role, "value") else role).lower()
+
+
+def _custom_policy_covers_standard(policies, role_str: str, standard_title: str) -> bool:
+    """True when a director monthly-allowance policy replaces legacy leave_type credits."""
+    want = standard_title.strip().lower()
+    for policy in policies:
+        if (policy.title or "").strip().lower() != want:
+            continue
+        if not policy.monthly_allowance or float(policy.monthly_allowance) <= 0:
+            continue
+        allowed = [x.strip().lower() for x in (policy.allowed_roles or "").split(",") if x.strip()]
+        if role_str in allowed:
+            return True
+    return False
+
+
 def _resolve_credit_date(user) -> Optional[date]:
     """Resolve the effective date for leave credit eligibility.
 
@@ -99,8 +117,12 @@ async def credit_month(db: AsyncSession, year: int, month: int) -> dict:
         if not _months_to_credit(effective_date, year, month):
             continue
 
-        # Standard EL (non-probation employees/managers/interns)
-        if role in STANDARD_LEAVE_ROLES and not is_probation:
+        role_str = _role_str(role)
+        skip_legacy_el = _custom_policy_covers_standard(policies, role_str, "Earned Leave")
+        skip_legacy_csl = _custom_policy_covers_standard(policies, role_str, "Sick/Casual Leave")
+
+        # Legacy leave_type credits only when no matching custom policy (avoids duplicate rows per month).
+        if role in STANDARD_LEAVE_ROLES and not is_probation and not skip_legacy_el:
             r = await db.execute(text("""
                 INSERT INTO leave_monthly_credits
                     (user_id, year, month, leave_type, custom_policy_id, days_credited)
@@ -110,8 +132,7 @@ async def credit_month(db: AsyncSession, year: int, month: int) -> dict:
             """), {"uid": user.id, "yr": year, "mo": month, "days": EL_MONTHLY})
             el_credited += r.rowcount
 
-        # Standard CSL (all standard roles, including probation)
-        if role in STANDARD_LEAVE_ROLES:
+        if role in STANDARD_LEAVE_ROLES and not skip_legacy_csl:
             r = await db.execute(text("""
                 INSERT INTO leave_monthly_credits
                     (user_id, year, month, leave_type, custom_policy_id, days_credited)
@@ -126,8 +147,7 @@ async def credit_month(db: AsyncSession, year: int, month: int) -> dict:
             if not policy.monthly_allowance or float(policy.monthly_allowance) <= 0:
                 continue
             allowed_roles = [x.strip().lower() for x in (policy.allowed_roles or "").split(",") if x.strip()]
-            user_role_str = str(role.value if hasattr(role, "value") else role).lower()
-            if user_role_str not in allowed_roles:
+            if role_str not in allowed_roles:
                 continue
             if is_probation and not getattr(policy, "allowed_on_probation", True):
                 continue

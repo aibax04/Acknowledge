@@ -20,6 +20,34 @@ from app.services.email_service import send_leave_notification, send_leave_confi
 
 router = APIRouter(prefix="/leaves", tags=["leaves"])
 
+# One-off migration rows that zeroed balances against monthly credits; excluded from math (rows stay in DB).
+_OBSOLETE_RESET_REASON = "reset leaves to zero"
+
+
+def _is_obsolete_reset_adjustment(adj) -> bool:
+    return (getattr(adj, "reason", "") or "").strip().lower() == _OBSOLETE_RESET_REASON
+
+
+def _sum_balance_adjustments(
+    adjustments,
+    *,
+    leave_type: Optional[str] = None,
+    custom_policy_ids: Optional[List[int]] = None,
+) -> float:
+    """Sum adjustment_days for balance, skipping obsolete migration resets."""
+    total = 0.0
+    for a in adjustments:
+        if _is_obsolete_reset_adjustment(a):
+            continue
+        if leave_type is not None and getattr(a, "leave_type", None) != leave_type:
+            continue
+        if custom_policy_ids is not None:
+            pid = getattr(a, "custom_policy_id", None)
+            if pid is None or pid not in custom_policy_ids:
+                continue
+        total += float(getattr(a, "adjustment_days", 0) or 0)
+    return total
+
 
 def count_working_days(start: date, end: date, office: str) -> float:
     """Count working days between two dates (excluding weekends based on office)."""
@@ -180,7 +208,7 @@ async def _compute_wallet_for_policy(
         for l in leaves
     )
     adjustments = await _get_adjustments_for_user_year(db, user_id, year)
-    adj_sum = sum(a.adjustment_days for a in adjustments if a.custom_policy_id is not None and a.custom_policy_id in ids)
+    adj_sum = _sum_balance_adjustments(adjustments, custom_policy_ids=ids)
     wallet = accrued - used + adj_sum
     return max(0.0, round(wallet, 2))
 
@@ -271,8 +299,8 @@ def _standard_balance_manual_override(adjustments: list) -> Optional[dict]:
     ]
     if not marked:
         return None
-    el = sum(float(a.adjustment_days or 0) for a in adjustments if a.leave_type == "earned_leave")
-    csl = sum(float(a.adjustment_days or 0) for a in adjustments if a.leave_type == "casual_sick_leave")
+    el = _sum_balance_adjustments(adjustments, leave_type="earned_leave")
+    csl = _sum_balance_adjustments(adjustments, leave_type="casual_sick_leave")
     return {
         "earned_leave_balance": max(0.0, round(el, 2)),
         "casual_sick_leave_balance": max(0.0, round(csl, 2)),
@@ -316,10 +344,7 @@ async def _compute_policy_balance_for_user(
     )
 
     adjustments = await _get_adjustments_for_user_year(db, user_id, year)
-    adj_sum = sum(
-        a.adjustment_days for a in adjustments
-        if a.custom_policy_id is not None and a.custom_policy_id in policy_ids
-    )
+    adj_sum = _sum_balance_adjustments(adjustments, custom_policy_ids=policy_ids)
 
     monthly_allowance = getattr(policy, "monthly_allowance", None)
     shared_limit = getattr(policy, "shared_annual_limit", None)
@@ -424,8 +449,8 @@ async def get_leave_balance(
 
     # Apply adjustments for standard leave types — preserve decimal precision
     adjustments = await _get_adjustments_for_user_year(db, target_user_id, current_year)
-    el_adj = round(sum(float(a.adjustment_days or 0) for a in adjustments if a.leave_type == "earned_leave"), 2)
-    csl_adj = round(sum(float(a.adjustment_days or 0) for a in adjustments if a.leave_type == "casual_sick_leave"), 2)
+    el_adj = round(_sum_balance_adjustments(adjustments, leave_type="earned_leave"), 2)
+    csl_adj = round(_sum_balance_adjustments(adjustments, leave_type="casual_sick_leave"), 2)
     balance["earned_leave_balance"] = round(max(0.0, balance["earned_leave_balance"] + el_adj), 2)
     balance["casual_sick_leave_balance"] = round(max(0.0, balance["casual_sick_leave_balance"] + csl_adj), 2)
     balance["adjustments"] = [
@@ -806,7 +831,7 @@ async def _apply_leave_impl(req: LeaveApplyRequest, db: AsyncSession, current_us
         balance["earned_leave_balance"] = max(
             0,
             balance["earned_leave_balance"]
-            + sum(a.adjustment_days for a in adjs if a.leave_type == "earned_leave"),
+            + _sum_balance_adjustments(adjs, leave_type="earned_leave"),
         )
         if num_days > balance["earned_leave_balance"]:
             raise HTTPException(
@@ -828,7 +853,7 @@ async def _apply_leave_impl(req: LeaveApplyRequest, db: AsyncSession, current_us
         balance["casual_sick_leave_balance"] = max(
             0,
             balance["casual_sick_leave_balance"]
-            + sum(a.adjustment_days for a in adjs if a.leave_type == "casual_sick_leave"),
+            + _sum_balance_adjustments(adjs, leave_type="casual_sick_leave"),
         )
         if num_days > balance["casual_sick_leave_balance"]:
             raise HTTPException(
