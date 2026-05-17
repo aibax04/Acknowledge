@@ -1831,7 +1831,7 @@ async function reviewLeave(id, status) {
 async function revokeLeave(id) {
     if (!confirm('Revoke this approved leave? The employee\'s balance will be restored.')) return;
     try {
-        await Api.put('/leaves/' + id + '/revoke', {});
+        await Api.post('/leaves/' + id + '/revoke', {});
         if (typeof showToast === 'function') showToast('Leave revoked.', 'success');
         loadPendingLeaves();
         if (typeof loadLeaveBalance === 'function') loadLeaveBalance();

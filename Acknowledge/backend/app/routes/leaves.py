@@ -881,9 +881,8 @@ async def _apply_leave_impl(req: LeaveApplyRequest, db: AsyncSession, current_us
             detail="Failed to save leave request. Please try again or contact support."
         )
 
-    # Fire and forget — notify company inbox and confirm to the employee
+    # Fire and forget — notify company inbox
     background_tasks.add_task(send_leave_notification, current_user, leave, custom_policy_title)
-    background_tasks.add_task(send_leave_confirmation, current_user, leave, custom_policy_title)
 
     return {"message": "Leave request submitted successfully", "id": leave.id, "num_days": num_days_val}
 
