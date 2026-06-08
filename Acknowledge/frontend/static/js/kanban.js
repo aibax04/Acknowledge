@@ -100,6 +100,10 @@
             `</div>`
             : '<span style="font-size:12px;color:#9ca3af;">No members</span>';
 
+        const manageBtnHtml = (typeof openProjectModal === 'function')
+            ? `<button onclick="openProjectModal(${v.id})" style="font-size:12px;font-weight:600;color:#4f46e5;background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;padding:4px 12px;cursor:pointer;transition:background .15s;" onmouseenter="this.style.background='#e0e7ff'" onmouseleave="this.style.background='#eef2ff'">Manage</button>`
+            : '';
+
         const totalTasks = tasks.length;
         const completedTasks = tasks.filter(t => t.status === 'completed').length;
         const progressPct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
@@ -140,6 +144,7 @@
                             </div>
                         </div>
                         ${memberAvatarsHtml}
+                        ${manageBtnHtml}
                     </div>
                 </div>
             </div>

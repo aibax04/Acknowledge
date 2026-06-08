@@ -3,6 +3,7 @@
 
 let selectedUsersToAdd = [];
 let selectedMembersForNotif = [];
+let _currentProjectCreatorId = null;
 
 
 // ========== API FUNCTIONS ==========
@@ -43,6 +44,16 @@ async function deleteProject(projectId) {
         return true;
     } catch (error) {
         console.error('Error deleting project:', error);
+        throw error;
+    }
+}
+
+async function updateProject(projectId, name, description) {
+    try {
+        const response = await Api.put(`/ventures/${projectId}`, { name, description });
+        return response;
+    } catch (error) {
+        console.error('Error updating project:', error);
         throw error;
     }
 }
@@ -288,12 +299,81 @@ async function openProjectModal(projectId) {
         return;
     }
 
+    _currentProjectCreatorId = project.creator ? project.creator.id : null;
+
     document.getElementById('project-modal-id').value = project.id;
     document.getElementById('project-modal-title').textContent = project.name;
     document.getElementById('project-modal-desc').textContent = project.description || 'No description';
 
+    // Reset edit mode to view mode
+    cancelProjectEdit();
+
     renderProjectMembers(project.members);
     showModal(document.getElementById('view-project-modal'));
+}
+
+function enableProjectEdit() {
+    const title = document.getElementById('project-modal-title');
+    const desc = document.getElementById('project-modal-desc');
+    const viewMode = document.getElementById('project-view-mode');
+    const editMode = document.getElementById('project-edit-mode');
+    const editBtn = document.getElementById('edit-project-btn');
+    const saveBtn = document.getElementById('save-project-btn');
+    const cancelEditBtn = document.getElementById('cancel-edit-project-btn');
+
+    if (document.getElementById('project-edit-name')) {
+        document.getElementById('project-edit-name').value = title ? title.textContent : '';
+        const descText = desc ? desc.textContent : '';
+        document.getElementById('project-edit-desc').value = descText === 'No description' ? '' : descText;
+    }
+
+    if (viewMode) viewMode.classList.add('hidden');
+    if (editMode) editMode.classList.remove('hidden');
+    if (editBtn) editBtn.classList.add('hidden');
+    if (saveBtn) saveBtn.classList.remove('hidden');
+    if (cancelEditBtn) cancelEditBtn.classList.remove('hidden');
+}
+
+function cancelProjectEdit() {
+    const viewMode = document.getElementById('project-view-mode');
+    const editMode = document.getElementById('project-edit-mode');
+    const editBtn = document.getElementById('edit-project-btn');
+    const saveBtn = document.getElementById('save-project-btn');
+    const cancelEditBtn = document.getElementById('cancel-edit-project-btn');
+
+    if (viewMode) viewMode.classList.remove('hidden');
+    if (editMode) editMode.classList.add('hidden');
+    if (editBtn) editBtn.classList.remove('hidden');
+    if (saveBtn) saveBtn.classList.add('hidden');
+    if (cancelEditBtn) cancelEditBtn.classList.add('hidden');
+}
+
+async function saveProjectEdit() {
+    const projectId = document.getElementById('project-modal-id').value;
+    const nameEl = document.getElementById('project-edit-name');
+    const descEl = document.getElementById('project-edit-desc');
+    if (!nameEl) return;
+
+    const name = nameEl.value.trim();
+    const description = descEl ? descEl.value.trim() : '';
+
+    if (!name) { showToast('Project name is required', 'error'); return; }
+
+    try {
+        await updateProject(projectId, name, description);
+        const titleEl = document.getElementById('project-modal-title');
+        const descViewEl = document.getElementById('project-modal-desc');
+        if (titleEl) titleEl.textContent = name;
+        if (descViewEl) descViewEl.textContent = description || 'No description';
+        cancelProjectEdit();
+        showToast('Project updated!', 'success');
+        loadProjects();
+        if (typeof window.loadKanbanDashboard === 'function') {
+            window.loadKanbanDashboard('projects-kanban-container');
+        }
+    } catch (e) {
+        showToast(e.message || 'Failed to update project', 'error');
+    }
 }
 
 function closeProjectModal() {
@@ -434,8 +514,11 @@ function initProjectsModule() {
                 closeCreateProjectModal();
                 showToast('Project created successfully', 'success');
                 loadProjects();
+                if (typeof window.loadKanbanDashboard === 'function') {
+                    window.loadKanbanDashboard('projects-kanban-container');
+                }
             } catch (error) {
-                showToast('Failed to create project', 'error');
+                showToast(error.message || 'Failed to create project', 'error');
             }
         });
     }
@@ -444,6 +527,22 @@ function initProjectsModule() {
     const closeProjectBtn = document.getElementById('close-project-modal');
     if (closeProjectBtn) {
         closeProjectBtn.addEventListener('click', closeProjectModal);
+    }
+
+    // Edit project
+    const editProjectBtn = document.getElementById('edit-project-btn');
+    if (editProjectBtn) {
+        editProjectBtn.addEventListener('click', enableProjectEdit);
+    }
+
+    const saveProjectBtn = document.getElementById('save-project-btn');
+    if (saveProjectBtn) {
+        saveProjectBtn.addEventListener('click', saveProjectEdit);
+    }
+
+    const cancelEditProjectBtn = document.getElementById('cancel-edit-project-btn');
+    if (cancelEditProjectBtn) {
+        cancelEditProjectBtn.addEventListener('click', cancelProjectEdit);
     }
 
     // Delete project

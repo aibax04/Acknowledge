@@ -26,19 +26,19 @@ def require_manager_or_senior(current_user: User):
 
 @router.post("/", response_model=VentureResponse, status_code=status.HTTP_201_CREATED)
 async def create_venture(
-    venture: VentureCreate, 
-    db: AsyncSession = Depends(get_db), 
+    venture: VentureCreate,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Create a new venture (manager/senior only)"""
-    require_manager_or_senior(current_user)
-    
+    """Create a new venture (any authenticated user)"""
     new_venture = Venture(
         name=venture.name,
         description=venture.description,
         created_by=current_user.id
     )
     db.add(new_venture)
+    await db.flush()
+    new_venture.members.append(current_user)
     await db.commit()
     await db.refresh(new_venture)
     return new_venture
@@ -62,9 +62,13 @@ async def list_ventures(
             )
         ).distinct()
     elif current_user.role in [UserRole.EMPLOYEE, UserRole.INTERN]:
-        # Employees/Interns should usually use /my-ventures, but if they hit this, show only membership
         from app.models.venture import venture_members
-        query = query.join(venture_members).filter(venture_members.c.user_id == current_user.id)
+        query = query.outerjoin(venture_members).filter(
+            or_(
+                Venture.created_by == current_user.id,
+                venture_members.c.user_id == current_user.id
+            )
+        ).distinct()
 
     result = await db.execute(query)
     ventures = result.scalars().unique().all()
@@ -99,7 +103,12 @@ async def get_kanban(
         selectinload(Venture.creator)
     ).order_by(Venture.created_at.desc())
     if current_user.role in [UserRole.EMPLOYEE, UserRole.INTERN]:
-        query = query.join(venture_members).filter(venture_members.c.user_id == current_user.id)
+        query = query.outerjoin(venture_members).filter(
+            or_(
+                Venture.created_by == current_user.id,
+                venture_members.c.user_id == current_user.id
+            )
+        ).distinct()
     elif current_user.role == UserRole.MANAGER:
         query = query.outerjoin(venture_members).filter(
             or_(
@@ -169,21 +178,18 @@ async def get_venture(
 
 @router.put("/{venture_id}", response_model=VentureResponse)
 async def update_venture(
-    venture_id: int, 
-    venture_update: VentureUpdate, 
-    db: AsyncSession = Depends(get_db), 
+    venture_id: int,
+    venture_update: VentureUpdate,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Update a venture (manager/senior only)"""
-    require_manager_or_senior(current_user)
-    
+    """Update a venture (creator of any role, or senior)"""
     result = await db.execute(select(Venture).filter(Venture.id == venture_id))
     venture = result.scalars().first()
-    
+
     if not venture:
         raise HTTPException(status_code=404, detail="Venture not found")
-    
-    # Only creator or senior can update
+
     if venture.created_by != current_user.id and current_user.role != UserRole.SENIOR:
         raise HTTPException(status_code=403, detail="You can only update ventures you created")
     
@@ -198,22 +204,19 @@ async def update_venture(
 
 @router.delete("/{venture_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_venture(
-    venture_id: int, 
-    db: AsyncSession = Depends(get_db), 
+    venture_id: int,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Delete a venture (manager/senior only)"""
-    require_manager_or_senior(current_user)
-    
+    """Delete a venture (creator of any role, or manager/senior)"""
     result = await db.execute(select(Venture).filter(Venture.id == venture_id))
     venture = result.scalars().first()
-    
+
     if not venture:
         raise HTTPException(status_code=404, detail="Venture not found")
-    
-    # Relaxed: Any manager or senior who has access to the route can delete any venture
-    # if venture.created_by != current_user.id and current_user.role != UserRole.SENIOR:
-    #     raise HTTPException(status_code=403, detail="You can only delete ventures you created")
+
+    if venture.created_by != current_user.id and current_user.role not in [UserRole.MANAGER, UserRole.SENIOR]:
+        raise HTTPException(status_code=403, detail="You can only delete ventures you created")
     
     # Handle associated tasks: remove venture reference
     from app.models.task import Task
@@ -238,23 +241,24 @@ async def delete_venture(
 
 @router.post("/{venture_id}/members", response_model=VentureDetailResponse)
 async def add_members(
-    venture_id: int, 
-    member_data: VentureMemberAdd, 
-    db: AsyncSession = Depends(get_db), 
+    venture_id: int,
+    member_data: VentureMemberAdd,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Add members to a venture (manager/senior only)"""
-    require_manager_or_senior(current_user)
-    
+    """Add members to a venture (creator of any role, or manager/senior)"""
     result = await db.execute(
         select(Venture)
         .options(selectinload(Venture.members), selectinload(Venture.creator))
         .filter(Venture.id == venture_id)
     )
     venture = result.scalars().first()
-    
+
     if not venture:
         raise HTTPException(status_code=404, detail="Venture not found")
+
+    if current_user.role not in [UserRole.MANAGER, UserRole.SENIOR] and venture.created_by != current_user.id:
+        raise HTTPException(status_code=403, detail="Only the creator, managers, or seniors can add members")
     
     # Fetch the users to add
     users_result = await db.execute(select(User).filter(User.id.in_(member_data.user_ids)))
@@ -277,23 +281,24 @@ async def add_members(
 
 @router.delete("/{venture_id}/members/{user_id}", response_model=VentureDetailResponse)
 async def remove_member(
-    venture_id: int, 
-    user_id: int, 
-    db: AsyncSession = Depends(get_db), 
+    venture_id: int,
+    user_id: int,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Remove a member from a venture (manager/senior only)"""
-    require_manager_or_senior(current_user)
-    
+    """Remove a member from a venture (creator of any role, or manager/senior)"""
     result = await db.execute(
         select(Venture)
         .options(selectinload(Venture.members), selectinload(Venture.creator))
         .filter(Venture.id == venture_id)
     )
     venture = result.scalars().first()
-    
+
     if not venture:
         raise HTTPException(status_code=404, detail="Venture not found")
+
+    if current_user.role not in [UserRole.MANAGER, UserRole.SENIOR] and venture.created_by != current_user.id:
+        raise HTTPException(status_code=403, detail="Only the creator, managers, or seniors can remove members")
     
     # Find and remove the user
     user_to_remove = None
@@ -312,22 +317,23 @@ async def remove_member(
 
 @router.get("/{venture_id}/available-users", response_model=List)
 async def get_available_users(
-    venture_id: int, 
-    db: AsyncSession = Depends(get_db), 
+    venture_id: int,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Get users who are not members of this venture (for adding)"""
-    require_manager_or_senior(current_user)
-    
+    """Get users who are not members of this venture (creator of any role, or manager/senior)"""
     result = await db.execute(
         select(Venture)
         .options(selectinload(Venture.members))
         .filter(Venture.id == venture_id)
     )
     venture = result.scalars().first()
-    
+
     if not venture:
         raise HTTPException(status_code=404, detail="Venture not found")
+
+    if current_user.role not in [UserRole.MANAGER, UserRole.SENIOR] and venture.created_by != current_user.id:
+        raise HTTPException(status_code=403, detail="Only the creator, managers, or seniors can view available users")
     
     # Get IDs of current members
     member_ids = {m.id for m in venture.members}
