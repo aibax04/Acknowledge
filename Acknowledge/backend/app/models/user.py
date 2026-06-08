@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
 import enum
+from typing import Optional
 
 class UserRole(str, enum.Enum):
     EMPLOYEE = "employee"
@@ -31,4 +32,6 @@ class User(Base):
     emergency_contact_name = Column(String, nullable=True)
     emergency_contact_number = Column(String, nullable=True)
     address = Column(String, nullable=True)
+    password_reset_token = Column(String, nullable=True)
+    password_reset_token_expires = Column(DateTime(timezone=True), nullable=True)
     office_location = relationship("OfficeLocation", foreign_keys=[office_location_id], lazy="raise")

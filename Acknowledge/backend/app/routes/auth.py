@@ -12,6 +12,7 @@ from app.utils.hashing import get_password_hash
 from app.models.user import User, UserRole
 from app.config import settings
 import secrets
+from datetime import datetime, timedelta, timezone
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -87,6 +88,69 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSessi
     # The role enum needs to be converted to string if it isn't already handled by Pydantic
     access_token = create_access_token(data={"sub": user.email, "role": user.role.value}) 
     return {"access_token": access_token, "token_type": "bearer"}
+
+# --- PASSWORD RESET ENDPOINTS ---
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+class ResetPasswordRequest(BaseModel):
+    otp_code: str
+    new_password: str
+
+@router.post("/forgot-password")
+async def forgot_password(body: ForgotPasswordRequest, db: AsyncSession = Depends(get_db)):
+    from sqlalchemy.future import select
+    result = await db.execute(select(User).filter(User.email == body.email.lower().strip()))
+    user = result.scalars().first()
+
+    # Always return success to avoid leaking which emails are registered
+    if not user or not user.is_active:
+        return {"message": "If that email is registered, a reset code has been sent."}
+
+    otp_code = str(secrets.randbelow(1000000)).zfill(6)
+    user.password_reset_token = otp_code
+    user.password_reset_token_expires = datetime.now(timezone.utc) + timedelta(minutes=15)
+    db.add(user)
+    await db.commit()
+
+    from app.services.email_service import send_password_reset_email
+    await send_password_reset_email(user, otp_code)
+
+    return {"message": "If that email is registered, a reset code has been sent."}
+
+
+@router.post("/reset-password")
+async def reset_password(body: ResetPasswordRequest, db: AsyncSession = Depends(get_db)):
+    from sqlalchemy.future import select
+    result = await db.execute(
+        select(User).filter(User.password_reset_token == body.otp_code.strip())
+    )
+    user = result.scalars().first()
+
+    if not user or not user.password_reset_token_expires:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset code.")
+
+    expires = user.password_reset_token_expires
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=timezone.utc)
+    if datetime.now(timezone.utc) > expires:
+        user.password_reset_token = None
+        user.password_reset_token_expires = None
+        await db.commit()
+        raise HTTPException(status_code=400, detail="Reset code has expired. Please request a new one.")
+
+    if len(body.new_password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters.")
+
+    user.hashed_password = get_password_hash(body.new_password)
+    user.password_reset_token = None
+    user.password_reset_token_expires = None
+    db.add(user)
+    await db.commit()
+
+    return {"message": "Password reset successfully. You can now log in."}
+
 
 # --- MICROSOFT OAUTH ENDPOINTS ---
 

@@ -608,7 +608,7 @@
                                         class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary focus:ring-2 transition-all">
                                     <span class="font-medium">Remember me</span>
                                 </label>
-                                <a href="#"
+                                <a href="#" id="forgotPasswordLink"
                                     class="text-primary hover:text-primary-hover font-semibold whitespace-nowrap transition-colors">Forgot
                                     password?</a>
                             </div>
@@ -982,6 +982,225 @@
                 });
             }
         });
+    </script>
+
+    <!-- Forgot Password Modal -->
+    <div id="forgotPasswordModal"
+        class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative">
+            <button id="closeForgotModal"
+                class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+
+            <!-- Step 1: Request OTP -->
+            <div id="forgotStep1">
+                <h2 class="text-xl font-bold text-gray-900 mb-1">Reset your password</h2>
+                <p class="text-sm text-gray-500 mb-6">Enter your email and we'll send you a 6-digit code.</p>
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Email Address</label>
+                    <input type="email" id="forgotEmail" placeholder="name@company.com"
+                        class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-sm" />
+                </div>
+                <div id="forgotStep1Error" class="hidden text-sm text-red-600 mb-3"></div>
+                <button id="forgotSendOtpBtn"
+                    class="w-full bg-primary hover:bg-primary-hover text-white py-3 rounded-xl font-bold text-sm transition-colors shadow-lg shadow-emerald-500/30">
+                    Send Reset Code
+                </button>
+            </div>
+
+            <!-- Step 2: Enter OTP + New Password -->
+            <div id="forgotStep2" class="hidden">
+                <h2 class="text-xl font-bold text-gray-900 mb-1">Enter your reset code</h2>
+                <p class="text-sm text-gray-500 mb-6">Check your email for the 6-digit code. It expires in 15 minutes.</p>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Reset Code</label>
+                        <input type="text" id="forgotOtpCode" placeholder="000000" maxlength="6"
+                            class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-sm tracking-widest text-center font-bold text-lg" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">New Password</label>
+                        <input type="password" id="forgotNewPassword" placeholder="Min. 8 characters"
+                            class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-sm" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Confirm New Password</label>
+                        <input type="password" id="forgotConfirmPassword" placeholder="Repeat password"
+                            class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-sm" />
+                    </div>
+                </div>
+                <div id="forgotStep2Error" class="hidden text-sm text-red-600 mt-3"></div>
+                <button id="forgotResetBtn"
+                    class="w-full mt-5 bg-primary hover:bg-primary-hover text-white py-3 rounded-xl font-bold text-sm transition-colors shadow-lg shadow-emerald-500/30">
+                    Reset Password
+                </button>
+                <button id="forgotBackBtn"
+                    class="w-full mt-2 text-sm text-gray-500 hover:text-gray-700 py-2 transition-colors">
+                    Back
+                </button>
+            </div>
+
+            <!-- Step 3: Success -->
+            <div id="forgotStep3" class="hidden text-center">
+                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-500" fill="none"
+                        viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+                <h2 class="text-xl font-bold text-gray-900 mb-2">Password reset!</h2>
+                <p class="text-sm text-gray-500 mb-6">Your password has been updated. You can now log in.</p>
+                <button id="forgotDoneBtn"
+                    class="w-full bg-primary hover:bg-primary-hover text-white py-3 rounded-xl font-bold text-sm transition-colors">
+                    Back to Login
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            const API_BASE = getApiUrl();
+
+            const modal = document.getElementById('forgotPasswordModal');
+            const step1 = document.getElementById('forgotStep1');
+            const step2 = document.getElementById('forgotStep2');
+            const step3 = document.getElementById('forgotStep3');
+
+            function showModal() {
+                step1.classList.remove('hidden');
+                step2.classList.add('hidden');
+                step3.classList.add('hidden');
+                // Pre-fill email from login form if already typed
+                const loginEmail = document.getElementById('email').value.trim();
+                document.getElementById('forgotEmail').value = loginEmail;
+                document.getElementById('forgotOtpCode').value = '';
+                document.getElementById('forgotNewPassword').value = '';
+                document.getElementById('forgotConfirmPassword').value = '';
+                document.getElementById('forgotStep1Error').classList.add('hidden');
+                document.getElementById('forgotStep2Error').classList.add('hidden');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                // Skip step 1 entirely if email is already filled
+                if (loginEmail) {
+                    step1.classList.add('hidden');
+                    step2.classList.remove('hidden');
+                    sendOtp(loginEmail);
+                }
+            }
+
+            function hideModal() {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+
+            document.getElementById('forgotPasswordLink').addEventListener('click', function (e) {
+                e.preventDefault();
+                showModal();
+            });
+
+            document.getElementById('closeForgotModal').addEventListener('click', hideModal);
+            modal.addEventListener('click', function (e) {
+                if (e.target === modal) hideModal();
+            });
+
+            async function sendOtp(email) {
+                try {
+                    await fetch(`${API_BASE}/auth/forgot-password`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email }),
+                    });
+                } catch (e) { /* silent — always proceed to step 2 */ }
+            }
+
+            document.getElementById('forgotSendOtpBtn').addEventListener('click', async function () {
+                const email = document.getElementById('forgotEmail').value.trim();
+                const errEl = document.getElementById('forgotStep1Error');
+                errEl.classList.add('hidden');
+
+                if (!email) {
+                    errEl.textContent = 'Please enter your email address.';
+                    errEl.classList.remove('hidden');
+                    return;
+                }
+
+                const btn = this;
+                btn.disabled = true;
+                btn.textContent = 'Sending...';
+
+                try {
+                    await sendOtp(email);
+                    step1.classList.add('hidden');
+                    step2.classList.remove('hidden');
+                } catch (err) {
+                    errEl.textContent = err.message;
+                    errEl.classList.remove('hidden');
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = 'Send Reset Code';
+                }
+            });
+
+            document.getElementById('forgotBackBtn').addEventListener('click', function () {
+                step2.classList.add('hidden');
+                step1.classList.remove('hidden');
+            });
+
+            document.getElementById('forgotResetBtn').addEventListener('click', async function () {
+                const otp_code = document.getElementById('forgotOtpCode').value.trim();
+                const new_password = document.getElementById('forgotNewPassword').value;
+                const confirm = document.getElementById('forgotConfirmPassword').value;
+                const errEl = document.getElementById('forgotStep2Error');
+                errEl.classList.add('hidden');
+
+                if (!otp_code || otp_code.length !== 6) {
+                    errEl.textContent = 'Please enter the 6-digit code from your email.';
+                    errEl.classList.remove('hidden');
+                    return;
+                }
+                if (new_password.length < 8) {
+                    errEl.textContent = 'Password must be at least 8 characters.';
+                    errEl.classList.remove('hidden');
+                    return;
+                }
+                if (new_password !== confirm) {
+                    errEl.textContent = 'Passwords do not match.';
+                    errEl.classList.remove('hidden');
+                    return;
+                }
+
+                const btn = this;
+                btn.disabled = true;
+                btn.textContent = 'Resetting...';
+
+                try {
+                    const res = await fetch(`${API_BASE}/auth/reset-password`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ otp_code, new_password }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.detail || 'Reset failed.');
+                    step2.classList.add('hidden');
+                    step3.classList.remove('hidden');
+                } catch (err) {
+                    errEl.textContent = err.message;
+                    errEl.classList.remove('hidden');
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = 'Reset Password';
+                }
+            });
+
+            document.getElementById('forgotDoneBtn').addEventListener('click', hideModal);
+        })();
     </script>
 </body>
 

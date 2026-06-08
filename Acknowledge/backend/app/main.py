@@ -297,6 +297,8 @@ async def startup():
             "emergency_contact_name VARCHAR",
             "emergency_contact_number VARCHAR",
             "address VARCHAR",
+            "password_reset_token VARCHAR",
+            "password_reset_token_expires TIMESTAMPTZ",
         ):
             try:
                 await conn.execute(text(f"ALTER TABLE users ADD COLUMN IF NOT EXISTS {_col_def}"))

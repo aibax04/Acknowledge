@@ -147,6 +147,77 @@ async def send_leave_confirmation(
         print(f"[email] Failed to send leave confirmation to {applicant.email}: {e}")
 
 
+async def send_password_reset_email(user: User, otp_code: str):
+    fm = _get_mailer()
+    if not fm:
+        return
+
+    from fastapi_mail import MessageSchema, MessageType
+
+    subject = "Password Reset Code — Acknowledge"
+    html_content = f"""
+<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,sans-serif;">
+  <div style="max-width:600px;margin:32px auto;background:#ffffff;border-radius:8px;
+              box-shadow:0 1px 4px rgba(0,0,0,0.08);overflow:hidden;">
+
+    <div style="background:#1e3a5f;padding:24px 32px;">
+      <h1 style="margin:0;color:#ffffff;font-size:20px;font-weight:600;">
+        Password Reset Request
+      </h1>
+      <p style="margin:4px 0 0;color:#93c5fd;font-size:13px;">Acknowledge · Account Security</p>
+    </div>
+
+    <div style="padding:28px 32px;">
+      <p style="margin:0 0 20px;color:#374151;font-size:15px;">
+        Hi <strong>{user.full_name}</strong>, we received a request to reset your password.
+        Use the code below to complete the reset.
+      </p>
+
+      <div style="text-align:center;margin:28px 0;">
+        <div style="display:inline-block;background:#f0fdf4;border:2px solid #22c55e;
+                    border-radius:12px;padding:20px 40px;">
+          <p style="margin:0 0 6px;color:#6b7280;font-size:12px;letter-spacing:1px;text-transform:uppercase;">
+            Your reset code
+          </p>
+          <p style="margin:0;color:#111827;font-size:36px;font-weight:700;letter-spacing:10px;">
+            {otp_code}
+          </p>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:16px;background:#fef3c7;border-radius:6px;
+                  border-left:3px solid #f59e0b;">
+        <p style="margin:0;color:#92400e;font-size:13px;">
+          This code expires in <strong>15 minutes</strong>.
+          If you did not request a password reset, please ignore this email.
+        </p>
+      </div>
+    </div>
+
+    <div style="padding:16px 32px;background:#f9fafb;border-top:1px solid #e5e7eb;">
+      <p style="margin:0;color:#9ca3af;font-size:12px;">
+        This is an automated notification from Acknowledge. Do not reply to this email.
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+"""
+    message = MessageSchema(
+        subject=subject,
+        recipients=[user.email],
+        body=html_content,
+        subtype=MessageType.html,
+    )
+    try:
+        await fm.send_message(message)
+        print(f"[email] Password reset code sent to {user.email}")
+    except Exception as e:
+        print(f"[email] Failed to send password reset email to {user.email}: {e}")
+
+
 async def send_leave_notification(
     applicant: User,
     leave_request,
