@@ -91,6 +91,30 @@ function clearLocSelection() {
     document.getElementById('loc-search-input').value = '';
 }
 
+function toggleManualEntry() {
+    var panel = document.getElementById('loc-manual-entry');
+    panel.classList.toggle('hidden');
+    if (!panel.classList.contains('hidden')) {
+        document.getElementById('loc-manual-address').focus();
+    }
+}
+
+function applyManualEntry() {
+    var address = (document.getElementById('loc-manual-address').value || '').trim();
+    var lat = parseFloat(document.getElementById('loc-manual-lat').value);
+    var lng = parseFloat(document.getElementById('loc-manual-lng').value);
+    if (!address) { showToast('Please enter an address', 'error'); return; }
+    if (isNaN(lat) || isNaN(lng)) { showToast('Please enter valid latitude and longitude', 'error'); return; }
+    if (lat < -90 || lat > 90) { showToast('Latitude must be between -90 and 90', 'error'); return; }
+    if (lng < -180 || lng > 180) { showToast('Longitude must be between -180 and 180', 'error'); return; }
+    _locSelected = { lat: lat, lng: lng, address: address, displayName: address };
+    document.getElementById('loc-manual-entry').classList.add('hidden');
+    document.getElementById('loc-manual-address').value = '';
+    document.getElementById('loc-manual-lat').value = '';
+    document.getElementById('loc-manual-lng').value = '';
+    showLocPreview(_locSelected);
+}
+
 async function saveOfficeLocation() {
     if (!_locSelected) { showToast('Please search and select a location first', 'error'); return; }
     var name = (document.getElementById('loc-name-input').value || '').trim();

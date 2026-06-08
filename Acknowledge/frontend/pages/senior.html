@@ -1160,6 +1160,33 @@
                         class="hidden mt-1 border border-gray-200 rounded-lg shadow-lg bg-white max-h-48 overflow-y-auto divide-y divide-gray-50 text-sm z-20 relative">
                     </div>
 
+                    <!-- Manual entry toggle -->
+                    <div class="mt-2 text-right">
+                        <button type="button" onclick="toggleManualEntry()" class="text-xs text-indigo-500 hover:text-indigo-700 underline">Enter address manually</button>
+                    </div>
+                    <!-- Manual entry form -->
+                    <div id="loc-manual-entry" class="hidden mt-3 p-3 bg-gray-50 border border-gray-200 rounded-lg space-y-2">
+                        <p class="text-xs font-medium text-gray-600">Enter address and coordinates manually</p>
+                        <input type="text" id="loc-manual-address" placeholder="Address (e.g. 123 Main St, Mumbai)"
+                            class="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white">
+                        <div class="flex gap-2">
+                            <div class="flex-1">
+                                <label class="text-xs text-gray-500">Latitude</label>
+                                <input type="number" id="loc-manual-lat" placeholder="e.g. 19.07609" step="any"
+                                    class="mt-0.5 w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white">
+                            </div>
+                            <div class="flex-1">
+                                <label class="text-xs text-gray-500">Longitude</label>
+                                <input type="number" id="loc-manual-lng" placeholder="e.g. 72.87736" step="any"
+                                    class="mt-0.5 w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white">
+                            </div>
+                        </div>
+                        <div class="flex justify-end gap-2">
+                            <button type="button" onclick="toggleManualEntry()" class="px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-200 rounded-lg">Cancel</button>
+                            <button type="button" onclick="applyManualEntry()" class="px-3 py-1.5 text-xs bg-primary text-white rounded-lg hover:bg-primary-hover font-medium">Use this address</button>
+                        </div>
+                    </div>
+
                     <!-- Selected location preview -->
                     <div id="loc-selected-preview" class="hidden mt-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
                         <div class="flex items-start justify-between gap-2">
