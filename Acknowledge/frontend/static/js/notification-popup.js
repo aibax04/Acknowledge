@@ -263,6 +263,7 @@ function createPopupModal() {
 
     modal.innerHTML = `
         <style>
+            #popup-content.policy-rich-content { word-break: break-word; overflow-wrap: anywhere; }
             #popup-content.policy-rich-content ul { list-style: disc; padding-left: 1.25rem; margin: 0.5rem 0; }
             #popup-content.policy-rich-content ol { list-style: decimal; padding-left: 1.25rem; margin: 0.5rem 0; }
             #popup-content.policy-rich-content h1,
@@ -273,7 +274,7 @@ function createPopupModal() {
             #popup-content.policy-rich-content em, #popup-content.policy-rich-content i { font-style: italic; }
             #popup-content.policy-rich-content img { max-width: 100%; height: auto; }
         </style>
-        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden animate-fade-in transform scale-100 w-full max-w-2xl max-h-[90vh] flex flex-col">
+        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden animate-fade-in transform scale-100 w-full max-w-4xl max-h-[90vh] flex flex-col">
             <!-- Header -->
             <div id="popup-header" class="bg-gradient-to-r from-primary to-primary-hover p-6 text-white flex-shrink-0">
                 <div class="flex items-center justify-between">
@@ -290,7 +291,7 @@ function createPopupModal() {
             </div>
             
             <!-- Content - Scrollable -->
-            <div class="flex-1 overflow-y-auto p-6">
+            <div class="flex-1 overflow-y-auto overflow-x-hidden p-6">
                 <input type="hidden" id="popup-id">
                 <input type="hidden" id="popup-type">
                 
