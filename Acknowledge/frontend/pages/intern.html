@@ -177,13 +177,6 @@
                     </svg>
                     My Tasks
                 </a>
-                <a href="#" data-tab="assign-task"
-                    class="nav-link flex items-center px-4 py-3 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-lg font-medium transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                    </svg>
-                    Assign Task
-                </a>
                 <a href="#" data-tab="concerns"
                     class="nav-link flex items-center px-4 py-3 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-lg font-medium transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
@@ -377,6 +370,13 @@
             <div id="tasks-tab" class="tab-content active">
                 <div class="flex items-center justify-between mb-6">
                     <h2 class="text-lg font-medium text-gray-900">My Tasks</h2>
+                    <button type="button" id="btn-employee-assign-task"
+                        class="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-xl hover:bg-primary-hover transition-colors shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Assign Task
+                    </button>
                 </div>
                 <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
                     <div class="overflow-x-auto w-full">
@@ -565,24 +565,6 @@
                         <p class="text-xs text-gray-500 mt-0.5">Pending and taken leave at a glance</p>
                     </div>
                     <div id="my-leaves-list"></div>
-                </div>
-            </div>
-
-            <!-- ASSIGN TASK TAB -->
-            <div id="assign-task-tab" class="tab-content">
-                <div class="flex items-center justify-between mb-6">
-                    <h2 class="text-xl font-bold text-gray-900">Assign Task</h2>
-                    <button type="button" id="btn-employee-assign-task"
-                        class="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-xl hover:bg-primary-hover transition-colors shadow-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                        </svg>
-                        Assign New Task
-                    </button>
-                </div>
-                <div class="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
-                    <p class="text-gray-600 text-sm mb-2">Assign tasks to other employees or interns. They will see the task in their My Tasks list.</p>
-                    <p class="text-gray-400 text-xs">Use the button above to create a new task and choose who it's assigned to.</p>
                 </div>
             </div>
 
