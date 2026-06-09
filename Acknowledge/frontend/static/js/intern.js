@@ -838,6 +838,61 @@ function handleLogout() {
 // INITIALIZATION
 // ============================================
 
+// ============================================
+// ASSIGN TASK (same rights as employees)
+// ============================================
+
+async function openEmployeeAssignTaskModal() {
+    const assigneeSelect = document.getElementById('employee-task-assignee');
+    if (!assigneeSelect) return;
+    assigneeSelect.innerHTML = '<option value="">Loading...</option>';
+    document.getElementById('employee-assign-task-modal').classList.remove('hidden');
+    try {
+        const users = await Api.get('/auth/all-users');
+        const allowed = (users || []).filter(u => u && (u.role === 'employee' || u.role === 'intern') && u.id !== currentUser?.id);
+        allowed.sort((a, b) => (a.full_name || '').localeCompare(b.full_name || '', undefined, { sensitivity: 'base' }));
+        assigneeSelect.innerHTML = '<option value="">Select person...</option>' +
+            allowed.map(u => `<option value="${u.id}">${u.full_name || u.email || 'User'} (${u.role})</option>`).join('');
+    } catch (e) {
+        assigneeSelect.innerHTML = '<option value="">Failed to load list</option>';
+        showToast('Could not load team list', 'error');
+    }
+    document.getElementById('employee-task-title').value = '';
+    document.getElementById('employee-task-description').value = '';
+    document.getElementById('employee-task-priority').value = 'medium';
+    document.getElementById('employee-task-deadline').value = '';
+}
+
+async function employeeAssignTask() {
+    const title = (document.getElementById('employee-task-title').value || '').trim();
+    const description = (document.getElementById('employee-task-description').value || '').trim();
+    const assignedToId = document.getElementById('employee-task-assignee').value;
+    const priority = document.getElementById('employee-task-priority').value || 'medium';
+    const deadline = document.getElementById('employee-task-deadline').value;
+    const btn = document.getElementById('employee-assign-task-confirm');
+    if (!title) { showToast('Please enter a task title', 'error'); return; }
+    if (!assignedToId) { showToast('Please select someone to assign the task to', 'error'); return; }
+    btn.disabled = true;
+    btn.textContent = 'Assigning...';
+    try {
+        await Api.post('/tasks/', {
+            title,
+            description: description || null,
+            assigned_to_id: parseInt(assignedToId, 10),
+            priority,
+            deadline: deadline ? new Date(deadline).toISOString() : null
+        });
+        showToast('Task assigned successfully', 'success');
+        document.getElementById('employee-assign-task-modal').classList.add('hidden');
+        await loadTasks();
+    } catch (e) {
+        showToast(e.message || 'Failed to assign task', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Assign Task';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     // Validate auth first
     const isAuthenticated = await validateAuth();
@@ -877,6 +932,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         const taskTitle = (btn.getAttribute('data-task-title') || '').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
         openTaskCommentsModal(taskId, taskTitle);
     });
+
+    document.getElementById('btn-employee-assign-task')?.addEventListener('click', openEmployeeAssignTaskModal);
+    document.getElementById('employee-assign-task-cancel')?.addEventListener('click', () => {
+        document.getElementById('employee-assign-task-modal').classList.add('hidden');
+    });
+    document.getElementById('employee-assign-task-backdrop')?.addEventListener('click', () => {
+        document.getElementById('employee-assign-task-modal').classList.add('hidden');
+    });
+    document.getElementById('employee-assign-task-confirm')?.addEventListener('click', employeeAssignTask);
 
     document.getElementById('btn-raise-concern').addEventListener('click', openRaiseConcernModal);
 

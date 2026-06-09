@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from typing import List
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from app.database import get_db
 from app.models.task import Task, TaskComment
 from app.models.user import User, UserRole
@@ -14,8 +14,8 @@ router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 @router.post("/", response_model=TaskResponse)
 async def create_task(task: TaskCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    # Employees may assign tasks only to employees and interns
-    if current_user.role == UserRole.EMPLOYEE:
+    # Employees and interns may assign tasks only to employees and interns
+    if current_user.role in (UserRole.EMPLOYEE, UserRole.INTERN):
         if not task.assigned_to_id:
             raise HTTPException(status_code=403, detail="Please select someone to assign the task to")
         result = await db.execute(select(User).filter(User.id == task.assigned_to_id))
@@ -23,7 +23,7 @@ async def create_task(task: TaskCreate, db: AsyncSession = Depends(get_db), curr
         if not assignee:
             raise HTTPException(status_code=404, detail="Assignee not found")
         if assignee.role not in (UserRole.EMPLOYEE, UserRole.INTERN):
-            raise HTTPException(status_code=403, detail="Employees can only assign tasks to other employees or interns")
+            raise HTTPException(status_code=403, detail="You can only assign tasks to other employees or interns")
     
     new_task = Task(
         title=task.title,
@@ -59,7 +59,12 @@ async def get_tasks(db: AsyncSession = Depends(get_db), current_user: User = Dep
             )
         )
     elif current_user.role == UserRole.INTERN:
-        query = query.filter(Task.assigned_to_id == current_user.id)
+        query = query.filter(
+            or_(
+                Task.assigned_to_id == current_user.id,
+                Task.created_by_id == current_user.id
+            )
+        )
     elif current_user.role == UserRole.MANAGER:
         query = query.filter(
             or_(
