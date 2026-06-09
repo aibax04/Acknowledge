@@ -36,9 +36,8 @@ async def create_venture(
         description=venture.description,
         created_by=current_user.id
     )
-    db.add(new_venture)
-    await db.flush()
     new_venture.members.append(current_user)
+    db.add(new_venture)
     await db.commit()
     await db.refresh(new_venture)
     return new_venture

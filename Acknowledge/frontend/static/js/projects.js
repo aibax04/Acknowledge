@@ -221,10 +221,11 @@ function renderProjectMembers(members) {
 function updateSelectedCount() {
     const btn = document.getElementById('btn-project-notify');
     const countSpan = document.getElementById('selected-count');
+    if (!btn) return;
 
     if (selectedMembersForNotif.length > 0) {
         btn.classList.remove('hidden');
-        countSpan.textContent = selectedMembersForNotif.length;
+        if (countSpan) countSpan.textContent = selectedMembersForNotif.length;
     } else {
         btn.classList.add('hidden');
     }
