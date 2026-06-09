@@ -1913,6 +1913,7 @@ async function postTaskComment() {
 }
 
 async function loadTrackData() {
+    if (typeof loadPendingAttendanceRequests === 'function') loadPendingAttendanceRequests();
     try {
         const data = await Api.get('/dashboard/senior/track');
 
