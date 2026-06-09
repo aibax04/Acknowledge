@@ -133,7 +133,7 @@ class Api {
             headers: this.getHeaders()
         });
         if (!response.ok) { const err = await response.json().catch(() => ({})); _handleApiResponse(response, err); }
-        return response.json();
+        return response.status === 204 ? null : response.json().catch(() => null);
     }
 
     // Auth specific (form data usually)
