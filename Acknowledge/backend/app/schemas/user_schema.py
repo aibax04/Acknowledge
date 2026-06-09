@@ -42,7 +42,6 @@ class UserPromote(BaseModel):
 
 class UserResponse(UserBase):
     id: int
-    full_name: Optional[str] = None
     is_active: bool
     is_pending_approval: bool = False
     created_at: datetime

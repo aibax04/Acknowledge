@@ -98,11 +98,9 @@ async def update_task(task_id: int, task_update: TaskUpdate, db: AsyncSession = 
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
         
-    # Permission check: creator can fully edit; assignee can update status; managers/seniors unrestricted
-    is_creator = task.created_by_id == current_user.id
-    is_assignee = task.assigned_to_id == current_user.id
-    if current_user.role in [UserRole.EMPLOYEE, UserRole.INTERN] and not is_creator and not is_assignee:
-        raise HTTPException(status_code=403, detail="Cannot update tasks you didn't create or aren't assigned to")
+    # Permission check: Only assignee or creator/manager can update
+    if current_user.role in [UserRole.EMPLOYEE, UserRole.INTERN] and task.assigned_to_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Cannot update tasks assigned to others")
 
     for key, value in task_update.model_dump(exclude_unset=True).items():
         setattr(task, key, value)
