@@ -34,10 +34,10 @@ async def get_all_activity_logs(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """All activity logs — senior (director) only."""
+    """All activity logs — managers and directors only."""
     from fastapi import HTTPException
-    if current_user.role != UserRole.SENIOR:
-        raise HTTPException(status_code=403, detail="Only directors can view all activity logs")
+    if current_user.role not in (UserRole.MANAGER, UserRole.SENIOR):
+        raise HTTPException(status_code=403, detail="Only managers and directors can view all activity logs")
 
     result = await db.execute(
         select(ActivityLog)

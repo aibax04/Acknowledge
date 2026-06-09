@@ -956,7 +956,7 @@ function switchTab(tabName) {
     } else if (tabName === 'holidays') {
         loadHolidays(currentUser ? currentUser.office : null);
     } else if (tabName === 'history') {
-        if (typeof loadActivityFeed === 'function') loadActivityFeed('activity-feed-container', false);
+        if (typeof loadActivityFeed === 'function') loadActivityFeed('activity-feed-container', true);
     }
 }
 
