@@ -236,6 +236,15 @@
                     </svg>
                     My Calendar
                 </a>
+                <a href="#" data-tab="history"
+                    class="nav-link flex items-center px-4 py-3 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-lg font-medium transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    History
+                </a>
             </nav>
         </div>
 
@@ -947,6 +956,21 @@
                         <ul id="personal-todo-list" class="space-y-2 max-h-[320px] overflow-y-auto">
                             <!-- To-Do items rendered by todo-list.js -->
                         </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="history-tab" class="tab-content">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-900">My Activity History</h2>
+                        <p class="text-sm text-gray-500 mt-0.5">A log of actions you've taken and things done to you</p>
+                    </div>
+                    <button onclick="loadActivityFeed('activity-feed-container', false)" class="text-sm text-primary hover:underline">Refresh</button>
+                </div>
+                <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-4">
+                    <div id="activity-feed-container">
+                        <p class="text-sm text-gray-400 text-center py-8">Loading history...</p>
                     </div>
                 </div>
             </div>
@@ -1663,7 +1687,8 @@
     <script src="../static/js/directory-search.js"></script>
     <script src="../static/js/todo-list.js"></script>
     <script src="../static/js/projects.js"></script>
-    <script src="../static/js/attendance-clock.js"></script>
+    <script src="../static/js/activity.js"></script>
+<script src="../static/js/attendance-clock.js"></script>
     <script src="../static/js/leaves-tab.js?v=8"></script>
     <script src="../static/js/holidays-tab.js"></script>
     <script src="../static/js/manager.js?v=3"></script>

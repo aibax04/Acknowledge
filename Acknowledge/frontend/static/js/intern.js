@@ -835,6 +835,8 @@ function switchTab(tabName) {
         loadAttendanceTab();
     } else if (tabName === 'leaves') {
         loadLeavesTab();
+    } else if (tabName === 'history') {
+        if (typeof loadActivityFeed === 'function') loadActivityFeed('activity-feed-container', false);
     }
 }
 

@@ -38,6 +38,11 @@ async def create_venture(
     )
     new_venture.members.append(current_user)
     db.add(new_venture)
+
+    from app.services.activity_service import log_activity
+    await log_activity(db, current_user, "project_created", "project", None, venture.name,
+                       f"{current_user.full_name or current_user.email} created project \"{venture.name}\"")
+
     await db.commit()
     await db.refresh(new_venture)
     return new_venture
@@ -189,7 +194,11 @@ async def update_venture(
         venture.name = venture_update.name
     if venture_update.description is not None:
         venture.description = venture_update.description
-    
+
+    from app.services.activity_service import log_activity
+    await log_activity(db, current_user, "project_edited", "project", venture.id, venture.name,
+                       f"{current_user.full_name or current_user.email} edited project \"{venture.name}\"")
+
     await db.commit()
     await db.refresh(venture)
     return venture
@@ -262,11 +271,18 @@ async def add_members(
     # Get existing member IDs
     existing_member_ids = {m.id for m in venture.members}
     
-    # Add only new members
+    from app.services.activity_service import log_activity
+    added = []
     for user in users_to_add:
         if user.id not in existing_member_ids:
             venture.members.append(user)
-    
+            added.append(user)
+
+    for user in added:
+        await log_activity(db, current_user, "project_member_added", "project", venture.id, venture.name,
+                           f"{current_user.full_name or current_user.email} added {user.full_name or user.email} to project \"{venture.name}\"",
+                           target=user)
+
     await db.commit()
     await db.refresh(venture)
     return venture
@@ -303,6 +319,12 @@ async def remove_member(
         raise HTTPException(status_code=404, detail="User is not a member of this venture")
     
     venture.members.remove(user_to_remove)
+
+    from app.services.activity_service import log_activity
+    await log_activity(db, current_user, "project_member_removed", "project", venture.id, venture.name,
+                       f"{current_user.full_name or current_user.email} removed {user_to_remove.full_name or user_to_remove.email} from project \"{venture.name}\"",
+                       target=user_to_remove)
+
     await db.commit()
     await db.refresh(venture)
     return venture

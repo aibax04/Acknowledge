@@ -35,11 +35,25 @@ async def create_task(task: TaskCreate, db: AsyncSession = Depends(get_db), curr
         venture_id=task.venture_id
     )
     db.add(new_task)
+
+    from app.services.activity_service import log_activity
+    assignee_user = None
+    if task.assigned_to_id and task.assigned_to_id != current_user.id:
+        res = await db.execute(select(User).filter(User.id == task.assigned_to_id))
+        assignee_user = res.scalars().first()
+    if assignee_user:
+        await log_activity(db, current_user, "task_assigned", "task", None, task.title,
+                           f"{current_user.full_name or current_user.email} assigned \"{task.title}\" to {assignee_user.full_name or assignee_user.email}",
+                           target=assignee_user)
+    else:
+        await log_activity(db, current_user, "task_created", "task", None, task.title,
+                           f"{current_user.full_name or current_user.email} created task \"{task.title}\"")
+
     await db.commit()
-    
+
     # Re-fetch with relationships for the response model
     stmt = select(Task).filter(Task.id == new_task.id).options(
-        selectinload(Task.assigned_to), 
+        selectinload(Task.assigned_to),
         selectinload(Task.created_by)
     )
     result = await db.execute(stmt)
@@ -103,14 +117,39 @@ async def update_task(task_id: int, task_update: TaskUpdate, db: AsyncSession = 
         if task.created_by_id != current_user.id and task.assigned_to_id != current_user.id:
             raise HTTPException(status_code=403, detail="Cannot update tasks you didn't create or aren't assigned to")
 
-    for key, value in task_update.model_dump(exclude_unset=True).items():
+    changes = task_update.model_dump(exclude_unset=True)
+    old_status = task.status
+    old_assignee_id = task.assigned_to_id
+
+    for key, value in changes.items():
         setattr(task, key, value)
-        
+
+    from app.services.activity_service import log_activity
+    new_status = changes.get("status")
+    new_assignee_id = changes.get("assigned_to_id")
+
+    if new_status and new_status != old_status:
+        if new_status == "completed":
+            await log_activity(db, current_user, "task_completed", "task", task.id, task.title,
+                               f"{current_user.full_name or current_user.email} completed \"{task.title}\"")
+        else:
+            await log_activity(db, current_user, "task_status_changed", "task", task.id, task.title,
+                               f"{current_user.full_name or current_user.email} changed status of \"{task.title}\" to {new_status.replace('_', ' ')}")
+    elif new_assignee_id and new_assignee_id != old_assignee_id:
+        res = await db.execute(select(User).filter(User.id == new_assignee_id))
+        new_assignee = res.scalars().first()
+        await log_activity(db, current_user, "task_assigned", "task", task.id, task.title,
+                           f"{current_user.full_name or current_user.email} reassigned \"{task.title}\" to {new_assignee.full_name if new_assignee else 'someone'}",
+                           target=new_assignee)
+    else:
+        await log_activity(db, current_user, "task_edited", "task", task.id, task.title,
+                           f"{current_user.full_name or current_user.email} edited task \"{task.title}\"")
+
     await db.commit()
-    
+
     # Re-fetch with relationships for the response model
     stmt = select(Task).filter(Task.id == task.id).options(
-        selectinload(Task.assigned_to), 
+        selectinload(Task.assigned_to),
         selectinload(Task.created_by)
     )
     result = await db.execute(stmt)

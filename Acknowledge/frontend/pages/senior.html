@@ -231,6 +231,15 @@
                     </svg>
                     My Calendar & Tasks
                 </button>
+                <button onclick="switchTab('history')" id="nav-history"
+                    class="w-full flex items-center px-4 py-3 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-lg font-medium transition-colors text-left">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Activity History
+                </button>
             </nav>
         </div>
 
@@ -1329,6 +1338,20 @@
                 </div>
             </div>
 
+            <div id="view-history" class="hidden space-y-8 animate-fade-in">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-900">Activity History</h2>
+                        <p class="text-sm text-gray-500 mt-1">All actions across the organisation</p>
+                    </div>
+                    <button onclick="loadActivityFeed('activity-feed-container', true)" class="text-sm text-primary hover:underline">Refresh</button>
+                </div>
+                <div class="bg-white border border-gray-100 rounded-xl shadow-sm p-4">
+                    <div id="activity-feed-container">
+                        <p class="text-sm text-gray-400 text-center py-8">Loading history...</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
     <!-- Notify Everyone Modal -->
@@ -2219,6 +2242,7 @@
     <script src="../static/js/holidays-tab.js"></script>
     <script src="../static/js/office-locations.js"></script>
     <script src="../static/js/attendance-clock.js"></script>
+    <script src="../static/js/activity.js"></script>
     <script src="../static/js/senior.js?v=5"></script>
 
     <!-- Mobile Sidebar Toggle Script -->

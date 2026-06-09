@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 from app.routes import auth, tasks, concerns, policies, dashboard, senior_dashboard, reports, notifications, ventures, uploads
 from app.routes import attendance, leaves, holidays
+from app.routes import activity_logs
 from app.database import engine, Base
 from app.config import settings
 from pathlib import Path
@@ -150,6 +151,7 @@ app.include_router(uploads.router)
 app.include_router(attendance.router)
 app.include_router(leaves.router)
 app.include_router(holidays.router)
+app.include_router(activity_logs.router)
 
 async def _auto_absent_scheduler():
     """Background task: runs daily at 23:45 IST (18:15 UTC).
@@ -207,6 +209,7 @@ async def startup():
     # Ensure all models are registered (including custom_leave_policies)
     from app.models import leave, custom_leave_policy  # noqa: F401
     from app.models.attendance import ClockLocation, OfficeLocation  # noqa: F401
+    from app.models import activity_log  # noqa: F401
     async with engine.begin() as conn:
         # Create tables — wrapped in try/except because multiple gunicorn workers can race here;
         # the unique constraint violation on pg_class is harmless (table already exists).
@@ -218,6 +221,25 @@ async def startup():
         # create_all won't add new columns to existing tables.
         try:
             await conn.execute(text("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS acknowledged_at TIMESTAMPTZ"))
+        except Exception:
+            pass
+        # Activity log table (created by create_all; patch in case of older deployments)
+        try:
+            await conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS activity_logs (
+                    id SERIAL PRIMARY KEY,
+                    created_at TIMESTAMPTZ DEFAULT NOW(),
+                    actor_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                    actor_name VARCHAR NOT NULL,
+                    action VARCHAR NOT NULL,
+                    entity_type VARCHAR NOT NULL,
+                    entity_id INTEGER,
+                    entity_name VARCHAR,
+                    target_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                    target_name VARCHAR,
+                    description VARCHAR NOT NULL
+                )
+            """))
         except Exception:
             pass
         # Add new columns to users table for attendance/leave features

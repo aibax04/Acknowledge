@@ -895,6 +895,14 @@ async def _apply_leave_impl(req: LeaveApplyRequest, db: AsyncSession, current_us
         status=LeaveStatus.PENDING
     )
     db.add(leave)
+
+    from app.services.activity_service import log_activity
+    policy_label = f" ({custom_policy_title})" if custom_policy_title else ""
+    await log_activity(db, current_user, "leave_requested", "leave", None,
+                       f"{req.start_date.isoformat()} – {req.end_date.isoformat()}",
+                       f"{current_user.full_name or current_user.email} applied for leave{policy_label}: "
+                       f"{req.start_date.isoformat()} – {req.end_date.isoformat()} ({num_days_val} day{'s' if num_days_val != 1 else ''})")
+
     try:
         await db.commit()
         await db.refresh(leave)
@@ -1419,6 +1427,19 @@ async def review_leave(
     leave.reviewer_notes = review.reviewer_notes
     leave.reviewed_at = datetime.now(timezone.utc)
 
+    leave_user_result = await db.execute(select(User).filter(User.id == leave.user_id))
+    leave_user = leave_user_result.scalars().first()
+    from app.services.activity_service import log_activity
+    action = "leave_approved" if review.status == "approved" else "leave_rejected"
+    desc = (
+        f"{current_user.full_name or current_user.email} {review.status} leave request "
+        f"from {leave_user.full_name if leave_user else 'someone'}: "
+        f"{leave.start_date.isoformat()} – {leave.end_date.isoformat()}"
+    )
+    await log_activity(db, current_user, action, "leave", leave.id,
+                       f"{leave.start_date.isoformat()} – {leave.end_date.isoformat()}",
+                       desc, target=leave_user)
+
     await db.commit()
     return {"message": f"Leave request {review.status} successfully"}
 
@@ -1443,6 +1464,13 @@ async def cancel_leave(
         raise HTTPException(status_code=400, detail="Only pending leave requests can be cancelled")
 
     leave.status = LeaveStatus.CANCELLED
+
+    from app.services.activity_service import log_activity
+    await log_activity(db, current_user, "leave_cancelled", "leave", leave.id,
+                       f"{leave.start_date.isoformat()} – {leave.end_date.isoformat()}",
+                       f"{current_user.full_name or current_user.email} cancelled their leave request: "
+                       f"{leave.start_date.isoformat()} – {leave.end_date.isoformat()}")
+
     await db.commit()
     return {"message": "Leave request cancelled"}
 

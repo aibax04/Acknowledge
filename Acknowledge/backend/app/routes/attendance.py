@@ -982,6 +982,13 @@ async def create_update_request(
         status="pending"
     )
     db.add(update_request)
+
+    from app.services.activity_service import log_activity
+    await log_activity(db, current_user, "attendance_requested", "attendance_request", None,
+                       req.date.isoformat(),
+                       f"{current_user.full_name or current_user.email} requested attendance update for {req.date.isoformat()}",
+                       target=manager)
+
     await db.commit()
     await db.refresh(update_request)
 
@@ -1088,6 +1095,18 @@ async def review_update_request(
     req.status = review.status
     req.reviewer_notes = review.reviewer_notes
     req.reviewed_at = datetime.now(timezone.utc)
+
+    # Fetch requester for log
+    req_user_result = await db.execute(select(User).filter(User.id == req.user_id))
+    req_user = req_user_result.scalars().first()
+    from app.services.activity_service import log_activity
+    action = "attendance_approved" if review.status == "approved" else "attendance_rejected"
+    desc = (
+        f"{current_user.full_name or current_user.email} {review.status} attendance update request "
+        f"from {req_user.full_name if req_user else 'someone'} for {req.date.isoformat()}"
+    )
+    await log_activity(db, current_user, action, "attendance_request", req.id,
+                       req.date.isoformat(), desc, target=req_user)
 
     if review.status == "approved":
         # Update or create attendance record

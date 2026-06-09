@@ -355,6 +355,15 @@
                     </svg>
                     Weekly Schedule
                 </a>
+                <a href="#" data-tab="history"
+                    class="nav-link flex items-center px-4 py-2.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900 rounded-lg font-medium transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3 flex-shrink-0" fill="none"
+                        viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    History
+                </a>
             </nav>
         </div>
 
@@ -738,6 +747,21 @@
                     </button>
                 </div>
                 <div id="projects-kanban-container" class="overflow-x-auto w-full pb-4"></div>
+            </div>
+
+            <div id="history-tab" class="tab-content">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h2 class="section-title text-lg">My Activity History</h2>
+                        <p class="section-subtitle">A log of actions you've taken and things done to you</p>
+                    </div>
+                    <button onclick="loadActivityFeed('activity-feed-container', false)" class="text-sm text-primary hover:underline">Refresh</button>
+                </div>
+                <div class="bg-white border border-slate-100 rounded-xl shadow-sm p-4">
+                    <div id="activity-feed-container">
+                        <p class="text-sm text-gray-400 text-center py-8">Loading history...</p>
+                    </div>
+                </div>
             </div>
         </div>
         </div>
@@ -1251,6 +1275,7 @@
     <script src="../static/js/leaves-tab.js?v=8"></script>
     <script src="../static/js/holidays-tab.js"></script>
     <script src="../static/js/projects.js"></script>
+    <script src="../static/js/activity.js"></script>
     <script src="../static/js/employee.js"></script>
     <script>
         // Mobile Sidebar Toggle
