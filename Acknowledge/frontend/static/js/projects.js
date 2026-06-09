@@ -306,6 +306,15 @@ async function openProjectModal(projectId) {
     document.getElementById('project-modal-title').textContent = project.name;
     document.getElementById('project-modal-desc').textContent = project.description || 'No description';
 
+    // Show delete button only to the creator (on pages where it starts hidden)
+    const deleteBtn = document.getElementById('delete-project-btn');
+    if (deleteBtn && deleteBtn.classList.contains('hidden')) {
+        const userId = typeof currentUser !== 'undefined' && currentUser ? currentUser.id : null;
+        if (_currentProjectCreatorId && userId && _currentProjectCreatorId === userId) {
+            deleteBtn.classList.remove('hidden');
+        }
+    }
+
     // Reset edit mode to view mode
     cancelProjectEdit();
 
@@ -379,6 +388,10 @@ async function saveProjectEdit() {
 
 function closeProjectModal() {
     hideModal(document.getElementById('view-project-modal'));
+    const deleteBtn = document.getElementById('delete-project-btn');
+    if (deleteBtn && deleteBtn.classList.contains('hidden') === false) {
+        deleteBtn.classList.add('hidden');
+    }
 }
 
 async function openAddMembersModal() {
