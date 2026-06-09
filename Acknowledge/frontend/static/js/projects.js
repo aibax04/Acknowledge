@@ -306,13 +306,24 @@ async function openProjectModal(projectId) {
     document.getElementById('project-modal-title').textContent = project.name;
     document.getElementById('project-modal-desc').textContent = project.description || 'No description';
 
-    // Show delete button only to the creator (on pages where it starts hidden)
+    const userId = typeof currentUser !== 'undefined' && currentUser ? currentUser.id : null;
+    const userRole = typeof currentUser !== 'undefined' && currentUser ? currentUser.role : null;
+    const isCreator = _currentProjectCreatorId && userId && _currentProjectCreatorId === userId;
+    const canEdit = isCreator || userRole === 'manager' || userRole === 'senior';
+    const canDelete = isCreator || userRole === 'manager' || userRole === 'senior';
+
+    // Show/hide edit button based on permission
+    const editBtn = document.getElementById('edit-project-btn');
+    if (editBtn) {
+        if (canEdit) editBtn.classList.remove('hidden');
+        else editBtn.classList.add('hidden');
+    }
+
+    // Show/hide delete button based on permission
     const deleteBtn = document.getElementById('delete-project-btn');
-    if (deleteBtn && deleteBtn.classList.contains('hidden')) {
-        const userId = typeof currentUser !== 'undefined' && currentUser ? currentUser.id : null;
-        if (_currentProjectCreatorId && userId && _currentProjectCreatorId === userId) {
-            deleteBtn.classList.remove('hidden');
-        }
+    if (deleteBtn) {
+        if (canDelete) deleteBtn.classList.remove('hidden');
+        else deleteBtn.classList.add('hidden');
     }
 
     // Reset edit mode to view mode
@@ -388,10 +399,11 @@ async function saveProjectEdit() {
 
 function closeProjectModal() {
     hideModal(document.getElementById('view-project-modal'));
+    cancelProjectEdit();
+    const editBtn = document.getElementById('edit-project-btn');
+    if (editBtn) editBtn.classList.add('hidden');
     const deleteBtn = document.getElementById('delete-project-btn');
-    if (deleteBtn && deleteBtn.classList.contains('hidden') === false) {
-        deleteBtn.classList.add('hidden');
-    }
+    if (deleteBtn) deleteBtn.classList.add('hidden');
 }
 
 async function openAddMembersModal() {

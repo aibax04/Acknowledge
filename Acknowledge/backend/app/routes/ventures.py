@@ -189,8 +189,8 @@ async def update_venture(
     if not venture:
         raise HTTPException(status_code=404, detail="Venture not found")
 
-    if venture.created_by != current_user.id and current_user.role != UserRole.SENIOR:
-        raise HTTPException(status_code=403, detail="You can only update ventures you created")
+    if venture.created_by != current_user.id and current_user.role not in [UserRole.MANAGER, UserRole.SENIOR]:
+        raise HTTPException(status_code=403, detail="Only the creator, managers, or seniors can edit this project")
     
     if venture_update.name is not None:
         venture.name = venture_update.name
