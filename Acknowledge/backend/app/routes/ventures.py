@@ -49,28 +49,21 @@ async def list_ventures(
 ):
     """List all ventures"""
     query = select(Venture).order_by(Venture.created_at.desc())
-    
-    if current_user.role == UserRole.MANAGER:
-        # Managers see ventures they created OR are members of
-        from sqlalchemy import or_
-        from app.models.venture import venture_members
-        query = query.outerjoin(venture_members).filter(
+
+    if current_user.role in [UserRole.MANAGER, UserRole.EMPLOYEE, UserRole.INTERN]:
+        # Show ventures the user created OR is a member of
+        member_venture_ids = select(venture_members.c.venture_id).where(
+            venture_members.c.user_id == current_user.id
+        ).scalar_subquery()
+        query = query.filter(
             or_(
                 Venture.created_by == current_user.id,
-                venture_members.c.user_id == current_user.id
+                Venture.id.in_(member_venture_ids)
             )
-        ).distinct()
-    elif current_user.role in [UserRole.EMPLOYEE, UserRole.INTERN]:
-        from app.models.venture import venture_members
-        query = query.outerjoin(venture_members).filter(
-            or_(
-                Venture.created_by == current_user.id,
-                venture_members.c.user_id == current_user.id
-            )
-        ).distinct()
+        )
 
     result = await db.execute(query)
-    ventures = result.scalars().unique().all()
+    ventures = result.scalars().all()
     return ventures
 
 @router.get("/my-ventures", response_model=List[VentureDetailResponse])
