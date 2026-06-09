@@ -428,7 +428,7 @@ async function openEditTaskModal(taskId) {
         const allowed = (usersResult.value || []).filter(u => u && (u.role === 'employee' || u.role === 'intern'));
         allowed.sort((a, b) => (a.full_name || '').localeCompare(b.full_name || '', undefined, { sensitivity: 'base' }));
         assigneeSelect.innerHTML = allowed.map(u =>
-            `<option value="${u.id}"${u.id === task.assigned_to_id ? ' selected' : ''}>${u.full_name || u.email || 'User'} (${u.role})</option>`
+            `<option value="${u.id}"${u.id === task.assigned_to_id ? ' selected' : ''}>${u.full_name || u.email || 'User'}</option>`
         ).join('');
     } else {
         assigneeSelect.innerHTML = '<option value="">Cannot load list</option>';
@@ -973,7 +973,7 @@ async function openEmployeeAssignTaskModal() {
         const allowed = (usersResult.value || []).filter(u => u && (u.role === 'employee' || u.role === 'intern') && u.id !== currentUser?.id);
         allowed.sort((a, b) => (a.full_name || '').localeCompare(b.full_name || '', undefined, { sensitivity: 'base' }));
         assigneeSelect.innerHTML = '<option value="">Select person...</option>' +
-            allowed.map(u => `<option value="${u.id}">${(u.full_name || u.email || 'User')} (${u.role})</option>`).join('');
+            allowed.map(u => `<option value="${u.id}">${u.full_name || u.email || 'User'}</option>`).join('');
     } else {
         console.error(usersResult.reason);
         assigneeSelect.innerHTML = '<option value="">Cannot load list</option>';

@@ -408,8 +408,7 @@ async function openAttendanceUpdateModal(dateStr) {
         sel.innerHTML = '<option value="">Select Manager...</option>';
         (mgrs || []).forEach(function (m) {
             if (myId != null && m.id === myId) return;
-            var roleDisplay = m.role === 'senior' ? 'Director' : m.role.charAt(0).toUpperCase() + m.role.slice(1);
-            sel.innerHTML += '<option value="' + m.id + '">' + m.full_name + ' (' + roleDisplay + ')</option>';
+            sel.innerHTML += '<option value="' + m.id + '">' + m.full_name + '</option>';
         });
     } catch (e) { console.error(e); }
     modal.classList.remove('hidden');

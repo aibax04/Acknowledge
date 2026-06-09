@@ -235,7 +235,6 @@ async function openAssignModal(locId) {
             return '<label class="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-50 cursor-pointer">'
                 + '<input type="checkbox" value="' + u.id + '" ' + checked + ' class="assign-loc-cb w-4 h-4 accent-emerald-600">'
                 + '<span class="flex-1 text-sm text-gray-800">' + esc(u.full_name) + '</span>'
-                + '<span class="text-xs text-gray-400">' + (roleLabel[u.role] || u.role) + '</span>'
                 + '</label>';
         }).join('');
     } catch (e) {

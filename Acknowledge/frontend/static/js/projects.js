@@ -250,7 +250,7 @@ function renderAvailableUsers(users) {
                    data-user-id="${user.id}">
             <div class="flex-1">
                 <p class="text-sm font-medium text-gray-900">${escapeHtml(user.full_name)}</p>
-                <p class="text-xs text-gray-500">${escapeHtml(user.email)} • ${user.role}</p>
+                <p class="text-xs text-gray-500">${escapeHtml(user.email)}</p>
             </div>
         </label>
     `).join('');
