@@ -916,23 +916,25 @@ async function openEmployeeAssignTaskModal() {
     if (!assigneeSelect) return;
     assigneeSelect.innerHTML = '<option value="">Loading...</option>';
     document.getElementById('employee-assign-task-modal').classList.remove('hidden');
-    try {
-        const users = await Api.get('/auth/all-users');
-        const allowed = (users || []).filter(u => u && (u.role === 'employee' || u.role === 'intern') && u.id !== currentUser?.id);
+    const [usersResult, projectsResult] = await Promise.allSettled([
+        Api.get('/auth/all-users'),
+        Api.get('/ventures/')
+    ]);
+    if (usersResult.status === 'fulfilled') {
+        const allowed = (usersResult.value || []).filter(u => u && (u.role === 'employee' || u.role === 'intern') && u.id !== currentUser?.id);
         allowed.sort((a, b) => (a.full_name || '').localeCompare(b.full_name || '', undefined, { sensitivity: 'base' }));
         assigneeSelect.innerHTML = '<option value="">Select person...</option>' +
             allowed.map(u => `<option value="${u.id}">${u.full_name || u.email || 'User'} (${u.role})</option>`).join('');
-    } catch (e) {
+    } else {
         assigneeSelect.innerHTML = '<option value="">Cannot load list</option>';
         showToast('Could not load team list', 'error');
     }
     const ventureSelect = document.getElementById('employee-task-venture');
     if (ventureSelect) {
-        try {
-            const projects = await Api.get('/ventures/');
+        if (projectsResult.status === 'fulfilled') {
             ventureSelect.innerHTML = '<option value="">No project</option>' +
-                (projects || []).map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-        } catch (e) {
+                (projectsResult.value || []).map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+        } else {
             ventureSelect.innerHTML = '<option value="">No project</option>';
         }
     }
