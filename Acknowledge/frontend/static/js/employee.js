@@ -965,30 +965,33 @@ async function openEmployeeAssignTaskModal() {
     if (!assigneeSelect) return;
     assigneeSelect.innerHTML = '<option value="">Loading...</option>';
     document.getElementById('employee-assign-task-modal').classList.remove('hidden');
-    try {
-        const [users, projects] = await Promise.all([
-            Api.get('/auth/all-users'),
-            Api.get('/ventures/')
-        ]);
-        const allowed = (users || []).filter(u => u && (u.role === 'employee' || u.role === 'intern') && u.id !== currentUser?.id);
+    const [usersResult, projectsResult] = await Promise.allSettled([
+        Api.get('/auth/all-users'),
+        Api.get('/ventures/')
+    ]);
+    if (usersResult.status === 'fulfilled') {
+        const allowed = (usersResult.value || []).filter(u => u && (u.role === 'employee' || u.role === 'intern') && u.id !== currentUser?.id);
         allowed.sort((a, b) => (a.full_name || '').localeCompare(b.full_name || '', undefined, { sensitivity: 'base' }));
         assigneeSelect.innerHTML = '<option value="">Select person...</option>' +
             allowed.map(u => `<option value="${u.id}">${(u.full_name || u.email || 'User')} (${u.role})</option>`).join('');
-        const ventureSelect = document.getElementById('employee-task-venture');
-        if (ventureSelect) {
-            ventureSelect.innerHTML = '<option value="">No project</option>' +
-                (projects || []).map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-        }
-    } catch (e) {
-        console.error(e);
-        assigneeSelect.innerHTML = '<option value="">Failed to load list</option>';
+    } else {
+        console.error(usersResult.reason);
+        assigneeSelect.innerHTML = '<option value="">Cannot load list</option>';
         showToast('Could not load team list', 'error');
+    }
+    const ventureSelect = document.getElementById('employee-task-venture');
+    if (ventureSelect) {
+        if (projectsResult.status === 'fulfilled') {
+            ventureSelect.innerHTML = '<option value="">No project</option>' +
+                (projectsResult.value || []).map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+        } else {
+            ventureSelect.innerHTML = '<option value="">No project</option>';
+        }
     }
     document.getElementById('employee-task-title').value = '';
     document.getElementById('employee-task-description').value = '';
     document.getElementById('employee-task-priority').value = 'medium';
     document.getElementById('employee-task-deadline').value = '';
-    const ventureSelect = document.getElementById('employee-task-venture');
     if (ventureSelect) ventureSelect.value = '';
 }
 
