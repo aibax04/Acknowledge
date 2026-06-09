@@ -21,6 +21,7 @@ class TaskUpdate(BaseModel):
     status: Optional[TaskStatus] = None
     deadline: Optional[datetime] = None
     assigned_to_id: Optional[int] = None
+    venture_id: Optional[int] = None
 
 class TaskResponse(TaskBase):
     id: int

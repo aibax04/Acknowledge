@@ -274,6 +274,7 @@ function renderTasks(tasks) {
                     Comment
                     ${hasUnseen ? '<span class="inline-block w-2 h-2 rounded-full bg-red-500" aria-label="Unseen comments"></span>' : ''}
                 </button>
+                ${(task.created_by_id === currentUser?.id || (task.created_by && task.created_by.id === currentUser?.id)) ? '<button type="button" onclick="openEditTaskModal(' + task.id + ')" class="text-indigo-600 hover:text-indigo-700 font-medium">Edit</button>' : ''}
             </td>
         </tr>
     `}).join('');
@@ -373,6 +374,82 @@ async function updateTaskStatus() {
     } finally {
         btn.disabled = false;
         btn.innerText = 'Update';
+    }
+}
+
+async function openEditTaskModal(taskId) {
+    const task = allTasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    document.getElementById('edit-task-id').value = task.id;
+    document.getElementById('edit-task-title').value = task.title || '';
+    document.getElementById('edit-task-description').value = task.description || '';
+    document.getElementById('edit-task-priority').value = task.priority || 'medium';
+    document.getElementById('edit-task-status').value = task.status || 'pending';
+    document.getElementById('edit-task-deadline').value = task.deadline ? task.deadline.split('T')[0] : '';
+    document.getElementById('edit-task-modal').classList.add('active');
+
+    const assigneeSelect = document.getElementById('edit-task-assignee');
+    const ventureSelect = document.getElementById('edit-task-venture');
+    assigneeSelect.innerHTML = '<option value="">Loading...</option>';
+
+    const [usersResult, projectsResult] = await Promise.allSettled([
+        Api.get('/auth/all-users'),
+        Api.get('/ventures/')
+    ]);
+
+    if (usersResult.status === 'fulfilled') {
+        const allowed = (usersResult.value || []).filter(u => u && (u.role === 'employee' || u.role === 'intern'));
+        allowed.sort((a, b) => (a.full_name || '').localeCompare(b.full_name || '', undefined, { sensitivity: 'base' }));
+        assigneeSelect.innerHTML = allowed.map(u =>
+            `<option value="${u.id}"${u.id === task.assigned_to_id ? ' selected' : ''}>${u.full_name || u.email || 'User'} (${u.role})</option>`
+        ).join('');
+    } else {
+        assigneeSelect.innerHTML = '<option value="">Cannot load list</option>';
+    }
+
+    if (ventureSelect) {
+        if (projectsResult.status === 'fulfilled') {
+            ventureSelect.innerHTML = '<option value="">No project</option>' +
+                (projectsResult.value || []).map(p =>
+                    `<option value="${p.id}"${p.id === task.venture_id ? ' selected' : ''}>${p.name}</option>`
+                ).join('');
+        } else {
+            ventureSelect.innerHTML = '<option value="">No project</option>';
+        }
+    }
+}
+
+async function saveEditTask() {
+    const taskId = document.getElementById('edit-task-id').value;
+    const title = (document.getElementById('edit-task-title').value || '').trim();
+    const assignedToId = document.getElementById('edit-task-assignee').value;
+    if (!title) { showToast('Task title is required', 'error'); return; }
+    if (!assignedToId) { showToast('Please select an assignee', 'error'); return; }
+
+    const btn = document.getElementById('edit-task-confirm');
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+    const deadline = document.getElementById('edit-task-deadline').value;
+    const ventureId = document.getElementById('edit-task-venture').value;
+    try {
+        await Api.put(`/tasks/${taskId}`, {
+            title,
+            description: document.getElementById('edit-task-description').value || null,
+            assigned_to_id: parseInt(assignedToId, 10),
+            priority: document.getElementById('edit-task-priority').value,
+            status: document.getElementById('edit-task-status').value,
+            deadline: deadline ? new Date(deadline).toISOString() : null,
+            venture_id: ventureId ? parseInt(ventureId, 10) : null
+        });
+        showToast('Task updated', 'success');
+        document.getElementById('edit-task-modal').classList.remove('active');
+        await loadTasks();
+    } catch (e) {
+        showToast(e.message || 'Failed to update task', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Save Changes';
     }
 }
 
@@ -991,6 +1068,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('nudge-filter')?.addEventListener('change', () => {
         renderConcerns(allConcerns);
     });
+
+    const editCancelBtn = document.getElementById('edit-task-cancel');
+    if (editCancelBtn) editCancelBtn.addEventListener('click', () => {
+        document.getElementById('edit-task-modal').classList.remove('active');
+    });
+    const editConfirmBtn = document.getElementById('edit-task-confirm');
+    if (editConfirmBtn) editConfirmBtn.addEventListener('click', saveEditTask);
 
     // Close modals on background click
     document.querySelectorAll('.modal').forEach(modal => {
