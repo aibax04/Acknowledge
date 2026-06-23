@@ -32,6 +32,11 @@ function getUserLocation() {
 async function checkGeoFence() {
     var loc = await getUserLocation();
     if (loc.latitude === null) {
+        var role = localStorage.getItem('user_role') || '';
+        if (role !== 'employee' && role !== 'manager') {
+            _geoStatus = { allowed: true, location_name: null, distance: null };
+            return _geoStatus;
+        }
         _geoStatus = { allowed: false, detail: 'Location access denied. Please enable GPS/location permissions.' };
         return _geoStatus;
     }
